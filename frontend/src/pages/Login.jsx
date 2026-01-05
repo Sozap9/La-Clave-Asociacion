@@ -1,0 +1,161 @@
+import { useState } from 'react';
+import Button from '../components/common/Button';
+import { useAuth } from '../hooks/useAuth';
+import { NAV_ROUTES } from '../utils/constants';
+
+const Login = () => {
+  const { login } = useAuth();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    console.log('🔐 Iniciando login...');
+    console.log('📧 Email:', formData.email);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+      
+      console.log('📦 RESPUESTA COMPLETA:', data);
+      console.log('✅ Success:', data.success);
+      console.log('👤 Usuario:', data.data?.user);
+      console.log('🔑 Token recibido:', data.data?.accessToken);  // ✅ CAMBIADO
+      console.log('🔑 Tipo de token:', typeof data.data?.accessToken);  // ✅ CAMBIADO
+
+      if (data.success) {
+        if (!data.data?.accessToken) {  // ✅ CAMBIADO
+          console.error('❌ ERROR: NO HAY TOKEN EN LA RESPUESTA');
+          setError('Error: No se recibió token');
+          return;
+        }
+
+        console.log('✅ Token existe, llamando a login()...');
+        console.log('✅ Pasando usuario:', data.data.user);
+        console.log('✅ Pasando token:', data.data.accessToken);  // ✅ CAMBIADO
+        
+        login(data.data.user, data.data.accessToken);  // ✅ CAMBIADO
+        
+        console.log('💾 Verificando localStorage...');
+        const savedToken = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
+        console.log('💾 Token en localStorage:', savedToken);
+        console.log('💾 User en localStorage:', savedUser);
+
+        if (!savedToken) {
+          console.error('❌ ERROR: Token NO se guardó en localStorage');
+          alert('Error: No se pudo guardar la sesión');
+          return;
+        }
+
+        console.log('✅ Todo OK, redirigiendo...');
+        window.location.href = data.data.user.role === 'admin' ? NAV_ROUTES.ADMIN : NAV_ROUTES.DASHBOARD;
+      } else {
+        console.error('❌ Login fallido:', data.message);
+        setError(data.message || 'Error al iniciar sesión');
+      }
+    } catch (err) {
+      console.error('💥 ERROR EN CATCH:', err);
+      setError('Error de conexión. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center py-20 px-4 relative overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-gray-950 z-10" />
+        <img
+          src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&q=80"
+          alt="Background"
+          className="w-full h-full object-cover opacity-30"
+        />
+      </div>
+
+      <div className="relative z-20 w-full max-w-md">
+        <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20">
+          
+          <h2 className="text-3xl font-bold text-white text-center mb-8">Inicio de Sesión</h2>
+
+          {error && (
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="label">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="input"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="label">Contraseña</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="input"
+                required
+              />
+            </div>
+
+            <div className="text-right">
+              <a href="/recuperar-password" className="text-sm text-primary-400 hover:text-primary-300 transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-400">
+              ¿No tienes cuenta?{' '}
+              <a href={NAV_ROUTES.REGISTER} className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+                Regístrate aquí
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build
+dist/
+build/
+
+# ============================================
+# Uploads - Archivos subidos por usuarios
+# ============================================
+# Ignorar todos los archivos dentro de uploads
+uploads/**/*
+
+# PERO mantener la estructura de carpetas con .gitkeep
+!uploads/.gitkeep
+!uploads/avatars/
+!uploads/avatars/.gitkeep
+!uploads/avatars/thumbnails/
+!uploads/avatars/thumbnails/.gitkeep
+!uploads/documents/
+!uploads/documents/.gitkeep
+!uploads/documents/dni-front/
+!uploads/documents/dni-front/.gitkeep
+!uploads/documents/dni-back/
+!uploads/documents/dni-back/.gitkeep
+!uploads/documents/firmas/
+!uploads/documents/firmas/.gitkeep
+!uploads/events/
+!uploads/events/.gitkeep
+!uploads/events/thumbnails/
+!uploads/events/thumbnails/.gitkeep
+!uploads/gallery/
+!uploads/gallery/.gitkeep
+!uploads/gallery/originals/
+!uploads/gallery/originals/.gitkeep
+!uploads/gallery/originals/thumbnails/
+!uploads/gallery/originals/thumbnails/.gitkeep
+!uploads/gallery/temp/
+!uploads/gallery/temp/.gitkeep
