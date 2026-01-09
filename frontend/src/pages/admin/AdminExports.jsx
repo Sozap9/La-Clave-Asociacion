@@ -51,7 +51,7 @@ const AdminExports = () => {
       }
     } catch (err) {
       console.error(`Error exportando ${type}:`, err);
-      setError(`Error al exportar ${type}. Es posible que el endpoint no esté implementado aún.`);
+      setError(`Error al exportar ${type}.`);
     } finally {
       setLoading('');
     }

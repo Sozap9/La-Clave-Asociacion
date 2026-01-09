@@ -37,7 +37,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
     { label: 'Inicio', href: NAV_ROUTES.HOME },
     { label: 'Eventos', href: NAV_ROUTES.EVENTS },
     { label: 'Galería', href: NAV_ROUTES.GALLERY },
-    { label: 'Mis Reservas', href: NAV_ROUTES.MY_BOOKINGS },
+    { label: 'Mis Entradas', href: NAV_ROUTES.MY_BOOKINGS },
     { label: 'Estatutos', href: NAV_ROUTES.STATUTES },
     { label: 'Mi Perfil', href: NAV_ROUTES.PROFILE, icon: User }
   ];

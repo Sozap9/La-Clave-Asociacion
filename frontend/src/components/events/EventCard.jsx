@@ -1,111 +1,93 @@
-import { Calendar, MapPin, Users, Clock } from 'lucide-react';
-import Button from '../common/Button';
+import { Calendar, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const EventCard = ({ event, onViewDetail }) => {
-  const {
-    id,
-    nombre,
-    descripcion,
-    fecha,
-    hora_inicio,
-    ubicacion,
-    aforo_maximo,
-    aforo_actual,
-    imagen_url,
-    estado
-  } = event;
+  const navigate = useNavigate();
 
-  // Formatear fecha
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
     });
   };
 
-  // Calcular porcentaje de aforo
-  const aforoPercentage = (aforo_actual / aforo_maximo) * 100;
-  const aforoColor = aforoPercentage >= 90 ? 'text-red-400' : 'text-primary-400';
+  const handleClick = () => {
+    if (onViewDetail) {
+      onViewDetail(event);
+    } else {
+      navigate('/eventos');
+    }
+  };
 
-  // Determinar si está lleno
-  const isFull = aforo_actual >= aforo_maximo;
-  const isPast = estado === 'pasado';
+  // ✅ Usar VITE_BASE_URL para imágenes (sin /api)
+  const imageUrl = event.imagen_cartel_url 
+    ? `${import.meta.env.VITE_BASE_URL}${event.imagen_cartel_url}`
+    : null;
 
   return (
-    <div className="card card-glow group cursor-pointer" onClick={onViewDetail}>
-      {/* Imagen */}
-      <div className="relative overflow-hidden rounded-t-lg h-56">
-        <img
-          src={imagen_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=80'}
-          alt={nombre}
-          className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-500"
-        />
-        
-        {/* Badge de estado */}
-        {isPast && (
-          <div className="absolute top-4 right-4 bg-gray-800/90 text-gray-300 px-3 py-1 rounded-full text-sm">
-            Finalizado
+    <div 
+      onClick={handleClick}
+      className="group cursor-pointer bg-gray-900 overflow-hidden border border-gray-800 
+                 hover:border-purple-600 transition-all duration-300"
+    >
+      {/* Imagen del evento */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-gray-800">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={event.titulo}
+            className="w-full h-full object-cover grayscale group-hover:grayscale-0 
+                      transition-all duration-700 group-hover:scale-105"
+            onError={(e) => {
+              console.error('Error loading image:', imageUrl);
+              e.target.style.display = 'none';
+              e.target.parentElement.innerHTML = `
+                <div class="w-full h-full flex items-center justify-center bg-gray-800">
+                  <span class="text-gray-600 text-sm">Sin imagen</span>
+                </div>
+              `;
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-800">
+            <span className="text-gray-600 text-sm">Sin imagen</span>
           </div>
         )}
-        {isFull && !isPast && (
-          <div className="absolute top-4 right-4 bg-red-500/90 text-white px-3 py-1 rounded-full text-sm font-semibold">
-            Completo
-          </div>
-        )}
+        {/* Overlay en hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300" />
       </div>
 
       {/* Contenido */}
-      <div className="p-6 space-y-4">
+      <div className="p-4 space-y-3">
         {/* Título */}
-        <h3 className="text-2xl font-bold text-white group-hover:text-primary-400 transition-colors">
-          {nombre}
+        <h3 className="text-white text-lg font-light uppercase tracking-wide line-clamp-2 
+                      group-hover:text-purple-400 transition-colors">
+          {event.titulo}
         </h3>
 
-        {/* Descripción */}
-        <p className="text-gray-400 line-clamp-2">
-          {descripcion}
-        </p>
-
-        {/* Info del evento */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-gray-300">
-            <Calendar size={18} className="text-primary-400" />
-            <span className="text-sm">{formatDate(fecha)}</span>
-          </div>
-
-          <div className="flex items-center gap-2 text-gray-300">
-            <Clock size={18} className="text-primary-400" />
-            <span className="text-sm">{hora_inicio}</span>
-          </div>
-
-          <div className="flex items-center gap-2 text-gray-300">
-            <MapPin size={18} className="text-primary-400" />
-            <span className="text-sm">{ubicacion}</span>
-          </div>
-
+        {/* Detalles */}
+        <div className="space-y-2 text-sm text-gray-400">
           <div className="flex items-center gap-2">
-            <Users size={18} className={aforoColor} />
-            <span className={`text-sm ${aforoColor} font-medium`}>
-              {aforo_actual} / {aforo_maximo} personas
-            </span>
+            <Calendar size={16} className="flex-shrink-0" />
+            <span className="font-light">{formatDate(event.fecha_evento)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin size={16} className="flex-shrink-0" />
+            <span className="font-light line-clamp-1">{event.ubicacion}</span>
           </div>
         </div>
+        
 
-        {/* Botón */}
-        <Button
-          variant={isFull || isPast ? 'outline' : 'primary'}
-          disabled={isFull || isPast}
-          className="w-full"
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewDetail();
-          }}
-        >
-          {isPast ? 'Evento Finalizado' : isFull ? 'Aforo Completo' : 'Ver Detalles'}
-        </Button>
+        {/* Precio (si existe) */}
+        {event.precio_socio && (
+          <div className="pt-2 border-t border-gray-800">
+            <span className="text-purple-400 text-sm font-medium">
+              {event.precio_socio}€
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

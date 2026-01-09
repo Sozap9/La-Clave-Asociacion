@@ -2,34 +2,57 @@ import Button from '../../components/common/Button';
 
 const InfoSection = ({ title, description, imageSrc, buttonText, buttonHref, reverse = false }) => {
   return (
-    <section className="py-20 bg-gray-950">
-      <div className="container-custom">
-        <div className={`grid md:grid-cols-2 gap-12 items-center ${reverse ? 'md:flex-row-reverse' : ''}`}>
+    <section className="py-24 bg-gray-950">
+      <div className="container-custom px-6">
+        <div className="max-w-5xl mx-auto">
           
-          <div className={`${reverse ? 'md:order-2' : ''}`}>
-            <div className="relative overflow-hidden rounded-lg shadow-2xl">
+          {/* IMAGEN ARRIBA */}
+          <div className="group mb-12">
+            <div className="relative overflow-hidden">
               <img
                 src={imageSrc}
                 alt={title}
-                className="w-full h-96 object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                className="w-full h-[450px] md:h-[550px] object-cover grayscale group-hover:grayscale-0 
+                          transition-all duration-700"
               />
+              {/* Overlay sutil */}
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-700" />
             </div>
           </div>
 
-          <div className={`${reverse ? 'md:order-1' : ''}`}>
-            <p className="text-gray-300 text-lg leading-relaxed mb-8">
+          {/* TEXTO DESCRIPTIVO */}
+          <div className="text-center space-y-6 mb-10">
+            <p className="text-gray-400 text-base md:text-lg leading-relaxed font-light max-w-4xl mx-auto">
               {description}
             </p>
+            
+            <p className="text-gray-400 text-base md:text-lg leading-relaxed font-light max-w-4xl mx-auto">
+              Lorem ipsum dolor sit amet consectetur adipiscing elit placerat elementum, lacus pellentesque 
+              ridiculus porta nisi nulla iaculis posuere inceptos magnis, curae pretium sed odio velit ac vulputate 
+              mauris. Sagittis rhoncus nam porta natoque id parturient eleifend venenatis at, montes interdum 
+              phasellus hac risus ac litora convallis.
+            </p>
 
-            {buttonText && (
+            <p className="text-gray-400 text-base md:text-lg leading-relaxed font-light max-w-4xl mx-auto">
+              Lorem ipsum dolor sit amet consectetur adipiscing elit placerat elementum, lacus pellentesque 
+              ridiculus porta nisi nulla iaculis posuere inceptos magnis, curae pretium sed odio velit ac vulputate 
+              mauris. Sagittis rhoncus nam porta natoque id parturient eleifend venenatis at, montes interdum 
+              phasellus hac risus ac litora convallis, ante fermentum commodo lacus metus pharetra tortor congue.
+            </p>
+          </div>
+
+          {/* BOTÓN ABAJO */}
+          {buttonText && (
+            <div className="text-center">
               <Button
                 variant="primary"
                 to={buttonHref}
+                className="rounded-full px-12 py-4 text-base"
               >
                 {buttonText}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

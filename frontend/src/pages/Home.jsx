@@ -2,6 +2,9 @@ import HeroSection from './home/HeroSection';
 import InfoSection from './home/InfoSection';
 import FeaturedEventsCarousel from '../components/events/FeaturedEventsCarousel';
 
+import registro from '../assets/registro.png';
+import socios from '../assets/socios.png';
+
 const Home = () => {
   return (
     <>
@@ -12,7 +15,7 @@ const Home = () => {
       <InfoSection
         title="Nuestra Comunidad"
         description="Lorem ipsum dolor sit amet consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
-        imageSrc="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80"
+        imageSrc={registro}
         buttonText="Regístrate para ver nuestros eventos"
         buttonHref="/registro"
         reverse={false}
@@ -22,7 +25,7 @@ const Home = () => {
       <InfoSection
         title="Eventos Exclusivos"
         description="Lorem ipsum dolor sit amet consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
-        imageSrc="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+        imageSrc={socios}
         buttonText="Hazte socio"
         buttonHref="/registro"
         reverse={true}

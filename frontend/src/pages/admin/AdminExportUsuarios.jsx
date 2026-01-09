@@ -16,13 +16,13 @@ const AdminExportUsuarios = () => {
     try {
       const result = await exportUsuarios();
       if (result.success) {
-        setSuccess('Exportación de usuarios completada exitosamente');
+        setSuccess('PDF de usuarios descargado correctamente');
       } else {
-        setError(result.message || 'Error en la exportación');
+        setError(result.message || 'No se pudo generar el PDF de usuarios');
       }
     } catch (err) {
-      console.error('Error exportando usuarios:', err);
-      setError('Error al exportar usuarios. Es posible que el endpoint no esté implementado aún.');
+      console.error('Error al exportar usuarios:', err);
+      setError('Error al descargar el PDF de usuarios. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -31,8 +31,8 @@ const AdminExportUsuarios = () => {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Exportar Usuarios CSV</h1>
-        <p className="text-gray-400">Descarga todos los usuarios registrados en formato CSV</p>
+        <h1 className="text-4xl font-bold text-white mb-2">Exportar Usuarios PDF</h1>
+        <p className="text-gray-400">Descarga todos los usuarios registrados en formato PDF</p>
       </div>
 
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
@@ -43,8 +43,8 @@ const AdminExportUsuarios = () => {
         <div>
           <p className="font-semibold mb-1">Información</p>
           <ul className="text-sm space-y-1 list-disc list-inside">
+            <li>Formato PDF listo para imprimir o ver en móvil</li>
             <li>Incluye usuarios básicos, socios y admins</li>
-            <li>Compatible con Excel y Google Sheets</li>
             <li>Se descargará automáticamente</li>
           </ul>
         </div>
@@ -66,7 +66,7 @@ const AdminExportUsuarios = () => {
         <div className="mb-6">
           <p className="text-white font-medium mb-3">Campos incluidos:</p>
           <div className="flex flex-wrap gap-2">
-            {['ID', 'Username', 'Nombre', 'Email', 'Rol', 'Estado', 'Fecha registro'].map(field => (
+            {['Nombre', 'Email', 'Teléfono', 'Rol', 'Estado', 'Email verificado', 'Fecha registro'].map(field => (
               <span key={field} className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm">
                 {field}
               </span>
@@ -82,12 +82,12 @@ const AdminExportUsuarios = () => {
           {loading ? (
             <>
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              Exportando...
+              Generando PDF...
             </>
           ) : (
             <>
               <Download className="w-6 h-6" />
-              Descargar CSV de Usuarios
+              Descargar PDF de Usuarios
             </>
           )}
         </button>

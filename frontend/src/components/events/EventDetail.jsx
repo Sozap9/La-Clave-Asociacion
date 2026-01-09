@@ -14,18 +14,19 @@ const EventDetail = ({ event, isOpen, onClose }) => {
 
   if (!isOpen || !event) return null;
 
+  //  CAMPOS CORRECTOS DE LA API
   const {
-    nombre,
+    titulo,
     descripcion,
-    fecha,
-    hora_inicio,
-    hora_fin,
+    fecha_evento,
+    hora_evento,
     ubicacion,
     aforo_maximo,
-    aforo_actual,
-    imagen_url,
-    estado,
-    precio
+    entradas_disponibles,
+    imagen_cartel_url,
+    precio_socio,
+    precio_invitado,
+    permite_invitados
   } = event;
 
   const formatDate = (dateString) => {
@@ -38,9 +39,10 @@ const EventDetail = ({ event, isOpen, onClose }) => {
     });
   };
 
-  const isFull = aforo_actual >= aforo_maximo;
-  const isPast = estado === 'pasado';
-  const canBook = !isFull && !isPast && isAuthenticated;
+  // ✅ CORREGIDO: Usar campo correcto del backend que excluye canceladas y admin
+  const entradas_reservadas = event.entradas_reservadas_real || 0;
+  const isFull = entradas_disponibles <= 0;
+  const canBook = !isFull && isAuthenticated;
 
   const handleBooking = async () => {
     if (!isAuthenticated) {
@@ -59,7 +61,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
         setSuccess(true);
         setTimeout(() => {
           onClose();
-          navigate('/panel');
+          navigate('/mis-entradas');
         }, 2000);
       } else {
         setError(result.message || 'Error al crear la reserva');
@@ -75,39 +77,50 @@ const EventDetail = ({ event, isOpen, onClose }) => {
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-80 z-50 animate-fade-in"
+        className="fixed inset-0 bg-black bg-opacity-90 z-50 animate-fade-in"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-800 animate-slide-up">
+        <div className="bg-gray-900 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl 
+                        border border-gray-800 animate-slide-up">
           
           {/* Header con imagen */}
           <div className="relative h-80">
-            <img
-              src={imagen_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&q=80'}
-              alt={nombre}
-              className="w-full h-full object-cover"
-            />
+            {imagen_cartel_url ? (
+              <img
+                src={`${import.meta.env.VITE_BASE_URL}${imagen_cartel_url}`}
+                alt={titulo}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <span className="text-gray-600">Sin imagen</span>
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
             
             {/* Botón cerrar */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 bg-gray-900/80 hover:bg-gray-800 text-white p-2 rounded-full transition-colors"
+              className="absolute top-4 right-4 bg-gray-900/80 hover:bg-gray-800 text-white p-3 
+                        rounded-full transition-colors border border-gray-700"
+              aria-label="Cerrar"
             >
               <X size={24} />
             </button>
 
             {/* Título sobre la imagen */}
             <div className="absolute bottom-6 left-6 right-6">
-              <h2 className="text-4xl font-bold text-white mb-2">{nombre}</h2>
+              <h2 className="text-4xl font-light text-white uppercase tracking-wide">
+                {titulo}
+              </h2>
             </div>
           </div>
 
           {/* Contenido */}
-          <div className="p-8 space-y-6">
+          <div className="p-8 space-y-6 bg-gray-900">
             
             {/* Alertas */}
             {error && (
@@ -118,7 +131,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
 
             {success && (
               <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded-lg">
-                ¡Reserva confirmada! Redirigiendo a tu panel...
+                ¡Reserva confirmada! Redirigiendo a tus entradas...
               </div>
             )}
 
@@ -126,37 +139,41 @@ const EventDetail = ({ event, isOpen, onClose }) => {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Calendar className="text-primary-400 mt-1" size={20} />
+                  <Calendar className="text-purple-400 mt-1" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Fecha</p>
-                    <p className="text-white font-medium">{formatDate(fecha)}</p>
+                    <p className="text-gray-400 text-sm font-light">Fecha</p>
+                    <p className="text-white font-medium">{formatDate(fecha_evento)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Clock className="text-primary-400 mt-1" size={20} />
+                  <Clock className="text-purple-400 mt-1" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Horario</p>
-                    <p className="text-white font-medium">{hora_inicio} - {hora_fin}</p>
+                    <p className="text-gray-400 text-sm font-light">Horario</p>
+                    {/*Hora sin segundos (HH:MM) */}
+                    <p className="text-white font-medium">
+                      {hora_evento ? hora_evento.slice(0, 5) : 'Por confirmar'}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <MapPin className="text-primary-400 mt-1" size={20} />
+                  <MapPin className="text-purple-400 mt-1" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Ubicación</p>
+                    <p className="text-gray-400 text-sm font-light">Ubicación</p>
                     <p className="text-white font-medium">{ubicacion}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Users className="text-primary-400 mt-1" size={20} />
+                  <Users className="text-purple-400 mt-1" size={20} />
                   <div>
-                    <p className="text-gray-400 text-sm">Aforo</p>
+                    <p className="text-gray-400 text-sm font-light">Aforo</p>
+                    {/*Usar campo correcto del backend */}
                     <p className="text-white font-medium">
-                      {aforo_actual} / {aforo_maximo} personas
+                      {event.entradas_reservadas_real || 0} / {aforo_maximo} personas
                     </p>
                     {isFull && <span className="text-red-400 text-sm">¡Completo!</span>}
                   </div>
@@ -165,21 +182,29 @@ const EventDetail = ({ event, isOpen, onClose }) => {
             </div>
 
             {/* Descripción */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Info className="text-primary-400" size={20} />
-                <h3 className="text-xl font-semibold text-white">Descripción</h3>
+            {descripcion && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Info className="text-purple-400" size={20} />
+                  <h3 className="text-xl font-light text-white uppercase tracking-wide">Descripción</h3>
+                </div>
+                <p className="text-gray-300 leading-relaxed font-light">
+                  {descripcion}
+                </p>
               </div>
-              <p className="text-gray-300 leading-relaxed">
-                {descripcion}
-              </p>
-            </div>
+            )}
 
-            {/* Precio */}
-            {precio && (
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <p className="text-gray-400 text-sm">Precio</p>
-                <p className="text-2xl font-bold text-primary-400">{precio}€</p>
+            {/* Precios */}
+            {(precio_socio || precio_invitado) && (
+              <div className="bg-gray-800/50 border border-gray-800 rounded-lg p-4">
+                <p className="text-gray-400 text-sm font-light mb-2">Precio</p>
+                <div className="space-y-1">
+                  {precio_socio > 0 && (
+                    <p className="text-white font-medium">
+                      <span className="text-purple-400">{precio_socio}€</span>
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -190,15 +215,15 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                   variant="primary"
                   onClick={handleBooking}
                   disabled={!canBook || loading}
-                  className="flex-1"
+                  className="flex-1 rounded-full"
                 >
-                  {loading ? 'Reservando...' : isPast ? 'Evento Finalizado' : isFull ? 'Aforo Completo' : 'Reservar Plaza'}
+                  {loading ? 'Reservando...' : isFull ? 'Aforo Completo' : 'Reservar Plaza'}
                 </Button>
               ) : (
                 <Button
                   variant="primary"
                   to="/login"
-                  className="flex-1"
+                  className="flex-1 rounded-full"
                 >
                   Inicia sesión para reservar
                 </Button>
@@ -207,7 +232,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
               <Button
                 variant="outline"
                 onClick={onClose}
-                className="flex-1"
+                className="flex-1 rounded-full"
               >
                 Cerrar
               </Button>

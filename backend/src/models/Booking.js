@@ -197,8 +197,8 @@ class Booking {
     }
   }
 
-  /**
-   * Obtener reservas de un socio
+   /**
+   * Obtener reservas de un socio CON TODOS LOS DATOS DEL EVENTO
    * @param {Number} socioId - ID del socio
    * @param {String} estado - Filtrar por estado (opcional)
    * @returns {Array} Lista de reservas
@@ -208,11 +208,24 @@ class Booking {
       let sql = `
         SELECT 
           b.*,
+          e.id as event_id,
           e.titulo as evento_titulo,
+          e.descripcion,
+          e.descripcion_corta,
           e.fecha_evento,
           e.hora_evento,
           e.ubicacion,
-          e.imagen_cartel_url
+          e.direccion,
+          e.aforo_maximo,
+          e.entradas_disponibles,
+          e.imagen_cartel_url,
+          e.precio_socio,
+          e.precio_invitado,
+          e.permite_invitados,
+          e.destacado,
+          e.edad_minima,
+          e.tags,
+          e.artistas
         FROM bookings b
         INNER JOIN events e ON b.event_id = e.id
         WHERE b.socio_id = ?

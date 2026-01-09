@@ -4,7 +4,7 @@ import Socio from '../models/Socio.js';
 import User from '../models/User.js'; 
 import EmailService from '../services/emailService.js'; 
 import { generateQRCode } from '../utils/qrCodeGenerator.js';
-import { transaction } from '../config/database.js';
+import { transaction, pool } from '../config/database.js';
 import logger from '../config/logger.js'; 
 
 /**
@@ -23,17 +23,35 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Obtener socio
-    const socio = await Socio.findByUserId(userId);
-    if (!socio) {
+    // ✅ CORREGIDO: Obtener o crear socio (admins pueden reservar automáticamente)
+    let socio = await Socio.findByUserId(userId);
+
+    // Si es admin y no tiene registro de socio, crear uno automáticamente
+    if (!socio && req.user.role === 'admin') {
+      try {
+        const [result] = await pool.execute(
+          `INSERT INTO members (user_id, numero_socio, estado, fecha_alta, metodo_pago)
+           VALUES (?, ?, 'activo', NOW(), 'admin')`,
+          [userId, `ADM-${userId.toString().padStart(3, '0')}`]
+        );
+        socio = await Socio.findById(result.insertId);
+        logger.info('✅ Registro de socio creado automáticamente para admin:', userId);
+      } catch (error) {
+        logger.error('Error creando registro de socio para admin:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Error al crear información de socio'
+        });
+      }
+    } else if (!socio) {
       return res.status(404).json({
         success: false,
         message: 'No se encontró información de socio'
       });
     }
 
-    // Verificar que el socio esté activo
-    if (socio.estado !== 'activo') {
+    // Verificar que el socio esté activo (admins siempre están activos)
+    if (socio.estado !== 'activo' && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Tu membresía no está activa. Actualiza tu método de pago para continuar'
@@ -49,8 +67,8 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el evento está publicado
-    if (event.estado !== 'publicado') {
+    // ✅ CORREGIDO: Verificar que el evento está publicado (scheduled en lugar de publicado)
+    if (event.estado !== 'scheduled') {
       return res.status(400).json({
         success: false,
         message: 'Este evento no está disponible para reservas'
@@ -140,40 +158,44 @@ export const createBooking = async (req, res) => {
       return await Booking.findById(bookingId);
     });
 
-    // Generar QR code
+    // ✅ CORREGIDO: Generar QR code y recargar booking
     try {
       const qrPath = await generateQRCode(booking.codigo_reserva, booking.id);
       await Booking.saveQRCode(booking.id, qrPath);
-      booking.qr_code_url = qrPath;
+      logger.info('✅ QR Code generado:', { bookingId: booking.id, qrPath });
     } catch (qrError) {
-      logger.error('Error generando QR:', qrError);
+      logger.error('❌ Error generando QR:', qrError);
       // No falla la reserva si el QR falla
     }
 
-    // ========== ENVIAR EMAIL DE CONFIRMACIÓN ========== ✨ NUEVO
+    // ✅ CORREGIDO: Recargar booking con QR actualizado antes de enviar email
+    const bookingWithQR = await Booking.findById(booking.id);
+
+    // ========== ENVIAR EMAIL DE CONFIRMACIÓN ==========
     try {
       // Obtener datos del usuario
       const user = await User.findById(userId);
       
       if (user) {
         // Enviar email de confirmación con QR
-        await EmailService.sendBookingConfirmation(booking, event, user);
-        logger.info('Email de confirmación enviado:', {
+        await EmailService.sendBookingConfirmation(bookingWithQR, event, user);
+        logger.info('✅ Email de confirmación enviado:', {
           userId: user.id,
-          bookingId: booking.id,
-          eventId: event.id
+          bookingId: bookingWithQR.id,
+          eventId: event.id,
+          hasQR: !!bookingWithQR.qr_code_url
         });
       }
     } catch (emailError) {
       // No fallar la reserva si el email falla
-      logger.error('Error enviando email de confirmación:', emailError);
+      logger.error('❌ Error enviando email de confirmación:', emailError);
     }
     // ==================================================
 
     return res.status(201).json({
       success: true,
       message: 'Reserva creada exitosamente',
-      data: booking
+      data: bookingWithQR
     });
 
   } catch (error) {
@@ -260,7 +282,7 @@ export const getBooking = async (req, res) => {
 };
 
 /**
- * Cancelar reserva
+ * ✅ CORREGIDO: Cancelar reserva
  * DELETE /api/bookings/:id
  */
 export const cancelBooking = async (req, res) => {
@@ -268,6 +290,8 @@ export const cancelBooking = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
     const { motivo } = req.body;
+
+    logger.info('📋 Cancelando reserva:', { bookingId: id, userId, motivo });
 
     const booking = await Booking.findById(id);
 
@@ -325,6 +349,8 @@ export const cancelBooking = async (req, res) => {
       );
     });
 
+    logger.info('✅ Reserva cancelada:', { bookingId: id });
+
     // TODO: Notificar a persona en lista de espera si hay
 
     return res.status(200).json({
@@ -333,10 +359,11 @@ export const cancelBooking = async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Error en cancelBooking:', error);
+    logger.error('❌ Error en cancelBooking:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error al cancelar reserva'
+      message: 'Error al cancelar reserva',
+      error: error.message
     });
   }
 };

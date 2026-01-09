@@ -5,6 +5,7 @@ import Event from "../models/Event.js";
 import Booking from "../models/Booking.js";
 import Payment from "../models/Payment.js";
 import Gallery from "../models/Gallery.js";
+import PDFDocument from 'pdfkit';
 
 /**
  * ========================================
@@ -1870,16 +1871,7 @@ export const getRecentActivity = async (req, res) => {
  */
 export const exportSocios = async (req, res) => {
   try {
-    const { format = 'csv' } = req.query;
-
-    if (format !== 'csv') {
-      return res.status(400).json({
-        success: false,
-        message: 'Solo se soporta formato CSV actualmente',
-      });
-    }
-
-    // Consulta para obtener todos los socios con sus datos
+    // Consulta para obtener todos los socios activos
     const sql = `
       SELECT 
         s.numero_socio,
@@ -1900,47 +1892,156 @@ export const exportSocios = async (req, res) => {
     if (!socios || socios.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No hay socios para exportar',
+        message: 'No hay socios registrados para exportar',
       });
     }
 
-    // Crear CSV
-    const headers = [
-      'Número socio',
-      'Nombre',
-      'Email',
-      'Teléfono',
-      'Cuota mensual',
-      'Estado',
-      'Fecha alta'
-    ];
-
-    let csv = headers.join(';') + '\n';
-
-    socios.forEach(socio => {
-      const row = [
-        socio.numero_socio || '',
-        socio.nombre || '',
-        socio.email || '',
-        socio.telefono || '',
-        socio.cuota_mensual ? socio.cuota_mensual.toFixed(2) + '€' : '0.00€',
-        socio.estado || '',
-        socio.fecha_alta || ''
-      ];
-      csv += row.join(';') + '\n';
+    // Crear documento PDF
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
 
     // Configurar headers para descarga
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=socios_export.csv');
-    res.setHeader('Content-Length', Buffer.byteLength(csv, 'utf-8'));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=socios_${new Date().toISOString().split('T')[0]}.pdf`);
 
-    return res.status(200).send('\uFEFF' + csv);
+    // Pipe el PDF directamente a la respuesta
+    doc.pipe(res);
+
+    // === ENCABEZADO ===
+    doc.fontSize(20)
+       .font('Helvetica-Bold')
+       .text('Lista de Socios - La Clave Asociación', { align: 'center' });
+    
+    doc.moveDown(0.5);
+    doc.fontSize(10)
+       .font('Helvetica')
+       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
+    
+    doc.moveDown(1);
+    doc.fontSize(12)
+       .font('Helvetica-Bold')
+       .text(`Total de socios: ${socios.length}`, { align: 'center' });
+
+    doc.moveDown(2);
+
+    // === TABLA DE SOCIOS ===
+    const tableTop = doc.y;
+    const tableLeft = 50;
+    const colWidths = {
+      numero: 60,
+      nombre: 110,
+      email: 140,
+      telefono: 80,
+      cuota: 60,
+      estado: 60
+    };
+
+    // Dibuja encabezados de columnas
+    doc.fontSize(9)
+       .font('Helvetica-Bold');
+    
+    let currentX = tableLeft;
+    doc.rect(currentX, tableTop - 5, colWidths.numero + colWidths.nombre + colWidths.email + colWidths.telefono + colWidths.cuota + colWidths.estado + 10, 20)
+       .fillAndStroke('#6366f1', '#6366f1');
+    
+    doc.fillColor('#ffffff')
+       .text('Nº', currentX + 5, tableTop, { width: colWidths.numero, align: 'center' });
+    currentX += colWidths.numero;
+    
+    doc.text('Nombre', currentX + 5, tableTop, { width: colWidths.nombre, align: 'left' });
+    currentX += colWidths.nombre;
+    
+    doc.text('Email', currentX + 5, tableTop, { width: colWidths.email, align: 'left' });
+    currentX += colWidths.email;
+    
+    doc.text('Teléfono', currentX + 5, tableTop, { width: colWidths.telefono, align: 'left' });
+    currentX += colWidths.telefono;
+    
+    doc.text('Cuota', currentX + 5, tableTop, { width: colWidths.cuota, align: 'center' });
+    currentX += colWidths.cuota;
+    
+    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+
+    doc.moveDown(1.5);
+
+    // Dibuja filas de datos
+    doc.font('Helvetica')
+       .fontSize(8)
+       .fillColor('#000000');
+
+    socios.forEach((socio, index) => {
+      const rowY = doc.y;
+
+      // Verifica si necesita nueva página
+      if (rowY > 700) {
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      // Alterna colores de fila
+      if (index % 2 === 0) {
+        doc.rect(tableLeft, rowY - 3, colWidths.numero + colWidths.nombre + colWidths.email + colWidths.telefono + colWidths.cuota + colWidths.estado + 10, 18)
+           .fill('#f3f4f6');
+        doc.fillColor('#000000');
+      }
+
+      currentX = tableLeft;
+
+      // Número socio
+      doc.text(socio.numero_socio || '-', currentX + 5, rowY, { width: colWidths.numero, align: 'center' });
+      currentX += colWidths.numero;
+
+      // Nombre (truncar si es muy largo)
+      const nombre = socio.nombre || '-';
+      doc.text(nombre.length > 18 ? nombre.substring(0, 15) + '...' : nombre, currentX + 5, rowY, { width: colWidths.nombre, align: 'left' });
+      currentX += colWidths.nombre;
+
+      // Email (truncar si es muy largo)
+      const email = socio.email || '-';
+      doc.text(email.length > 22 ? email.substring(0, 19) + '...' : email, currentX + 5, rowY, { width: colWidths.email, align: 'left' });
+      currentX += colWidths.email;
+
+      // Teléfono
+      doc.text(socio.telefono || '-', currentX + 5, rowY, { width: colWidths.telefono, align: 'left' });
+      currentX += colWidths.telefono;
+
+      // Cuota
+      const cuota = socio.cuota_mensual ? Number(socio.cuota_mensual).toFixed(2) + '€' : '0.00€';
+      doc.text(cuota, currentX + 5, rowY, { width: colWidths.cuota, align: 'center' });
+      currentX += colWidths.cuota;
+
+      // Estado
+      const estadoColor = socio.estado === 'activo' ? '#10b981' : socio.estado === 'moroso' ? '#ef4444' : '#6b7280';
+      doc.fillColor(estadoColor)
+         .text(socio.estado || '-', currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
+         .fillColor('#000000');
+
+      doc.moveDown(0.8);
+    });
+
+    // === PIE DE PÁGINA ===
+    const bottomY = 800;
+    doc.fontSize(8)
+       .font('Helvetica')
+       .fillColor('#6b7280')
+       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center' });
+
+    // Finalizar el documento
+    doc.end();
+
   } catch (error) {
-    console.error('Error en exportSocios:', error);
+    console.error('Error al exportar socios a PDF:', error);
+    
+    // Si ya se enviaron headers, no podemos enviar JSON
+    if (res.headersSent) {
+      return res.end();
+    }
+    
     return res.status(500).json({
       success: false,
-      message: 'Error al exportar socios',
+      message: 'Error al generar el PDF de socios',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
@@ -1952,86 +2053,218 @@ export const exportSocios = async (req, res) => {
  */
 export const exportReservas = async (req, res) => {
   try {
-    const { format = 'csv' } = req.query;
+    const { fecha_desde, fecha_hasta, event_id } = req.query;
 
-    if (format !== 'csv') {
-      return res.status(400).json({
-        success: false,
-        message: 'Solo se soporta formato CSV actualmente',
-      });
-    }
-
-    // Consulta para obtener todas las reservas con datos relacionados
-    const sql = `
+    // Construir consulta con filtros opcionales
+    let sql = `
       SELECT 
         b.codigo_reserva,
-        u.nombre as nombre_socio,
-        u.email,
-        e.nombre as nombre_evento,
-        DATE_FORMAT(e.fecha, '%d/%m/%Y') as fecha_evento,
-        TIME_FORMAT(e.hora_inicio, '%H:%i') as hora_evento,
-        b.num_acompanantes,
+        e.titulo as evento,
+        u.nombre as socio,
+        DATE_FORMAT(e.fecha_evento, '%d/%m/%Y') as fecha_evento,
+        TIME_FORMAT(e.hora_evento, '%H:%i') as hora_evento,
         b.estado,
-        DATE_FORMAT(b.fecha_reserva, '%d/%m/%Y %H:%i') as fecha_reserva,
-        CASE WHEN b.asistio = 1 THEN 'Sí' ELSE 'No' END as asistio
+        DATE_FORMAT(b.fecha_reserva, '%d/%m/%Y') as fecha_reserva,
+        b.num_acompanantes
       FROM bookings b
-      INNER JOIN users u ON b.user_id = u.id
       INNER JOIN events e ON b.event_id = e.id
-      ORDER BY b.fecha_reserva DESC
+      INNER JOIN users u ON b.user_id = u.id
+      WHERE 1=1
     `;
 
-    const reservas = await query(sql);
+    const params = [];
+
+    if (fecha_desde) {
+      sql += ' AND e.fecha_evento >= ?';
+      params.push(fecha_desde);
+    }
+
+    if (fecha_hasta) {
+      sql += ' AND e.fecha_evento <= ?';
+      params.push(fecha_hasta);
+    }
+
+    if (event_id) {
+      sql += ' AND b.event_id = ?';
+      params.push(event_id);
+    }
+
+    sql += ' ORDER BY e.fecha_evento DESC, b.fecha_reserva DESC';
+
+    const reservas = await query(sql, params);
 
     if (!reservas || reservas.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No hay reservas para exportar',
+        message: 'No hay reservas para exportar con los filtros aplicados',
       });
     }
 
-    // Crear CSV
-    const headers = [
-      'Código reserva',
-      'Nombre socio',
-      'Email',
-      'Evento',
-      'Fecha evento',
-      'Hora',
-      'Acompañantes',
-      'Estado',
-      'Fecha reserva',
-      'Asistió'
-    ];
-
-    let csv = headers.join(';') + '\n';
-
-    reservas.forEach(reserva => {
-      const row = [
-        reserva.codigo_reserva || '',
-        reserva.nombre_socio || '',
-        reserva.email || '',
-        reserva.nombre_evento || '',
-        reserva.fecha_evento || '',
-        reserva.hora_evento || '',
-        reserva.num_acompanantes || '0',
-        reserva.estado || '',
-        reserva.fecha_reserva || '',
-        reserva.asistio || 'No'
-      ];
-      csv += row.join(';') + '\n';
+    // Crear documento PDF
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape', // Horizontal para más columnas
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
 
     // Configurar headers para descarga
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=reservas_export.csv');
-    res.setHeader('Content-Length', Buffer.byteLength(csv, 'utf-8'));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=reservas_${new Date().toISOString().split('T')[0]}.pdf`);
 
-    return res.status(200).send('\uFEFF' + csv);
+    // Pipe el PDF directamente a la respuesta
+    doc.pipe(res);
+
+    // === ENCABEZADO ===
+    doc.fontSize(20)
+       .font('Helvetica-Bold')
+       .text('Lista de Reservas - La Clave Asociación', { align: 'center' });
+    
+    doc.moveDown(0.5);
+    doc.fontSize(10)
+       .font('Helvetica')
+       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
+    
+    doc.moveDown(1);
+    doc.fontSize(12)
+       .font('Helvetica-Bold')
+       .text(`Total de reservas: ${reservas.length}`, { align: 'center' });
+
+    doc.moveDown(2);
+
+    // === TABLA DE RESERVAS ===
+    const tableTop = doc.y;
+    const tableLeft = 50;
+    const colWidths = {
+      codigo: 100,
+      evento: 160,
+      socio: 120,
+      fecha_evento: 80,
+      hora: 50,
+      acompanantes: 60,
+      estado: 70,
+      fecha_reserva: 80
+    };
+
+    // Dibuja encabezados de columnas
+    doc.fontSize(9)
+       .font('Helvetica-Bold');
+    
+    let currentX = tableLeft;
+    const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
+    
+    doc.rect(currentX, tableTop - 5, totalWidth, 20)
+       .fillAndStroke('#6366f1', '#6366f1');
+    
+    doc.fillColor('#ffffff')
+       .text('Código', currentX + 5, tableTop, { width: colWidths.codigo, align: 'center' });
+    currentX += colWidths.codigo;
+    
+    doc.text('Evento', currentX + 5, tableTop, { width: colWidths.evento, align: 'left' });
+    currentX += colWidths.evento;
+    
+    doc.text('Socio', currentX + 5, tableTop, { width: colWidths.socio, align: 'left' });
+    currentX += colWidths.socio;
+    
+    doc.text('Fecha', currentX + 5, tableTop, { width: colWidths.fecha_evento, align: 'center' });
+    currentX += colWidths.fecha_evento;
+    
+    doc.text('Hora', currentX + 5, tableTop, { width: colWidths.hora, align: 'center' });
+    currentX += colWidths.hora;
+    
+    doc.text('Acomp.', currentX + 5, tableTop, { width: colWidths.acompanantes, align: 'center' });
+    currentX += colWidths.acompanantes;
+    
+    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+    currentX += colWidths.estado;
+    
+    doc.text('F. Reserva', currentX + 5, tableTop, { width: colWidths.fecha_reserva, align: 'center' });
+
+    doc.moveDown(1.5);
+
+    // Dibuja filas de datos
+    doc.font('Helvetica')
+       .fontSize(8)
+       .fillColor('#000000');
+
+    reservas.forEach((reserva, index) => {
+      const rowY = doc.y;
+
+      // Verifica si necesita nueva página
+      if (rowY > 500) { // Landscape tiene menos altura
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      // Alterna colores de fila
+      if (index % 2 === 0) {
+        doc.rect(tableLeft, rowY - 3, totalWidth, 18)
+           .fill('#f3f4f6');
+        doc.fillColor('#000000');
+      }
+
+      currentX = tableLeft;
+
+      // Código reserva
+      doc.text(reserva.codigo_reserva || '-', currentX + 5, rowY, { width: colWidths.codigo, align: 'center' });
+      currentX += colWidths.codigo;
+
+      // Evento (truncar si es muy largo)
+      const evento = reserva.evento || '-';
+      doc.text(evento.length > 24 ? evento.substring(0, 21) + '...' : evento, currentX + 5, rowY, { width: colWidths.evento, align: 'left' });
+      currentX += colWidths.evento;
+
+      // Socio (truncar si es muy largo)
+      const socio = reserva.socio || '-';
+      doc.text(socio.length > 18 ? socio.substring(0, 15) + '...' : socio, currentX + 5, rowY, { width: colWidths.socio, align: 'left' });
+      currentX += colWidths.socio;
+
+      // Fecha evento
+      doc.text(reserva.fecha_evento || '-', currentX + 5, rowY, { width: colWidths.fecha_evento, align: 'center' });
+      currentX += colWidths.fecha_evento;
+
+      // Hora evento
+      doc.text(reserva.hora_evento || '-', currentX + 5, rowY, { width: colWidths.hora, align: 'center' });
+      currentX += colWidths.hora;
+
+      // Acompañantes
+      doc.text(reserva.num_acompanantes?.toString() || '0', currentX + 5, rowY, { width: colWidths.acompanantes, align: 'center' });
+      currentX += colWidths.acompanantes;
+
+      // Estado
+      const estadoColor = reserva.estado === 'confirmada' ? '#10b981' : 
+                         reserva.estado === 'cancelada' ? '#ef4444' : 
+                         reserva.estado === 'asistida' ? '#3b82f6' : '#6b7280';
+      doc.fillColor(estadoColor)
+         .text(reserva.estado || '-', currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
+         .fillColor('#000000');
+      currentX += colWidths.estado;
+
+      // Fecha reserva
+      doc.text(reserva.fecha_reserva || '-', currentX + 5, rowY, { width: colWidths.fecha_reserva, align: 'center' });
+
+      doc.moveDown(0.8);
+    });
+
+    // === PIE DE PÁGINA ===
+    const bottomY = 540; // Landscape height
+    doc.fontSize(8)
+       .font('Helvetica')
+       .fillColor('#6b7280')
+       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center', width: totalWidth });
+
+    // Finalizar el documento
+    doc.end();
+
   } catch (error) {
-    console.error('Error en exportReservas:', error);
+    console.error('Error al exportar reservas a PDF:', error);
+    
+    if (res.headersSent) {
+      return res.end();
+    }
+    
     return res.status(500).json({
       success: false,
-      message: 'Error al exportar reservas',
+      message: 'Error al generar el PDF de reservas',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
@@ -2043,25 +2276,21 @@ export const exportReservas = async (req, res) => {
  */
 export const exportUsuarios = async (req, res) => {
   try {
-    const { format = 'csv' } = req.query;
-
-    if (format !== 'csv') {
-      return res.status(400).json({
-        success: false,
-        message: 'Solo se soporta formato CSV actualmente',
-      });
-    }
-
     // Consulta para obtener todos los usuarios
     const sql = `
       SELECT 
-        u.id,
         u.nombre,
         u.email,
         u.telefono,
         u.role,
-        CASE WHEN u.activo = 1 THEN 'Activo' ELSE 'Inactivo' END as estado,
-        CASE WHEN u.email_verified = 1 THEN 'Sí' ELSE 'No' END as email_verificado,
+        CASE 
+          WHEN u.activo = true THEN 'Activo'
+          ELSE 'Inactivo'
+        END as estado,
+        CASE 
+          WHEN u.email_verified = true THEN 'Sí'
+          ELSE 'No'
+        END as email_verificado,
         DATE_FORMAT(u.created_at, '%d/%m/%Y') as fecha_registro
       FROM users u
       ORDER BY u.created_at DESC
@@ -2072,50 +2301,582 @@ export const exportUsuarios = async (req, res) => {
     if (!usuarios || usuarios.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No hay usuarios para exportar',
+        message: 'No hay usuarios registrados para exportar',
       });
     }
 
-    // Crear CSV
-    const headers = [
-      'ID',
-      'Nombre',
-      'Email',
-      'Teléfono',
-      'Rol',
-      'Estado',
-      'Email verificado',
-      'Fecha registro'
-    ];
-
-    let csv = headers.join(';') + '\n';
-
-    usuarios.forEach(usuario => {
-      const row = [
-        usuario.id || '',
-        usuario.nombre || '',
-        usuario.email || '',
-        usuario.telefono || '',
-        usuario.role || '',
-        usuario.estado || '',
-        usuario.email_verificado || '',
-        usuario.fecha_registro || ''
-      ];
-      csv += row.join(';') + '\n';
+    // Crear documento PDF
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
 
     // Configurar headers para descarga
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=usuarios_export.csv');
-    res.setHeader('Content-Length', Buffer.byteLength(csv, 'utf-8'));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
 
-    return res.status(200).send('\uFEFF' + csv);
+    // Pipe el PDF directamente a la respuesta
+    doc.pipe(res);
+
+    // === ENCABEZADO ===
+    doc.fontSize(20)
+       .font('Helvetica-Bold')
+       .text('Lista de Usuarios - La Clave Asociación', { align: 'center' });
+    
+    doc.moveDown(0.5);
+    doc.fontSize(10)
+       .font('Helvetica')
+       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
+    
+    doc.moveDown(1);
+    
+    // Estadísticas rápidas
+    const activos = usuarios.filter(u => u.estado === 'Activo').length;
+    const socios = usuarios.filter(u => u.role === 'socio').length;
+    const admins = usuarios.filter(u => u.role === 'admin').length;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text(`Total: ${usuarios.length} usuarios | Activos: ${activos} | Socios: ${socios} | Admins: ${admins}`, { align: 'center' });
+
+    doc.moveDown(2);
+
+    // === TABLA DE USUARIOS ===
+    const tableTop = doc.y;
+    const tableLeft = 50;
+    const colWidths = {
+      nombre: 130,
+      email: 170,
+      telefono: 90,
+      rol: 60,
+      estado: 60,
+      verificado: 60,
+      fecha: 80
+    };
+
+    // Dibuja encabezados de columnas
+    doc.fontSize(9)
+       .font('Helvetica-Bold');
+    
+    let currentX = tableLeft;
+    const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
+    
+    doc.rect(currentX, tableTop - 5, totalWidth, 20)
+       .fillAndStroke('#6366f1', '#6366f1');
+    
+    doc.fillColor('#ffffff')
+       .text('Nombre', currentX + 5, tableTop, { width: colWidths.nombre, align: 'left' });
+    currentX += colWidths.nombre;
+    
+    doc.text('Email', currentX + 5, tableTop, { width: colWidths.email, align: 'left' });
+    currentX += colWidths.email;
+    
+    doc.text('Teléfono', currentX + 5, tableTop, { width: colWidths.telefono, align: 'center' });
+    currentX += colWidths.telefono;
+    
+    doc.text('Rol', currentX + 5, tableTop, { width: colWidths.rol, align: 'center' });
+    currentX += colWidths.rol;
+    
+    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+    currentX += colWidths.estado;
+    
+    doc.text('Verif.', currentX + 5, tableTop, { width: colWidths.verificado, align: 'center' });
+    currentX += colWidths.verificado;
+    
+    doc.text('Registro', currentX + 5, tableTop, { width: colWidths.fecha, align: 'center' });
+
+    doc.moveDown(1.5);
+
+    // Dibuja filas de datos
+    doc.font('Helvetica')
+       .fontSize(8)
+       .fillColor('#000000');
+
+    usuarios.forEach((usuario, index) => {
+      const rowY = doc.y;
+
+      // Verifica si necesita nueva página
+      if (rowY > 500) {
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      // Alterna colores de fila
+      if (index % 2 === 0) {
+        doc.rect(tableLeft, rowY - 3, totalWidth, 18)
+           .fill('#f3f4f6');
+        doc.fillColor('#000000');
+      }
+
+      currentX = tableLeft;
+
+      // Nombre (truncar si es muy largo)
+      const nombre = usuario.nombre || '-';
+      doc.text(nombre.length > 20 ? nombre.substring(0, 17) + '...' : nombre, currentX + 5, rowY, { width: colWidths.nombre, align: 'left' });
+      currentX += colWidths.nombre;
+
+      // Email (truncar si es muy largo)
+      const email = usuario.email || '-';
+      doc.text(email.length > 26 ? email.substring(0, 23) + '...' : email, currentX + 5, rowY, { width: colWidths.email, align: 'left' });
+      currentX += colWidths.email;
+
+      // Teléfono
+      doc.text(usuario.telefono || '-', currentX + 5, rowY, { width: colWidths.telefono, align: 'center' });
+      currentX += colWidths.telefono;
+
+      // Rol
+      const rolColor = usuario.role === 'admin' ? '#ef4444' : 
+                       usuario.role === 'socio' ? '#6366f1' : '#6b7280';
+      doc.fillColor(rolColor)
+         .text(usuario.role || '-', currentX + 5, rowY, { width: colWidths.rol, align: 'center' })
+         .fillColor('#000000');
+      currentX += colWidths.rol;
+
+      // Estado
+      const estadoColor = usuario.estado === 'Activo' ? '#10b981' : '#ef4444';
+      doc.fillColor(estadoColor)
+         .text(usuario.estado, currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
+         .fillColor('#000000');
+      currentX += colWidths.estado;
+
+      // Email verificado
+      const verifColor = usuario.email_verificado === 'Sí' ? '#10b981' : '#f59e0b';
+      doc.fillColor(verifColor)
+         .text(usuario.email_verificado, currentX + 5, rowY, { width: colWidths.verificado, align: 'center' })
+         .fillColor('#000000');
+      currentX += colWidths.verificado;
+
+      // Fecha registro
+      doc.text(usuario.fecha_registro || '-', currentX + 5, rowY, { width: colWidths.fecha, align: 'center' });
+
+      doc.moveDown(0.8);
+    });
+
+    // === PIE DE PÁGINA ===
+    const bottomY = 540;
+    doc.fontSize(8)
+       .font('Helvetica')
+       .fillColor('#6b7280')
+       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center', width: totalWidth });
+
+    // Finalizar el documento
+    doc.end();
+
   } catch (error) {
-    console.error('Error en exportUsuarios:', error);
+    console.error('Error al exportar usuarios a PDF:', error);
+    
+    if (res.headersSent) {
+      return res.end();
+    }
+    
     return res.status(500).json({
       success: false,
-      message: 'Error al exportar usuarios',
+      message: 'Error al generar el PDF de usuarios',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Exportar lista de eventos en formato PDF
+ * GET /api/admin/export/eventos
+ */
+export const exportEventos = async (req, res) => {
+  try {
+    // Consulta para obtener todos los eventos
+    const sql = `
+      SELECT 
+        e.titulo,
+        DATE_FORMAT(e.fecha_evento, '%d/%m/%Y') as fecha_evento,
+        TIME_FORMAT(e.hora_evento, '%H:%i') as hora_evento,
+        e.ubicacion,
+        e.aforo_maximo,
+        COALESCE((
+          SELECT COUNT(*) 
+          FROM bookings b 
+          WHERE b.event_id = e.id AND b.estado = 'confirmada'
+        ), 0) as entradas_vendidas,
+        e.estado,
+        DATE_FORMAT(e.created_at, '%d/%m/%Y') as fecha_alta
+      FROM events e
+      ORDER BY e.fecha_evento DESC
+    `;
+
+    const eventos = await query(sql);
+
+    if (!eventos || eventos.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay eventos registrados para exportar',
+      });
+    }
+
+    // Crear documento PDF
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+    });
+
+    // Configurar headers para descarga
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=eventos_${new Date().toISOString().split('T')[0]}.pdf`);
+
+    // Pipe el PDF directamente a la respuesta
+    doc.pipe(res);
+
+    // === ENCABEZADO ===
+    doc.fontSize(20)
+       .font('Helvetica-Bold')
+       .text('Lista de Eventos - La Clave Asociación', { align: 'center' });
+    
+    doc.moveDown(0.5);
+    doc.fontSize(10)
+       .font('Helvetica')
+       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
+    
+    doc.moveDown(1);
+    
+    // Estadísticas rápidas
+    const publicados = eventos.filter(e => e.estado === 'publicado').length;
+    const borradores = eventos.filter(e => e.estado === 'borrador').length;
+    const cancelados = eventos.filter(e => e.estado === 'cancelado').length;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text(`Total: ${eventos.length} eventos | Publicados: ${publicados} | Borradores: ${borradores} | Cancelados: ${cancelados}`, { align: 'center' });
+
+    doc.moveDown(2);
+
+    // === TABLA DE EVENTOS ===
+    const tableTop = doc.y;
+    const tableLeft = 50;
+    const colWidths = {
+      titulo: 160,
+      fecha: 80,
+      hora: 50,
+      ubicacion: 120,
+      aforo: 50,
+      vendidas: 60,
+      estado: 70,
+      alta: 80
+    };
+
+    // Dibuja encabezados de columnas
+    doc.fontSize(9)
+       .font('Helvetica-Bold');
+    
+    let currentX = tableLeft;
+    const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
+    
+    doc.rect(currentX, tableTop - 5, totalWidth, 20)
+       .fillAndStroke('#6366f1', '#6366f1');
+    
+    doc.fillColor('#ffffff')
+       .text('Título', currentX + 5, tableTop, { width: colWidths.titulo, align: 'left' });
+    currentX += colWidths.titulo;
+    
+    doc.text('Fecha', currentX + 5, tableTop, { width: colWidths.fecha, align: 'center' });
+    currentX += colWidths.fecha;
+    
+    doc.text('Hora', currentX + 5, tableTop, { width: colWidths.hora, align: 'center' });
+    currentX += colWidths.hora;
+    
+    doc.text('Ubicación', currentX + 5, tableTop, { width: colWidths.ubicacion, align: 'left' });
+    currentX += colWidths.ubicacion;
+    
+    doc.text('Aforo', currentX + 5, tableTop, { width: colWidths.aforo, align: 'center' });
+    currentX += colWidths.aforo;
+    
+    doc.text('Vendidas', currentX + 5, tableTop, { width: colWidths.vendidas, align: 'center' });
+    currentX += colWidths.vendidas;
+    
+    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+    currentX += colWidths.estado;
+    
+    doc.text('F. Alta', currentX + 5, tableTop, { width: colWidths.alta, align: 'center' });
+
+    doc.moveDown(1.5);
+
+    // Dibuja filas de datos
+    doc.font('Helvetica')
+       .fontSize(8)
+       .fillColor('#000000');
+
+    eventos.forEach((evento, index) => {
+      const rowY = doc.y;
+
+      // Verifica si necesita nueva página
+      if (rowY > 500) {
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      // Alterna colores de fila
+      if (index % 2 === 0) {
+        doc.rect(tableLeft, rowY - 3, totalWidth, 18)
+           .fill('#f3f4f6');
+        doc.fillColor('#000000');
+      }
+
+      currentX = tableLeft;
+
+      // Título (truncar si es muy largo)
+      const titulo = evento.titulo || '-';
+      doc.text(titulo.length > 24 ? titulo.substring(0, 21) + '...' : titulo, currentX + 5, rowY, { width: colWidths.titulo, align: 'left' });
+      currentX += colWidths.titulo;
+
+      // Fecha evento
+      doc.text(evento.fecha_evento || '-', currentX + 5, rowY, { width: colWidths.fecha, align: 'center' });
+      currentX += colWidths.fecha;
+
+      // Hora evento
+      doc.text(evento.hora_evento || '-', currentX + 5, rowY, { width: colWidths.hora, align: 'center' });
+      currentX += colWidths.hora;
+
+      // Ubicación (truncar si es muy largo)
+      const ubicacion = evento.ubicacion || '-';
+      doc.text(ubicacion.length > 18 ? ubicacion.substring(0, 15) + '...' : ubicacion, currentX + 5, rowY, { width: colWidths.ubicacion, align: 'left' });
+      currentX += colWidths.ubicacion;
+
+      // Aforo máximo
+      doc.text(evento.aforo_maximo?.toString() || '-', currentX + 5, rowY, { width: colWidths.aforo, align: 'center' });
+      currentX += colWidths.aforo;
+
+      // Entradas vendidas
+      doc.text(evento.entradas_vendidas?.toString() || '0', currentX + 5, rowY, { width: colWidths.vendidas, align: 'center' });
+      currentX += colWidths.vendidas;
+
+      // Estado
+      const estadoColor = evento.estado === 'publicado' ? '#10b981' : 
+                         evento.estado === 'cancelado' ? '#ef4444' : '#f59e0b';
+      doc.fillColor(estadoColor)
+         .text(evento.estado || '-', currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
+         .fillColor('#000000');
+      currentX += colWidths.estado;
+
+      // Fecha alta
+      doc.text(evento.fecha_alta || '-', currentX + 5, rowY, { width: colWidths.alta, align: 'center' });
+
+      doc.moveDown(0.8);
+    });
+
+    // === PIE DE PÁGINA ===
+    const bottomY = 540;
+    doc.fontSize(8)
+       .font('Helvetica')
+       .fillColor('#6b7280')
+       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center', width: totalWidth });
+
+    // Finalizar el documento
+    doc.end();
+
+  } catch (error) {
+    console.error('Error al exportar eventos a PDF:', error);
+    
+    if (res.headersSent) {
+      return res.end();
+    }
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Error al generar el PDF de eventos',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+
+/**
+ * ========================================
+ * GESTIÓN DE ROLES Y APROBACIONES
+ * ========================================
+ */
+
+/**
+ * Cambiar rol de un usuario
+ * PATCH /api/admin/users/:id/role
+ */
+export const updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    // Validar rol
+    const validRoles = ['basico', 'socio', 'admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: `Rol inválido. Debe ser uno de: ${validRoles.join(', ')}`
+      });
+    }
+
+    // Verificar que el usuario existe
+    const checkSql = 'SELECT id, username, email, role FROM users WHERE id = ?';
+    const users = await query(checkSql, [id]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const user = users[0];
+
+    // No permitir cambiar el rol del propio admin
+    if (user.id === req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'No puedes cambiar tu propio rol'
+      });
+    }
+
+    // Si ya tiene ese rol, no hacer nada
+    if (user.role === role) {
+      return res.status(200).json({
+        success: true,
+        message: 'El usuario ya tiene ese rol',
+        data: { id: user.id, role: user.role }
+      });
+    }
+
+    // Actualizar rol
+    const updateSql = 'UPDATE users SET role = ? WHERE id = ?';
+    await query(updateSql, [role, id]);
+
+    return res.status(200).json({
+      success: true,
+      message: `Rol actualizado a ${role} correctamente`,
+      data: {
+        id: parseInt(id),
+        username: user.username,
+        email: user.email,
+        previousRole: user.role,
+        newRole: role
+      }
+    });
+  } catch (error) {
+    console.error('Error en updateUserRole:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al actualizar el rol del usuario',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Aprobar usuario como socio
+ * PATCH /api/admin/users/:id/approve
+ */
+export const approveUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar que el usuario existe
+    const checkSql = 'SELECT id, username, email, role FROM users WHERE id = ?';
+    const users = await query(checkSql, [id]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    const user = users[0];
+
+    // Verificar si ya tiene registro de socio
+    const socioCheckSql = 'SELECT id, estado FROM socios WHERE user_id = ?';
+    const socios = await query(socioCheckSql, [id]);
+
+    if (socios.length > 0) {
+      // Ya existe registro de socio
+      const socio = socios[0];
+      
+      if (socio.estado === 'pendiente') {
+        // Actualizar estado a activo
+        const updateSocioSql = 'UPDATE socios SET estado = ? WHERE user_id = ?';
+        await query(updateSocioSql, ['activo', id]);
+      }
+
+      // Actualizar rol a socio
+      const updateUserSql = 'UPDATE users SET role = ? WHERE id = ?';
+      await query(updateUserSql, ['socio', id]);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Usuario aprobado como socio correctamente',
+        data: { id: parseInt(id), role: 'socio' }
+      });
+    }
+
+    // Si no existe registro de socio, solo cambiar el rol
+    const updateUserSql = 'UPDATE users SET role = ? WHERE id = ?';
+    await query(updateUserSql, ['socio', id]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Usuario aprobado como socio correctamente',
+      data: { id: parseInt(id), role: 'socio' }
+    });
+  } catch (error) {
+    console.error('Error en approveUser:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al aprobar usuario',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Rechazar solicitud de usuario
+ * PATCH /api/admin/users/:id/reject
+ */
+export const rejectUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    // Verificar que el usuario existe
+    const checkSql = 'SELECT id, username, email FROM users WHERE id = ?';
+    const users = await query(checkSql, [id]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // Verificar si tiene registro de socio pendiente
+    const socioCheckSql = 'SELECT id, estado FROM socios WHERE user_id = ?';
+    const socios = await query(socioCheckSql, [id]);
+
+    if (socios.length > 0 && socios[0].estado === 'pendiente') {
+      // Actualizar estado a rechazado
+      const updateSocioSql = 'UPDATE socios SET estado = ? WHERE user_id = ?';
+      await query(updateSocioSql, ['cancelado', id]);
+    }
+
+    // Actualizar rol a básico
+    const updateUserSql = 'UPDATE users SET role = ? WHERE id = ?';
+    await query(updateUserSql, ['basico', id]);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Solicitud rechazada correctamente',
+      data: { id: parseInt(id), role: 'basico' }
+    });
+  } catch (error) {
+    console.error('Error en rejectUser:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al rechazar usuario',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -2132,6 +2893,9 @@ export default {
   listUsers,
   getUserDetails,
   deleteUser,
+  updateUserRole,
+  approveUser,
+  rejectUser,
   listSocios,
   getSocioDetails,
   createSocio,
@@ -2153,4 +2917,5 @@ export default {
   exportSocios,
   exportReservas,
   exportUsuarios,
+  exportEventos,
 };

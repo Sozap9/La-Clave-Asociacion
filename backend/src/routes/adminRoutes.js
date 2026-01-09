@@ -9,6 +9,9 @@ import {
   listUsers,
   getUserDetails,
   deleteUser,
+  updateUserRole,
+  approveUser,
+  rejectUser,
   
   // Socios
   listSocios,
@@ -43,7 +46,8 @@ import {
   // Exportaciones
   exportSocios,
   exportReservas,
-  exportUsuarios
+  exportUsuarios,
+  exportEventos
 } from '../controllers/adminController.js';
 
 // Controllers de otros módulos (para rutas de gestión)
@@ -83,261 +87,221 @@ import { param } from 'express-validator';
 const router = express.Router();
 
 /**
- * ========================================
  * MIDDLEWARE GLOBAL
  * Todas las rutas requieren autenticación y rol admin
- * ========================================
  */
 router.use(authenticate);
 router.use(isAdmin);
 
 /**
- * ========================================
- * 📊 MÓDULO: DASHBOARD Y MENÚ
- * ========================================
- */
-
-// Obtener estructura del menú del panel admin
-// GET /api/admin/menu
-router.get('/menu', getAdminMenu);
-
-// Obtener estadísticas completas del dashboard
-// GET /api/admin/dashboard/stats
-router.get('/dashboard/stats', getDashboardStats);
-
-// Obtener estadísticas generales (legacy - compatibilidad)
-// GET /api/admin/stats
-router.get('/stats', getGeneralStats);
-
-/**
- * ========================================
- * 👥 MÓDULO: GESTIÓN DE USUARIOS
- * ========================================
+ * MÓDULO: GESTIÓN DE USUARIOS
  */
 
 // Listar usuarios con filtros
 // Query params: search, role, activo, email_verified, page, limit
-// GET /api/admin/users
+
 router.get(
   '/users',
-  paginationValidator,        // ← VALIDAR PAGINACIÓN
-  searchQueryValidator,        // ← VALIDAR BÚSQUEDA
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  paginationValidator,       
+  searchQueryValidator,        
+  handleValidationErrors,      
   listUsers
 );
 
 // Obtener detalles de un usuario específico
 // Incluye: datos de usuario, info de socio (si aplica), estadísticas de reservas
-// GET /api/admin/users/:id
 router.get(
   '/users/:id',
-  idParamValidator,            // ← VALIDAR ID
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  idParamValidator,            
+  handleValidationErrors,      
   getUserDetails
 );
 
 // Desactivar usuario básico (OPERACIÓN CRÍTICA - 20 ops/hora)
 // Solo permite desactivar usuarios con role='basico'
-// DELETE /api/admin/users/:id
 router.delete(
   '/users/:id',
-  adminStrictLimiter,          // ← RATE LIMITING
-  idParamValidator,            // ← VALIDAR ID
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  adminStrictLimiter,          
+  idParamValidator,            
+  handleValidationErrors,      
   deleteUser
 );
 
 /**
- * ========================================
- * 🎫 MÓDULO: GESTIÓN DE SOCIOS
- * ========================================
+ * NUEVAS RUTAS: GESTIÓN DE ROLES
+ */
+
+// Cambiar rol de un usuario
+// Body: { role: 'basico' | 'socio' | 'admin' }
+router.patch(
+  '/users/:id/role',
+  idParamValidator,            
+  handleValidationErrors,      
+  updateUserRole
+);
+
+// Aprobar usuario como socio
+router.patch(
+  '/users/:id/approve',
+  idParamValidator,            
+  handleValidationErrors,      
+  approveUser
+);
+
+// Rechazar solicitud de usuario
+router.patch(
+  '/users/:id/reject',
+  idParamValidator,            
+  handleValidationErrors,      
+  rejectUser
+);
+
+/**
+ * MÓDULO: GESTIÓN DE SOCIOS
  */
 
 // Listar socios con filtros
-// Query params: search, estado, page, limit
-// GET /api/admin/socios
 router.get(
   '/socios',
-  paginationValidator,         // ← VALIDAR PAGINACIÓN
-  searchQueryValidator,         // ← VALIDAR BÚSQUEDA
-  statusFilterValidator,        // ← VALIDAR ESTADO
-  handleValidationErrors,       // ← MANEJAR ERRORES
+  paginationValidator,         
+  searchQueryValidator,         
+  statusFilterValidator,        
+  handleValidationErrors,       
   listSocios
 );
 
 // Obtener socios morosos
-// Incluye todos los socios con estado='moroso' o dias_morosidad > 0
-// GET /api/admin/socios/morosos
 router.get('/socios/morosos', listMorosos);
 
 // Obtener detalles de un socio específico
-// Incluye: datos de socio, usuario asociado, últimos 10 pagos, últimas 10 reservas
-// GET /api/admin/socios/:id
 router.get(
   '/socios/:id',
-  idParamValidator,            // ← VALIDAR ID
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  idParamValidator,            
+  handleValidationErrors,      
   getSocioDetails
 );
 
 // Crear socio manualmente (sin Stripe)
-// Body requerido: { user_id }
-// Body opcional: { cuota_mensual, notas_admin }
-// POST /api/admin/socios
 router.post(
   '/socios',
-  createSocioValidator,        // ← VALIDAR DATOS
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  createSocioValidator,       
+  handleValidationErrors,      
   createSocio
 );
 
 // Actualizar datos de un socio
-// Body opcional: { cuota_mensual, notas_admin }
-// PUT /api/admin/socios/:id
 router.put(
   '/socios/:id',
-  updateSocioValidator,        // ← VALIDAR DATOS
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  updateSocioValidator,        
+  handleValidationErrors,      
   updateSocio
 );
 
 // Dar de baja a un socio (OPERACIÓN CRÍTICA - 20 ops/hora)
-// Body opcional: { motivo }
-// Cambia estado a 'baja', actualiza role del usuario a 'basico', cancela reservas futuras
-// DELETE /api/admin/socios/:id
 router.delete(
   '/socios/:id',
-  adminStrictLimiter,          // ← RATE LIMITING
-  deleteSocioValidator,        // ← VALIDAR DATOS
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  adminStrictLimiter,          
+  deleteSocioValidator,        
+  handleValidationErrors,      
   deleteSocio
 );
 
 /**
  * ========================================
- * 🎉 MÓDULO: GESTIÓN DE EVENTOS
+ * GESTIÓN DE EVENTOS
  * ========================================
  */
 
 // Listar TODOS los eventos (admin ve todos los estados)
-// Query params: search, estado, destacado, dateFrom, dateTo, page, limit
-// GET /api/admin/events
 router.get(
   '/events',
-  paginationValidator,         // ← VALIDAR PAGINACIÓN
-  searchQueryValidator,         // ← VALIDAR BÚSQUEDA
-  statusFilterValidator,        // ← VALIDAR ESTADO
-  dateRangeValidator,           // ← VALIDAR FECHAS
-  handleValidationErrors,       // ← MANEJAR ERRORES
+  paginationValidator,         
+  searchQueryValidator,         
+  statusFilterValidator,       
+  dateRangeValidator,           
+  handleValidationErrors,       
   listAllEvents
 );
 
 // Obtener estadísticas de eventos
-// Incluye: total, por estado, próximos, pasados, ocupación promedio
-// GET /api/admin/events/stats
 router.get('/events/stats', getEventsStats);
 
 // Obtener detalles completos de un evento
-// Incluye: datos del evento, estadísticas de reservas, lista de artistas
-// GET /api/admin/events/:id
 router.get(
   '/events/:id',
-  idParamValidator,            // ← VALIDAR ID
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  idParamValidator,            
+  handleValidationErrors,      
   getEventDetailsAdmin
 );
 
 // Crear nuevo evento
-// Body: ver EventController para campos requeridos
-// POST /api/admin/events
 router.post('/events', createEvent);
 
 // Actualizar evento existente
-// Body: campos a actualizar (ver EventController)
-// PUT /api/admin/events/:id
 router.put('/events/:id', updateEvent);
 
 // Eliminar evento (OPERACIÓN CRÍTICA - 20 ops/hora)
-// Solo permite eliminar si no tiene reservas asociadas
-// DELETE /api/admin/events/:id
 router.delete('/events/:id', adminStrictLimiter, deleteEvent);
 
 // Cancelar evento (OPERACIÓN CRÍTICA - 20 ops/hora)
-// Cambia estado a 'cancelado', mantiene reservas con estado 'cancelada'
-// PATCH /api/admin/events/:id/cancel
 router.patch('/events/:id/cancel', adminStrictLimiter, cancelEvent);
 
 // Publicar evento
-// Cambia estado de 'borrador' a 'publicado'
-// PATCH /api/admin/events/:id/publish
 router.patch('/events/:id/publish', publishEvent);
 
 /**
  * ========================================
- * 📦 MÓDULO: GESTIÓN DE RESERVAS
+ * GESTIÓN DE RESERVAS
  * ========================================
  */
 
 // Listar TODAS las reservas del sistema
-// Query params: search, estado, event_id, dateFrom, dateTo, page, limit
-// GET /api/admin/bookings
 router.get(
   '/bookings',
-  paginationValidator,         // ← VALIDAR PAGINACIÓN
-  searchQueryValidator,         // ← VALIDAR BÚSQUEDA
-  statusFilterValidator,        // ← VALIDAR ESTADO
-  dateRangeValidator,           // ← VALIDAR FECHAS
-  handleValidationErrors,       // ← MANEJAR ERRORES
+  paginationValidator,         
+  searchQueryValidator,         
+  statusFilterValidator,        
+  dateRangeValidator,           
+  handleValidationErrors,       
   listAllBookings
 );
 
 // Obtener estadísticas generales de reservas
-// Incluye: total, por estado, esta semana, este mes, top 5 eventos
-// GET /api/admin/bookings/stats
 router.get('/bookings/stats', getBookingsStats);
 
 // Obtener reservas de un evento específico
-// Incluye detalles de cada reserva y del socio
-// GET /api/admin/bookings/event/:eventId
 router.get(
   '/bookings/event/:eventId',
   param('eventId')
     .isInt({ min: 1 }).withMessage('El ID del evento debe ser un número entero positivo')
     .toInt(),
-  statusFilterValidator,        // ← VALIDAR ESTADO (opcional)
-  handleValidationErrors,       // ← MANEJAR ERRORES
+  statusFilterValidator,        
+  handleValidationErrors,       
   getEventBookings
 );
 
 // Obtener detalles completos de una reserva
-// Incluye: datos de reserva, socio, usuario, evento
-// GET /api/admin/bookings/:id
 router.get(
   '/bookings/:id',
-  idParamValidator,            // ← VALIDAR ID
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  idParamValidator,            
+  handleValidationErrors,      
   getBookingDetails
 );
 
 // Cancelar reserva (OPERACIÓN CRÍTICA - 20 ops/hora)
-// Admin puede cancelar cualquier reserva
-// Body opcional: { motivo }
-// PATCH /api/admin/bookings/:id/cancel
 router.patch('/bookings/:id/cancel', adminStrictLimiter, cancelBookingAdmin);
 
 // Verificar QR y registrar asistencia
-// Body: { codigo_reserva }
-// POST /api/admin/bookings/verify-qr
 router.post(
   '/bookings/verify-qr',
-  verifyQRValidator,          // ← VALIDAR CÓDIGO QR
-  handleValidationErrors,     // ← MANEJAR ERRORES
-  verifyQRAndCheckIn          // ← CONTROLLER
+  verifyQRValidator,          
+  handleValidationErrors,     
+  verifyQRAndCheckIn          
 );
 
 /**
  * ========================================
- * 📸 MÓDULO: GESTIÓN DE GALERÍA
+ * GESTIÓN DE GALERÍA
  * ========================================
  */
 
@@ -351,7 +315,7 @@ router.get('/gallery/stats', getGalleryStats);
 
 /**
  * ========================================
- * 🎤 MÓDULO: GESTIÓN DE ARTISTAS
+ * GESTIÓN DE ARTISTAS
  * ========================================
  */
 
@@ -361,7 +325,7 @@ router.get('/gallery/stats', getGalleryStats);
 
 /**
  * ========================================
- * 🏢 MÓDULO: GESTIÓN DE VENUES
+ * GESTIÓN DE VENUES
  * ========================================
  */
 
@@ -371,70 +335,62 @@ router.get('/gallery/stats', getGalleryStats);
 
 /**
  * ========================================
- * 💰 MÓDULO: GESTIÓN DE PAGOS
+ * GESTIÓN DE PAGOS
  * ========================================
  */
 
 // Listar todos los pagos del sistema
-// Query params: search, estado, tipo_pago, dateFrom, dateTo, page, limit
-// GET /api/admin/payments
 router.get(
   '/payments',
-  paginationValidator,         // ← VALIDAR PAGINACIÓN
-  searchQueryValidator,         // ← VALIDAR BÚSQUEDA
-  statusFilterValidator,        // ← VALIDAR ESTADO
-  dateRangeValidator,           // ← VALIDAR FECHAS
-  handleValidationErrors,       // ← MANEJAR ERRORES
+  paginationValidator,         
+  searchQueryValidator,         
+  statusFilterValidator,        
+  dateRangeValidator,           
+  handleValidationErrors,       
   listPayments
 );
 
 // Obtener ingresos mensuales por año
-// Query param: ?year=2024
-// GET /api/admin/payments/monthly
 router.get(
   '/payments/monthly',
-  yearQueryValidator,          // ← VALIDAR AÑO
-  handleValidationErrors,      // ← MANEJAR ERRORES
+  yearQueryValidator,          
+  handleValidationErrors,     
   getMonthlyRevenue
 );
 
 // Obtener estadísticas de pagos
-// Incluye: ingresos mensuales últimos 12 meses, resumen anual
-// GET /api/admin/payments/stats
 router.get('/payments/stats', getPaymentsStats);
 
 /**
  * ========================================
- * 📋 MÓDULO: ACTIVIDAD Y LOGS
+ * ACTIVIDAD Y LOGS
  * ========================================
  */
 
 // Obtener actividad reciente del sistema
-// Query param: ?limit=50 (default: 50, max: 200)
-// Incluye: acción, entidad, usuario, timestamp
-// GET /api/admin/activity
 router.get('/activity', getRecentActivity);
 
 /**
  * ========================================
- * 📤 MÓDULO: EXPORTACIONES
+ * EXPORTACIONES
  * ========================================
  */
 
-// Exportar lista completa de socios en formato CSV
-// Query param: ?format=csv
+// Exportar lista completa de socios en formato PDF
 // GET /api/admin/export/socios
 router.get('/export/socios', exportSocios);
 
-// Exportar lista completa de reservas en formato CSV
-// Query param: ?format=csv
+// Exportar lista completa de reservas en formato PDF
 // GET /api/admin/export/reservas
 router.get('/export/reservas', exportReservas);
 
-// Exportar lista completa de usuarios en formato CSV
-// Query param: ?format=csv
+// Exportar lista completa de usuarios en formato PDF
 // GET /api/admin/export/usuarios
 router.get('/export/usuarios', exportUsuarios);
+
+// Exportar lista completa de eventos en formato PDF
+// GET /api/admin/export/eventos
+router.get('/export/eventos', exportEventos);
 
 
 export default router;

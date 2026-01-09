@@ -16,13 +16,13 @@ const AdminExportSocios = () => {
     try {
       const result = await exportSocios();
       if (result.success) {
-        setSuccess('Exportación de socios completada exitosamente');
+        setSuccess('PDF de socios descargado correctamente');
       } else {
-        setError(result.message || 'Error en la exportación');
+        setError(result.message || 'No se pudo generar el PDF de socios');
       }
     } catch (err) {
-      console.error('Error exportando socios:', err);
-      setError('Error al exportar socios.');
+      console.error('Error al exportar socios:', err);
+      setError('Error al descargar el PDF de socios. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -31,8 +31,8 @@ const AdminExportSocios = () => {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Exportar Socios CSV</h1>
-        <p className="text-gray-400">Descarga la lista completa de socios en formato CSV</p>
+        <h1 className="text-4xl font-bold text-white mb-2">Exportar Socios PDF</h1>
+        <p className="text-gray-400">Descarga la lista completa de socios en formato PDF</p>
       </div>
 
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
@@ -43,8 +43,8 @@ const AdminExportSocios = () => {
         <div>
           <p className="font-semibold mb-1">Información</p>
           <ul className="text-sm space-y-1 list-disc list-inside">
-            <li>Archivo con codificación UTF-8 y separador punto y coma (;)</li>
-            <li>Compatible con Excel y Google Sheets</li>
+            <li>Formato PDF listo para imprimir o ver en móvil</li>
+            <li>Compatible con cualquier dispositivo</li>
             <li>Se descargará automáticamente</li>
           </ul>
         </div>
@@ -82,12 +82,12 @@ const AdminExportSocios = () => {
           {loading ? (
             <>
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              Exportando...
+              Generando PDF...
             </>
           ) : (
             <>
               <Download className="w-6 h-6" />
-              Descargar CSV de Socios
+              Descargar PDF de Socios
             </>
           )}
         </button>

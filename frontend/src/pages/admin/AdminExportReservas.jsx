@@ -42,13 +42,13 @@ const AdminExportReservas = () => {
     try {
       const result = await exportReservas(filters);
       if (result.success) {
-        setSuccess('Exportación de reservas completada exitosamente');
+        setSuccess('PDF de reservas descargado correctamente');
       } else {
-        setError(result.message || 'Error en la exportación');
+        setError(result.message || 'No se pudo generar el PDF de reservas');
       }
     } catch (err) {
-      console.error('Error exportando reservas:', err);
-      setError('Error al exportar reservas. Es posible que el endpoint no esté implementado aún.');
+      console.error('Error al exportar reservas:', err);
+      setError('Error al descargar el PDF de reservas. Por favor, intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -61,7 +61,7 @@ const AdminExportReservas = () => {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Exportar Reservas CSV</h1>
+        <h1 className="text-4xl font-bold text-white mb-2">Exportar Reservas PDF</h1>
         <p className="text-gray-400">Descarga reservas filtradas por fecha o evento</p>
       </div>
 
@@ -73,9 +73,9 @@ const AdminExportReservas = () => {
         <div>
           <p className="font-semibold mb-1">Información</p>
           <ul className="text-sm space-y-1 list-disc list-inside">
+            <li>Formato PDF horizontal para mejor visualización</li>
             <li>Filtra por evento para ver lista de entradas compradas</li>
-            <li>Filtra por fecha para ver reservas en un rango temporal</li>
-            <li>Compatible con Excel y Google Sheets</li>
+            <li>Compatible con cualquier dispositivo</li>
           </ul>
         </div>
       </div>
@@ -164,7 +164,7 @@ const AdminExportReservas = () => {
         <div className="mb-6">
           <p className="text-white font-medium mb-3">Campos incluidos:</p>
           <div className="flex flex-wrap gap-2">
-            {['Código reserva', 'Nombre socio', 'Email', 'Evento', 'Fecha evento', 'Entradas', 'Estado', 'Fecha reserva'].map(field => (
+            {['Código reserva', 'Evento', 'Socio', 'Fecha evento', 'Hora', 'Acompañantes', 'Estado', 'Fecha reserva'].map(field => (
               <span key={field} className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm">
                 {field}
               </span>
@@ -180,12 +180,12 @@ const AdminExportReservas = () => {
           {loading ? (
             <>
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              Exportando...
+              Generando PDF...
             </>
           ) : (
             <>
               <Download className="w-6 h-6" />
-              Descargar CSV de Reservas
+              Descargar PDF de Reservas
             </>
           )}
         </button>

@@ -611,131 +611,156 @@ export const getRecentActivity = async (limit = 50) => {
 
 /**
  * ========================================
- * CSV EXPORTS
+ * 📤 EXPORTAR SOCIOS - PDF
  * ========================================
  */
-
 export const exportSocios = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/admin/export/socios?format=csv`, {
+    const response = await fetch(`${API_URL}/admin/export/socios`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
     
     if (!response.ok) {
-      throw new Error('Error exporting socios');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'No se pudo generar el PDF de socios');
     }
 
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `socios_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `socios_${new Date().toISOString().split('T')[0]}.pdf`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
     
-    return { success: true, message: 'Export completed' };
+    return { success: true, message: 'PDF de socios descargado correctamente' };
   } catch (error) {
-    console.error('Error exporting socios:', error);
+    console.error('Error al exportar socios:', error);
     throw error;
   }
 };
 
+/**
+ * ========================================
+ * 📤 EXPORTAR USUARIOS - PDF
+ * ========================================
+ */
 export const exportUsuarios = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/admin/export/usuarios?format=csv`, {
+    const response = await fetch(`${API_URL}/admin/export/usuarios`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
     
     if (!response.ok) {
-      throw new Error('Error exporting users');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'No se pudo generar el PDF de usuarios');
     }
 
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `usuarios_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `usuarios_${new Date().toISOString().split('T')[0]}.pdf`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
     
-    return { success: true, message: 'Export completed' };
+    return { success: true, message: 'PDF de usuarios descargado correctamente' };
   } catch (error) {
-    console.error('Error exporting users:', error);
+    console.error('Error al exportar usuarios:', error);
     throw error;
   }
 };
 
-export const exportEventos = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/admin/export/eventos?format=csv`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Error exporting events');
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eventos_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    return { success: true, message: 'Export completed' };
-  } catch (error) {
-    console.error('Error exporting events:', error);
-    throw error;
-  }
-};
-
+/**
+ * ========================================
+ * 📤 EXPORTAR RESERVAS - PDF
+ * ========================================
+ */
 export const exportReservas = async (params = {}) => {
   try {
     const token = localStorage.getItem('token');
-    const queryParams = new URLSearchParams({ format: 'csv' });
+    const queryParams = new URLSearchParams();
+    
+    // Agregar filtros opcionales
     if (params.fecha_desde) queryParams.append('fecha_desde', params.fecha_desde);
     if (params.fecha_hasta) queryParams.append('fecha_hasta', params.fecha_hasta);
     if (params.event_id) queryParams.append('event_id', params.event_id);
 
-    const response = await fetch(`${API_URL}/admin/export/reservas?${queryParams}`, {
+    const url = queryParams.toString() 
+      ? `${API_URL}/admin/export/reservas?${queryParams}`
+      : `${API_URL}/admin/export/reservas`;
+
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
     
     if (!response.ok) {
-      throw new Error('Error exporting bookings');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'No se pudo generar el PDF de reservas');
+    }
+
+    const blob = await response.blob();
+    const url2 = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url2;
+    a.download = `reservas_${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url2);
+    document.body.removeChild(a);
+    
+    return { success: true, message: 'PDF de reservas descargado correctamente' };
+  } catch (error) {
+    console.error('Error al exportar reservas:', error);
+    throw error;
+  }
+};
+
+/**
+ * ========================================
+ * 📤 EXPORTAR EVENTOS - PDF (OPCIONAL)
+ * ========================================
+ * Solo si tienes esta función en tu adminApi.js
+ */
+export const exportEventos = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/admin/export/eventos`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'No se pudo generar el PDF de eventos');
     }
 
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reservas_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `eventos_${new Date().toISOString().split('T')[0]}.pdf`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
     
-    return { success: true, message: 'Export completed' };
+    return { success: true, message: 'PDF de eventos descargado correctamente' };
   } catch (error) {
-    console.error('Error exporting bookings:', error);
+    console.error('Error al exportar eventos:', error);
     throw error;
   }
 };

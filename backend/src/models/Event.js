@@ -16,17 +16,31 @@ class Event {
           e.*,
           u.username as creado_por_username,
           u.nombre as creado_por_nombre,
-          COUNT(DISTINCT b.id) as total_reservas,
-          COUNT(DISTINCT CASE WHEN b.estado = 'confirmada' THEN b.id END) as reservas_confirmadas
+          SUM(CASE 
+            WHEN b.estado = 'confirmada' AND ub.role != 'admin' 
+            THEN b.numero_entradas 
+            ELSE 0 
+          END) as entradas_reservadas_real
         FROM events e
         LEFT JOIN users u ON e.created_by = u.id
         LEFT JOIN bookings b ON e.id = b.event_id
+        LEFT JOIN socios s ON b.socio_id = s.id
+        LEFT JOIN users ub ON s.user_id = ub.id
         WHERE e.id = ?
         GROUP BY e.id
         LIMIT 1
       `;
       const results = await query(sql, [id]);
-      return results.length > 0 ? results[0] : null;
+      
+      if (results.length > 0) {
+        const event = results[0];
+        // Calcular entradas disponibles reales
+        const reservadas = parseInt(event.entradas_reservadas_real) || 0;
+        event.entradas_disponibles_real = event.aforo_maximo - reservadas;
+        return event;
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error en findById:', error);
       throw error;
@@ -96,14 +110,19 @@ class Event {
         ? 'WHERE ' + conditions.join(' AND ') 
         : '';
 
-      // Query principal
+      // Query principal - solo cuenta confirmadas y excluye admins
       const sql = `
         SELECT 
           e.*,
-          COUNT(DISTINCT b.id) as total_reservas,
-          COUNT(DISTINCT CASE WHEN b.estado = 'confirmada' THEN b.id END) as reservas_confirmadas
+          SUM(CASE 
+            WHEN b.estado = 'confirmada' AND ub.role != 'admin' 
+            THEN b.numero_entradas 
+            ELSE 0 
+          END) as entradas_reservadas_real
         FROM events e
         LEFT JOIN bookings b ON e.id = b.event_id
+        LEFT JOIN socios s ON b.socio_id = s.id
+        LEFT JOIN users ub ON s.user_id = ub.id
         ${whereClause}
         GROUP BY e.id
         ORDER BY e.${validOrderBy} ${validOrderDir}
@@ -113,10 +132,16 @@ class Event {
       // Añadir limit y offset a params
       const queryParams = [...params, validLimit, offset];
       const events = await query(sql, queryParams);
+      
+      // Calcular disponibilidad real para cada evento
+      events.forEach(event => {
+        const reservadas = parseInt(event.entradas_reservadas_real) || 0;
+        event.entradas_disponibles_real = event.aforo_maximo - reservadas;
+      });
 
       // Contar total
       const countSql = `SELECT COUNT(*) as total FROM events e ${whereClause}`;
-      const countParams = [...params]; // Solo los parámetros del WHERE, sin limit/offset
+      const countParams = [...params];
       const countResult = await query(countSql, countParams);
       const total = countResult[0].total;
 
@@ -181,7 +206,7 @@ class Event {
         ubicacion,
         direccion,
         aforo_maximo,
-        aforo_maximo, // entradas_disponibles = aforo_maximo inicialmente
+        aforo_maximo,
         imagen_cartel_url,
         precio_socio,
         precio_invitado,
@@ -206,45 +231,36 @@ class Event {
 
   /**
    * Actualizar evento
-   * @param {Number} id - ID del evento
-   * @param {Object} updateData - Datos a actualizar
-   * @returns {Boolean} true si se actualizó
    */
-  static async update(id, updateData) {
+  static async update(id, eventData) {
     try {
+      const fields = [];
+      const values = [];
+
+      // Campos permitidos para actualizar
       const allowedFields = [
-        'titulo', 'descripcion', 'descripcion_corta', 'fecha_evento',
-        'hora_evento', 'ubicacion', 'direccion', 'aforo_maximo',
-        'imagen_cartel_url', 'precio_socio', 'precio_invitado',
-        'permite_invitados', 'destacado', 'estado', 'motivo_cancelacion',
-        'visible_desde', 'visible_hasta', 'tags', 'artistas', 'edad_minima'
+        'titulo', 'descripcion', 'descripcion_corta', 'fecha_evento', 'hora_evento',
+        'ubicacion', 'direccion', 'aforo_maximo', 'imagen_cartel_url',
+        'precio_socio', 'precio_invitado', 'permite_invitados', 'destacado',
+        'estado', 'visible_desde', 'visible_hasta', 'tags', 'artistas', 'edad_minima'
       ];
 
-      const updates = {};
-      Object.keys(updateData).forEach(key => {
-        if (allowedFields.includes(key)) {
-          updates[key] = updateData[key];
+      for (const field of allowedFields) {
+        if (eventData[field] !== undefined) {
+          fields.push(`${field} = ?`);
+          values.push(eventData[field]);
         }
-      });
-
-      if (Object.keys(updates).length === 0) {
-        throw new Error('No hay campos válidos para actualizar');
       }
 
-      // Si se actualiza el aforo, recalcular entradas disponibles
-      if (updates.aforo_maximo !== undefined) {
-        const event = await this.findById(id);
-        const reservadas = event.entradas_reservadas || 0;
-        updates.entradas_disponibles = updates.aforo_maximo - reservadas;
+      if (fields.length === 0) {
+        return await this.findById(id);
       }
 
-      const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-      const values = Object.values(updates);
       values.push(id);
-
-      const sql = `UPDATE events SET ${fields} WHERE id = ?`;
+      const sql = `UPDATE events SET ${fields.join(', ')} WHERE id = ?`;
       await query(sql, values);
-      return true;
+
+      return await this.findById(id);
     } catch (error) {
       console.error('Error en update:', error);
       throw error;
@@ -252,23 +268,13 @@ class Event {
   }
 
   /**
-   * Eliminar evento (solo si no tiene reservas)
-   * @param {Number} id - ID del evento
-   * @returns {Boolean} true si se eliminó
+   * Eliminar evento
    */
   static async delete(id) {
     try {
-      // Verificar que no tenga reservas
-      const checkSql = 'SELECT COUNT(*) as total FROM bookings WHERE event_id = ?';
-      const checkResult = await query(checkSql, [id]);
-      
-      if (checkResult[0].total > 0) {
-        throw new Error('No se puede eliminar un evento con reservas');
-      }
-
       const sql = 'DELETE FROM events WHERE id = ?';
       await query(sql, [id]);
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('Error en delete:', error);
       throw error;
@@ -276,141 +282,17 @@ class Event {
   }
 
   /**
-   * Cancelar evento
-   * @param {Number} id - ID del evento
-   * @param {String} motivo - Motivo de cancelación
-   * @returns {Boolean} true si se canceló
-   */
-  static async cancel(id, motivo) {
-    try {
-      const sql = `
-        UPDATE events 
-        SET estado = 'cancelado', motivo_cancelacion = ?
-        WHERE id = ?
-      `;
-      await query(sql, [motivo, id]);
-
-      // Cancelar todas las reservas
-      await query(`
-        UPDATE bookings 
-        SET estado = 'cancelada', motivo_cancelacion = 'Evento cancelado'
-        WHERE event_id = ? AND estado = 'confirmada'
-      `, [id]);
-
-      return true;
-    } catch (error) {
-      console.error('Error en cancel:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Publicar evento
-   * @param {Number} id - ID del evento
-   * @returns {Boolean} true si se publicó
-   */
-  static async publish(id) {
-    try {
-      const sql = 'UPDATE events SET estado = \'publicado\' WHERE id = ?';
-      await query(sql, [id]);
-      return true;
-    } catch (error) {
-      console.error('Error en publish:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtener próximos eventos públicos
-   * @param {Number} limit - Cantidad de eventos
-   * @returns {Array} Lista de eventos
-   */
-  static async getUpcoming(limit = 10) {
-    try {
-      const sql = `
-        SELECT 
-          e.*,
-          COUNT(DISTINCT b.id) as total_reservas
-        FROM events e
-        LEFT JOIN bookings b ON e.id = b.event_id AND b.estado = 'confirmada'
-        WHERE e.estado = 'publicado'
-          AND e.fecha_evento >= CURDATE()
-          AND (e.visible_desde IS NULL OR e.visible_desde <= NOW())
-          AND (e.visible_hasta IS NULL OR e.visible_hasta >= NOW())
-        GROUP BY e.id
-        ORDER BY e.fecha_evento ASC, e.hora_evento ASC
-        LIMIT ?
-      `;
-      return await query(sql, [limit]);
-    } catch (error) {
-      console.error('Error en getUpcoming:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Obtener eventos destacados
-   * @param {Number} limit - Cantidad de eventos
-   * @returns {Array} Lista de eventos destacados
-   */
-  static async getFeatured(limit = 3) {
-    try {
-      const sql = `
-        SELECT e.*
-        FROM events e
-        WHERE e.estado = 'publicado'
-          AND e.destacado = true
-          AND e.fecha_evento >= CURDATE()
-        ORDER BY e.fecha_evento ASC
-        LIMIT ?
-      `;
-      return await query(sql, [limit]);
-    } catch (error) {
-      console.error('Error en getFeatured:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Buscar eventos
-   * @param {String} searchTerm - Término de búsqueda
-   * @returns {Array} Eventos encontrados
-   */
-  static async search(searchTerm) {
-    try {
-      const sql = `
-        SELECT e.*
-        FROM events e
-        WHERE (
-          e.titulo LIKE ? OR
-          e.descripcion LIKE ? OR
-          e.tags LIKE ? OR
-          e.artistas LIKE ?
-        ) AND e.estado = 'publicado'
-        LIMIT 50
-      `;
-      
-      const searchPattern = `%${searchTerm}%`;
-      const params = Array(4).fill(searchPattern);
-      
-      return await query(sql, params);
-    } catch (error) {
-      console.error('Error en search:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Verificar disponibilidad de entradas
-   * @param {Number} id - ID del evento
-   * @param {Number} cantidad - Cantidad de entradas
-   * @returns {Boolean} true si hay disponibilidad
    */
-  static async checkAvailability(id, cantidad = 1) {
+  static async checkAvailability(eventId, numeroEntradas = 1) {
     try {
-      const event = await this.findById(id);
-      if (!event) return false;
-      return event.entradas_disponibles >= cantidad;
+      const event = await this.findById(eventId);
+      if (!event) {
+        return false;
+      }
+
+      const disponibles = event.entradas_disponibles_real || 0;
+      return disponibles >= numeroEntradas;
     } catch (error) {
       console.error('Error en checkAvailability:', error);
       throw error;
@@ -418,31 +300,97 @@ class Event {
   }
 
   /**
-   * Actualizar estadísticas de entradas
-   * @param {Number} id - ID del evento
-   * @returns {Boolean} true si se actualizó
+   * Obtener eventos destacados
    */
-  static async updateEntryStats(id) {
+  static async getFeatured(limit = 6) {
     try {
-      const sql = `
-        UPDATE events e
-        SET 
-          entradas_reservadas = (
-            SELECT COUNT(*) 
-            FROM bookings 
-            WHERE event_id = e.id AND estado = 'confirmada'
-          ),
-          entradas_disponibles = e.aforo_maximo - (
-            SELECT COUNT(*) 
-            FROM bookings 
-            WHERE event_id = e.id AND estado = 'confirmada'
-          )
-        WHERE e.id = ?
-      `;
-      await query(sql, [id]);
-      return true;
+      return await this.list({
+        destacado: true,
+        estado: 'scheduled',
+        limit,
+        orderBy: 'fecha_evento',
+        orderDir: 'ASC'
+      });
     } catch (error) {
-      console.error('Error en updateEntryStats:', error);
+      console.error('Error en getFeatured:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Buscar eventos por término
+   */
+  static async search(searchTerm, options = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        estado = 'scheduled'
+      } = options;
+
+      const validPage = Math.max(1, parseInt(page) || 1);
+      const validLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
+      const offset = (validPage - 1) * validLimit;
+
+      const sql = `
+        SELECT 
+          e.*,
+          SUM(CASE 
+            WHEN b.estado = 'confirmada' AND ub.role != 'admin' 
+            THEN b.numero_entradas 
+            ELSE 0 
+          END) as entradas_reservadas_real
+        FROM events e
+        LEFT JOIN bookings b ON e.id = b.event_id
+        LEFT JOIN socios s ON b.socio_id = s.id
+        LEFT JOIN users ub ON s.user_id = ub.id
+        WHERE e.estado = ?
+        AND (
+          e.titulo LIKE ? OR
+          e.descripcion LIKE ? OR
+          e.artistas LIKE ? OR
+          e.tags LIKE ?
+        )
+        GROUP BY e.id
+        ORDER BY e.fecha_evento ASC
+        LIMIT ? OFFSET ?
+      `;
+
+      const searchPattern = `%${searchTerm}%`;
+      const params = [estado, searchPattern, searchPattern, searchPattern, searchPattern, validLimit, offset];
+      
+      const events = await query(sql, params);
+      
+      // Calcular disponibilidad real
+      events.forEach(event => {
+        const reservadas = parseInt(event.entradas_reservadas_real) || 0;
+        event.entradas_disponibles_real = event.aforo_maximo - reservadas;
+      });
+
+      // Contar total
+      const countSql = `
+        SELECT COUNT(*) as total
+        FROM events e
+        WHERE e.estado = ?
+        AND (
+          e.titulo LIKE ? OR
+          e.descripcion LIKE ? OR
+          e.artistas LIKE ? OR
+          e.tags LIKE ?
+        )
+      `;
+      const countParams = [estado, searchPattern, searchPattern, searchPattern, searchPattern];
+      const countResult = await query(countSql, countParams);
+      const total = countResult[0].total;
+
+      return {
+        events,
+        total,
+        page: validPage,
+        pages: Math.ceil(total / validLimit)
+      };
+    } catch (error) {
+      console.error('Error en search:', error);
       throw error;
     }
   }

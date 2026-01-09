@@ -89,10 +89,10 @@ const Events = () => {
     <div className="min-h-screen py-20 px-4">
       <div className="container-custom">
         
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-gradient mb-4">Eventos</h1>
-          <p className="text-gray-400 text-xl max-w-2xl mx-auto">
+        {/* ✅ ACTUALIZADO: Header alineado a la izquierda (como MisEntradas) */}
+        <div className="mb-10">
+          <h1 className="text-gradient mb-2 text-4xl">Eventos</h1>
+          <p className="text-gray-400 text-lg">
             Descubre los mejores eventos y reserva tu plaza
           </p>
         </div>
@@ -102,7 +102,7 @@ const Events = () => {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-8 max-w-2xl mx-auto">
+          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-8">
             {error}
           </div>
         )}

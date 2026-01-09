@@ -9,12 +9,14 @@ import Profile from './pages/Profile';
 import UpgradeToSocio from './pages/UpgradeToSocio';
 import Gallery from './pages/Gallery';
 import GalleryAlbum from './pages/GalleryAlbum';
+import MisEntradas from './pages/MisEntradas'; // ✅ NUEVO
 
 // Admin imports
 import AdminLayout from './components/admin/AdminLayout';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEvents from './pages/admin/AdminEvents';
+import AdminDraftEvents from './pages/admin/AdminDraftEvents';
 import AdminEventForm from './pages/admin/AdminEventForm';
 import AdminSocios from './pages/admin/AdminSocios';
 import AdminBookings from './pages/admin/AdminBookings';
@@ -140,10 +142,10 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/mis-reservas',
+    path: '/mis-entradas',
     element: (
       <ProtectedRoute requireSocio>
-        <Layout><ComingSoon title="Mis Reservas" /></Layout>
+        <Layout><MisEntradas /></Layout>
       </ProtectedRoute>
     ),
   },
@@ -177,6 +179,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute requireAdmin>
         <AdminLayout>
           <AdminEvents />
+        </AdminLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/eventos/borradores',
+    element: (
+      <ProtectedRoute requireAdmin>
+        <AdminLayout>
+          <AdminDraftEvents />
         </AdminLayout>
       </ProtectedRoute>
     ),

@@ -12,7 +12,8 @@ import {
   BarChart3,
   FileDown,
   LogOut,
-  Home
+  Home,
+  FileText
 } from 'lucide-react';
 import SidebarSection from './SidebarSection';
 
@@ -55,6 +56,7 @@ const AdminSidebar = () => {
   // Gestión Eventos
   const eventosItems = [
     { path: '/admin/eventos', label: 'Listar eventos', icon: Calendar },
+    { path: '/admin/eventos/borradores', label: 'Borradores', icon: FileText },
     { path: '/admin/eventos/nuevo', label: 'Crear evento', icon: Calendar }
   ];
 

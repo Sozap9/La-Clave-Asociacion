@@ -29,7 +29,7 @@ export const NAV_ROUTES = {
   REGISTER_SOCIO: '/registro-socio',
   DASHBOARD: '/panel',
   PROFILE: '/perfil',
-  MY_BOOKINGS: '/mis-reservas',
+  MY_BOOKINGS: '/mis-entradas',
   UPGRADE: '/mejorar-cuenta',
   ADMIN: '/admin'
 };
