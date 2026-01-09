@@ -89,13 +89,7 @@ const AdminBookings = () => {
   }) : [];
 
   const getEstadoBadge = (estado) => {
-    const styles = {
-      confirmada: 'bg-green-500/20 text-green-400',
-      cancelada: 'bg-red-500/20 text-red-400',
-      asistida: 'bg-blue-500/20 text-blue-400',
-      no_asistida: 'bg-gray-500/20 text-gray-400'
-    };
-    return styles[estado] || styles.confirmada;
+    return 'bg-primary-500/20 text-primary-300 border border-primary-500/30';
   };
 
   const formatDate = (dateString) => {
@@ -113,11 +107,11 @@ const AdminBookings = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Gestión de Reservas</h1>
-        <p className="text-gray-400">
+        <h1 className="text-gradient mb-2 text-4xl">Gestión de Reservas</h1>
+        <p className="text-gray-400 text-lg">
           {Array.isArray(bookings) ? `${bookings.length} reserva${bookings.length !== 1 ? 's' : ''} total${bookings.length !== 1 ? 'es' : ''}` : 'Administra todas las reservas'}
         </p>
       </div>
@@ -139,7 +133,7 @@ const AdminBookings = () => {
             placeholder="Buscar por código, nombre, email o evento..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none"
+            className="w-full bg-[#262626] border border-[#333333] rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none transition-colors"
           />
           {search && (
             <button
@@ -158,7 +152,7 @@ const AdminBookings = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               filter === 'all'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
             }`}
           >
             Todas ({bookings.length})
@@ -168,7 +162,7 @@ const AdminBookings = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               filter === 'confirmada'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
             }`}
           >
             Confirmadas ({bookings.filter(b => b.estado === 'confirmada').length})
@@ -178,7 +172,7 @@ const AdminBookings = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               filter === 'asistida'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
             }`}
           >
             Asistidas ({bookings.filter(b => b.estado === 'asistida').length})
@@ -188,7 +182,7 @@ const AdminBookings = () => {
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               filter === 'cancelada'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
             }`}
           >
             Canceladas ({bookings.filter(b => b.estado === 'cancelada').length})
@@ -198,7 +192,7 @@ const AdminBookings = () => {
 
       {/* Lista de reservas */}
       {filteredBookings.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Ticket className="mx-auto mb-4 text-gray-600" size={48} />
           <p className="text-gray-400 text-lg">
             {search ? 'No se encontraron reservas con esos criterios' : 'No hay reservas en esta categoría'}
@@ -209,13 +203,13 @@ const AdminBookings = () => {
           {filteredBookings.map((booking) => (
             <div
               key={booking.id}
-              className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-primary-500/50 transition-all"
+              className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
             >
               <div className="flex items-start justify-between">
                 {/* Info de la reserva */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <Ticket className="text-primary-400" size={24} />
+                    <Ticket className="text-primary-300" size={24} />
                     <div>
                       <h3 className="text-xl font-bold text-white">
                         {booking.codigo_reserva || `Reserva #${booking.id}`}
@@ -254,7 +248,7 @@ const AdminBookings = () => {
 
                   {booking.fecha_evento && (
                     <div className="flex items-center gap-2 text-gray-300 text-sm">
-                      <Calendar size={16} className="text-primary-400" />
+                      <Calendar size={16} className="text-primary-300" />
                       <span>Evento: {formatDate(booking.fecha_evento)}</span>
                     </div>
                   )}
@@ -265,14 +259,14 @@ const AdminBookings = () => {
                   {booking.estado === 'confirmada' && (
                     <button
                       onClick={() => handleCancelBooking(booking.id)}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                      className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
                     >
                       Cancelar
                     </button>
                   )}
                   <button
                     onClick={() => setSelectedBooking(booking)}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors"
+                    className="px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors"
                   >
                     Ver Detalles
                   </button>
@@ -286,7 +280,7 @@ const AdminBookings = () => {
       {/* Modal de detalles */}
       {selectedBooking && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBooking(null)}>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">Detalles de Reserva</h2>
               <button
@@ -350,7 +344,7 @@ const AdminBookings = () => {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                className="flex-1 px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg transition-colors"
               >
                 Cerrar
               </button>

@@ -87,14 +87,14 @@ const AdminSociosMorosos = () => {
   const moderados = morosos.filter(s => s.dias_morosidad >= 15 && s.dias_morosidad < 30).length;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
+        <h1 className="text-gradient mb-2 text-4xl flex items-center gap-3">
           <AlertTriangle className="w-10 h-10 text-red-400" />
           Socios Morosos
         </h1>
-        <p className="text-gray-400">{morosos.length} socios con pagos pendientes</p>
+        <p className="text-gray-400 text-lg">{morosos.length} socios con pagos pendientes</p>
       </div>
 
       {/* Alertas */}
@@ -131,7 +131,7 @@ const AdminSociosMorosos = () => {
 
       {/* Lista de morosos */}
       {morosos.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <AlertTriangle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-400 text-lg">¡Excelente! No hay socios con pagos pendientes</p>
         </div>
@@ -184,7 +184,7 @@ const AdminSociosMorosos = () => {
                     <button
                       onClick={() => handleSendReminder(socio.id)}
                       disabled={actionLoading === `reminder-${socio.id}`}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                      className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                     >
                       {actionLoading === `reminder-${socio.id}` ? (
                         <>
@@ -203,7 +203,7 @@ const AdminSociosMorosos = () => {
                       <button
                         onClick={() => handleSuspend(socio.id)}
                         disabled={actionLoading === `suspend-${socio.id}`}
-                        className="bg-red-600 hover:bg-red-700 disabled:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                       >
                         {actionLoading === `suspend-${socio.id}` ? (
                           <>
@@ -230,13 +230,13 @@ const AdminSociosMorosos = () => {
 };
 
 const StatCard = ({ title, value, icon: Icon, color }) => (
-  <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+  <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
     <div className="flex items-start justify-between mb-4">
       <div>
         <p className="text-gray-400 text-sm mb-1">{title}</p>
-        <p className="text-white text-3xl font-bold">{value}</p>
+        <p className="text-primary-300 text-3xl font-bold">{value}</p>
       </div>
-      <Icon className={`w-8 h-8 text-${color}-400`} />
+      <Icon className="w-8 h-8 text-primary-300" />
     </div>
   </div>
 );

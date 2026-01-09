@@ -102,13 +102,13 @@ const AdminGallery = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Gestionar Álbumes</h1>
-            <p className="text-gray-400">Administra los álbumes de fotos de la asociación</p>
+            <h1 className="text-gradient mb-2 text-4xl">Gestionar Álbumes</h1>
+            <p className="text-gray-400 text-lg">Administra los álbumes de fotos de la asociación</p>
           </div>
           <Button
             variant="primary"
@@ -131,7 +131,7 @@ const AdminGallery = () => {
 
       {/* Grid de álbumes */}
       {folders.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Image size={64} className="text-gray-600 mx-auto mb-4" />
           <h3 className="text-white text-xl font-semibold mb-2">No hay álbumes</h3>
           <p className="text-gray-400 mb-6">Crea tu primer álbum para empezar a organizar fotos</p>
@@ -157,10 +157,10 @@ const AdminGallery = () => {
             return (
               <div
                 key={folder.id}
-                className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-primary-500/50 transition-all"
+                className="bg-[#1a1a1a] border border-[#262626] rounded-xl overflow-hidden hover:border-primary-500/50 transition-all"
               >
                 {/* Imagen de portada */}
-                <div className="aspect-video bg-gray-800 flex items-center justify-center relative">
+                <div className="aspect-video bg-[#262626] flex items-center justify-center relative">
                   {coverImageUrl ? (
                     <img
                       src={coverImageUrl}
@@ -177,9 +177,7 @@ const AdminGallery = () => {
                   
                   <div className="absolute top-2 right-2 flex gap-2">
                     {/* Badge de visibilidad */}
-                    <div className={`px-2 py-1 rounded text-white text-xs font-semibold ${
-                      folder.visible ? 'bg-green-600' : 'bg-red-600'
-                    }`}>
+                    <div className="px-2 py-1 rounded text-white text-xs font-semibold bg-primary-600">
                       {folder.visible ? 'VISIBLE' : 'OCULTO'}
                     </div>
                     
@@ -221,7 +219,7 @@ const AdminGallery = () => {
                     </button>
                     <button
                       onClick={() => handleEdit(folder)}
-                      className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                      className="px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
                     >
                       <Edit size={16} />
                       Editar
@@ -230,7 +228,7 @@ const AdminGallery = () => {
                   
                   <button
                     onClick={() => handleDelete(folder)}
-                    className="w-full mt-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+                    className="w-full mt-2 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
                   >
                     <Trash2 size={16} />
                     Eliminar Álbum

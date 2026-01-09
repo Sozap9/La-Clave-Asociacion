@@ -76,11 +76,11 @@ const Register = () => {
     <div className="min-h-screen py-20 px-4 relative overflow-hidden">
       {/* Fondo */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-gray-950 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-black z-10" />
         <img
           src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&q=80"
           alt="Background"
-          className="w-full h-full object-cover opacity-30"
+          className="w-full h-full object-cover opacity-20"
         />
       </div>
 

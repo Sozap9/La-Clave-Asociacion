@@ -29,31 +29,19 @@ const AdminExportSocios = () => {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Exportar Socios PDF</h1>
-        <p className="text-gray-400">Descarga la lista completa de socios en formato PDF</p>
+        <h1 className="text-gradient mb-2 text-4xl">Exportar Socios PDF</h1>
+        <p className="text-gray-400 text-lg">Descarga la lista completa de socios en formato PDF</p>
       </div>
 
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
       {error && <Alert type="error" message={error} onClose={() => setError('')} persistent />}
 
-      <div className="bg-blue-500/20 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg mb-8 flex items-start gap-3">
-        <Info className="w-5 h-5 mt-0.5 flex-shrink-0" />
-        <div>
-          <p className="font-semibold mb-1">Información</p>
-          <ul className="text-sm space-y-1 list-disc list-inside">
-            <li>Formato PDF listo para imprimir o ver en móvil</li>
-            <li>Compatible con cualquier dispositivo</li>
-            <li>Se descargará automáticamente</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
         <div className="flex items-start gap-4 mb-6">
-          <div className="bg-purple-500/20 p-3 rounded-lg">
-            <UserCheck className="w-8 h-8 text-purple-400" />
+          <div className="bg-primary-500/20 p-3 rounded-lg">
+            <UserCheck className="w-8 h-8 text-primary-300" />
           </div>
           <div className="flex-1">
             <h3 className="text-2xl font-semibold text-white mb-2">Lista de Socios</h3>
@@ -67,7 +55,7 @@ const AdminExportSocios = () => {
           <p className="text-white font-medium mb-3">Campos incluidos:</p>
           <div className="flex flex-wrap gap-2">
             {['Número socio', 'Nombre', 'Email', 'Teléfono', 'Cuota mensual', 'Estado', 'Fecha alta'].map(field => (
-              <span key={field} className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm">
+              <span key={field} className="bg-[#262626] text-gray-300 px-3 py-1 rounded-full text-sm border border-[#333333]">
                 {field}
               </span>
             ))}

@@ -60,19 +60,19 @@ const AdminVerifyQR = () => {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8 text-center">
         <div className="inline-block p-4 bg-primary-500/20 rounded-full mb-4">
-          <QrCode size={48} className="text-primary-400" />
+          <QrCode size={48} className="text-primary-300" />
         </div>
-        <h1 className="text-4xl font-bold text-white mb-2">Verificar QR / Check-in</h1>
-        <p className="text-gray-400">Escanea o ingresa el código de reserva para validar la entrada</p>
+        <h1 className="text-gradient mb-2 text-4xl">Verificar QR / Check-in</h1>
+        <p className="text-gray-400 text-lg">Escanea o ingresa el código de reserva para validar la entrada</p>
       </div>
 
       {/* Formulario de verificación */}
       <div className="max-w-2xl mx-auto">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 mb-6">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 mb-6">
           <form onSubmit={handleVerify} className="space-y-6">
             {/* Input de código */}
             <div>
@@ -85,7 +85,7 @@ const AdminVerifyQR = () => {
                   value={codigo}
                   onChange={(e) => setCodigo(e.target.value.toUpperCase())}
                   placeholder="Ej: BOOK-ABC123"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none font-mono text-lg"
+                  className="w-full bg-[#262626] border border-[#333333] rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none transition-colors font-mono text-lg"
                   autoFocus
                   disabled={loading}
                 />
@@ -122,30 +122,30 @@ const AdminVerifyQR = () => {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-500/20 border border-red-500 rounded-xl p-6 mb-6 flex items-start gap-4">
-            <XCircle className="text-red-400 flex-shrink-0" size={24} />
+          <div className="bg-primary-500/20 border border-primary-500/50 rounded-xl p-6 mb-6 flex items-start gap-4">
+            <XCircle className="text-primary-300 flex-shrink-0" size={24} />
             <div>
-              <h3 className="text-red-400 font-semibold mb-1">Error de Verificación</h3>
-              <p className="text-red-200">{error}</p>
+              <h3 className="text-primary-300 font-semibold mb-1">Error de Verificación</h3>
+              <p className="text-primary-200">{error}</p>
             </div>
           </div>
         )}
 
         {/* Resultado exitoso */}
         {result?.success && result.booking && (
-          <div className="bg-green-500/20 border border-green-500 rounded-xl p-6">
+          <div className="bg-primary-500/20 border border-primary-500/50 rounded-xl p-6">
             <div className="flex items-start gap-4 mb-6">
-              <CheckCircle className="text-green-400 flex-shrink-0" size={32} />
+              <CheckCircle className="text-primary-300 flex-shrink-0" size={32} />
               <div>
-                <h3 className="text-green-400 font-semibold text-xl mb-1">
+                <h3 className="text-primary-300 font-semibold text-xl mb-1">
                   ¡Check-in Exitoso!
                 </h3>
-                <p className="text-green-200">{result.message}</p>
+                <p className="text-primary-200">{result.message}</p>
               </div>
             </div>
 
             {/* Detalles de la reserva */}
-            <div className="bg-gray-900/50 rounded-lg p-6 space-y-4">
+            <div className="bg-[#0d0d0d] rounded-lg p-6 space-y-4 border border-[#1a1a1a]">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-400 text-sm mb-1">Código de Reserva</p>
@@ -155,7 +155,7 @@ const AdminVerifyQR = () => {
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm mb-1">Estado</p>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary-500/20 text-primary-300 border border-primary-500/30">
                     {result.booking.estado}
                   </span>
                 </div>
@@ -188,7 +188,7 @@ const AdminVerifyQR = () => {
               {result.booking.numero_socio && (
                 <div>
                   <p className="text-gray-400 text-sm mb-1">Número de Socio</p>
-                  <p className="text-primary-400 font-semibold">
+                  <p className="text-primary-300 font-semibold">
                     {result.booking.numero_socio}
                   </p>
                 </div>
@@ -209,23 +209,23 @@ const AdminVerifyQR = () => {
 
       {/* Instrucciones */}
       <div className="max-w-2xl mx-auto mt-8">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
           <h3 className="text-white font-semibold mb-4">💡 Instrucciones</h3>
           <ul className="space-y-2 text-gray-400 text-sm">
             <li className="flex items-start gap-2">
-              <span className="text-primary-400 font-bold">1.</span>
+              <span className="text-primary-300 font-bold">1.</span>
               <span>Pide al usuario que muestre su código QR o su código de reserva</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-primary-400 font-bold">2.</span>
+              <span className="text-primary-300 font-bold">2.</span>
               <span>Escanea el QR con un lector o ingresa el código manualmente</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-primary-400 font-bold">3.</span>
+              <span className="text-primary-300 font-bold">3.</span>
               <span>El sistema validará la reserva y marcará la asistencia automáticamente</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-primary-400 font-bold">4.</span>
+              <span className="text-primary-300 font-bold">4.</span>
               <span>Verifica el número de entradas antes de permitir el acceso</span>
             </li>
           </ul>
@@ -234,15 +234,15 @@ const AdminVerifyQR = () => {
 
       {/* Estadísticas rápidas */}
       <div className="max-w-2xl mx-auto mt-6 grid grid-cols-3 gap-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 text-center">
           <p className="text-gray-400 text-sm mb-1">Check-ins hoy</p>
           <p className="text-white text-2xl font-bold">-</p>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 text-center">
           <p className="text-gray-400 text-sm mb-1">Reservas confirmadas</p>
           <p className="text-white text-2xl font-bold">-</p>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 text-center">
           <p className="text-gray-400 text-sm mb-1">Entradas totales</p>
           <p className="text-white text-2xl font-bold">-</p>
         </div>

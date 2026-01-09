@@ -1,35 +1,27 @@
-import { Calendar, Users, Ticket, CheckCircle } from 'lucide-react';
+import { Calendar, Users, Ticket, CheckCircle } from "lucide-react";
 
 const AdminStats = ({ stats }) => {
   const statsData = [
     {
-      label: 'Total Eventos',
+      label: "Total Eventos",
       value: stats?.totalEventos || 0,
       icon: Calendar,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/20'
     },
     {
-      label: 'Total Usuarios',
+      label: "Total Usuarios",
       value: stats?.totalUsuarios || 0,
       icon: Users,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/20'
     },
     {
-      label: 'Total Reservas',
+      label: "Total Reservas",
       value: stats?.totalReservas || 0,
       icon: Ticket,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/20'
     },
     {
-      label: 'Socios Activos',
+      label: "Socios Activos",
       value: stats?.sociosActivos || 0,
       icon: CheckCircle,
-      color: 'text-primary-400',
-      bgColor: 'bg-primary-500/20'
-    }
+    },
   ];
 
   return (
@@ -39,15 +31,15 @@ const AdminStats = ({ stats }) => {
         return (
           <div
             key={index}
-            className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-primary-500/50 transition-all"
+            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`${stat.bgColor} p-3 rounded-lg`}>
-                <Icon className={stat.color} size={24} />
+              <div className="bg-primary-500/20 p-3 rounded-lg">
+                <Icon className="text-primary-300" size={24} />
               </div>
             </div>
             <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-            <p className="text-3xl font-bold text-white">{stat.value}</p>
+            <p className="text-3xl font-bold text-primary-300">{stat.value}</p>
           </div>
         );
       })}

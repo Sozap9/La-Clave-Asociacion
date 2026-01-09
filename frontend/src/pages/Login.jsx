@@ -39,11 +39,11 @@ const Login = () => {
       console.log('📦 RESPUESTA COMPLETA:', data);
       console.log('✅ Success:', data.success);
       console.log('👤 Usuario:', data.data?.user);
-      console.log('🔑 Token recibido:', data.data?.accessToken);  // ✅ CAMBIADO
-      console.log('🔑 Tipo de token:', typeof data.data?.accessToken);  // ✅ CAMBIADO
+      console.log('🔑 Token recibido:', data.data?.accessToken);
+      console.log('🔑 Tipo de token:', typeof data.data?.accessToken);
 
       if (data.success) {
-        if (!data.data?.accessToken) {  // ✅ CAMBIADO
+        if (!data.data?.accessToken) {
           console.error('❌ ERROR: NO HAY TOKEN EN LA RESPUESTA');
           setError('Error: No se recibió token');
           return;
@@ -51,9 +51,9 @@ const Login = () => {
 
         console.log('✅ Token existe, llamando a login()...');
         console.log('✅ Pasando usuario:', data.data.user);
-        console.log('✅ Pasando token:', data.data.accessToken);  // ✅ CAMBIADO
+        console.log('✅ Pasando token:', data.data.accessToken);
         
-        login(data.data.user, data.data.accessToken);  // ✅ CAMBIADO
+        login(data.data.user, data.data.accessToken);
         
         console.log('💾 Verificando localStorage...');
         const savedToken = localStorage.getItem('token');
@@ -84,11 +84,11 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center py-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-gray-950 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-black z-10" />
         <img
           src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&q=80"
           alt="Background"
-          className="w-full h-full object-cover opacity-30"
+          className="w-full h-full object-cover opacity-20"
         />
       </div>
 

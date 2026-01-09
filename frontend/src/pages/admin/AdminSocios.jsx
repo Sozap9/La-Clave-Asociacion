@@ -108,11 +108,11 @@ const AdminSocios = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Gestión de Socios</h1>
-        <p className="text-gray-400">
+        <h1 className="text-gradient mb-2 text-4xl">Gestión de Socios</h1>
+        <p className="text-gray-400 text-lg">
           {Array.isArray(socios) ? `${socios.length} socio${socios.length !== 1 ? 's' : ''} registrado${socios.length !== 1 ? 's' : ''}` : 'Administra socios y aprobaciones'}
         </p>
       </div>
@@ -131,7 +131,7 @@ const AdminSocios = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-all ${
             filter === 'all'
               ? 'bg-primary-600 text-white'
-              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
           }`}
         >
           Todos ({Array.isArray(socios) ? socios.length : 0})
@@ -141,7 +141,7 @@ const AdminSocios = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-all ${
             filter === 'activo'
               ? 'bg-primary-600 text-white'
-              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
           }`}
         >
           Activos ({Array.isArray(socios) ? socios.filter(s => s.estado === 'activo').length : 0})
@@ -151,7 +151,7 @@ const AdminSocios = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-all ${
             filter === 'pendiente'
               ? 'bg-primary-600 text-white'
-              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
           }`}
         >
           Pendientes ({Array.isArray(socios) ? socios.filter(s => s.estado === 'pendiente').length : 0})
@@ -161,7 +161,7 @@ const AdminSocios = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-all ${
             filter === 'moroso'
               ? 'bg-primary-600 text-white'
-              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
           }`}
         >
           Morosos ({Array.isArray(socios) ? socios.filter(s => s.estado === 'moroso').length : 0})
@@ -171,7 +171,7 @@ const AdminSocios = () => {
           className={`px-4 py-2 rounded-lg font-medium transition-all ${
             filter === 'cancelado'
               ? 'bg-primary-600 text-white'
-              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
           }`}
         >
           Cancelados ({Array.isArray(socios) ? socios.filter(s => s.estado === 'cancelado').length : 0})
@@ -180,7 +180,7 @@ const AdminSocios = () => {
 
       {/* Lista de socios */}
       {filteredSocios.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Users className="mx-auto mb-4 text-gray-600" size={48} />
           <p className="text-gray-400 text-lg">No hay socios en esta categoría</p>
         </div>
@@ -189,7 +189,7 @@ const AdminSocios = () => {
           {filteredSocios.map((socio) => (
             <div
               key={socio.id}
-              className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-primary-500/50 transition-all"
+              className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
             >
               <div className="flex items-start justify-between">
                 {/* Info del socio */}
@@ -279,7 +279,7 @@ const AdminSocios = () => {
                         <select
                           onChange={(e) => handleChangeRole(socio.user_id, e.target.value)}
                           value={socio.role}
-                          className="bg-gray-800 text-white border border-gray-700 rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-primary-500 transition-colors"
+                          className="bg-[#262626] text-white border border-gray-700 rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-primary-500 transition-colors"
                         >
                           <option value="basico">Básico</option>
                           <option value="socio">Socio</option>

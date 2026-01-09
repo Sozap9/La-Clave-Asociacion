@@ -90,21 +90,21 @@ const MobileMenu = ({ isOpen, onClose }) => {
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-60 z-40 animate-fade-in"
+        className="fixed inset-0 bg-black bg-opacity-70 z-40 animate-fade-in"
         onClick={onClose}
       />
 
       {/* Menú lateral */}
-      <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-gray-900 shadow-2xl z-50 transform transition-transform duration-300">
+      <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-[#0a0a0a] shadow-2xl z-50 transform transition-transform duration-300">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-[#262626]">
           <h2 className="text-xl font-display text-white">
             {isAuthenticated ? `Hola, ${user?.nombre}` : 'Menú'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg"
+            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-[#1a1a1a] rounded-lg"
             aria-label="Cerrar menú"
           >
             <X size={24} />
@@ -121,7 +121,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 <button
                   key={item.href}
                   onClick={() => handleNavigation(item.href)}
-                  className="w-full text-left text-gray-300 hover:text-white hover:bg-gray-800 text-lg transition-all py-3 px-4 rounded-lg flex items-center gap-3"
+                  className="w-full text-left text-gray-300 hover:text-white hover:bg-[#1a1a1a] text-lg transition-all py-3 px-4 rounded-lg flex items-center gap-3"
                 >
                   {ItemIcon && <ItemIcon size={20} />}
                   {item.label}
@@ -131,11 +131,11 @@ const MobileMenu = ({ isOpen, onClose }) => {
           </nav>
 
           {/* Footer del menú */}
-          <div className="p-6 border-t border-gray-800 space-y-4 bg-gray-950">
+          <div className="p-6 border-t border-[#262626] space-y-4 bg-black">
             {isAuthenticated ? (
               <>
                 {/* Info del usuario */}
-                <div className="flex items-center gap-3 mb-4 p-3 bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-3 mb-4 p-3 bg-[#1a1a1a] rounded-lg">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center shadow-glow">
                     <span className="text-white font-bold text-lg">
                       {user?.nombre?.charAt(0).toUpperCase()}
@@ -160,7 +160,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                     onClick={() => handleNavigation(isAdmin ? NAV_ROUTES.ADMIN : NAV_ROUTES.DASHBOARD)}
                     className="w-full"
                   >
-                    {isAdmin ? '⚡ Panel Admin' : '👤 Mi Panel'}
+                    {isAdmin ? 'Panel Admin' : 'Mi Panel'}
                   </Button>
                 )}
 

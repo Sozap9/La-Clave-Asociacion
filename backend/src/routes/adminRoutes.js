@@ -1,10 +1,10 @@
-import express from 'express';
+import express from "express";
 import {
   // Dashboard y menú
   getAdminMenu,
   getDashboardStats,
   getGeneralStats,
-  
+
   // Usuarios
   listUsers,
   getUserDetails,
@@ -12,7 +12,7 @@ import {
   updateUserRole,
   approveUser,
   rejectUser,
-  
+
   // Socios
   listSocios,
   getSocioDetails,
@@ -20,35 +20,35 @@ import {
   updateSocio,
   deleteSocio,
   listMorosos,
-  
+
   // Eventos
   listAllEvents,
   getEventDetailsAdmin,
   getEventsStats,
-  
+
   // Reservas
   listAllBookings,
   getBookingDetails,
   cancelBookingAdmin,
   getBookingsStats,
-  
+
   // Pagos
   listPayments,
   getMonthlyRevenue,
   getPaymentsStats,
-  
+
   // Galería
   getGalleryStats,
-  
+
   // Actividad
   getRecentActivity,
-  
+
   // Exportaciones
   exportSocios,
   exportReservas,
   exportUsuarios,
-  exportEventos
-} from '../controllers/adminController.js';
+  exportEventos,
+} from "../controllers/adminController.js";
 
 // Controllers de otros módulos (para rutas de gestión)
 import {
@@ -56,21 +56,21 @@ import {
   updateEvent,
   deleteEvent,
   cancelEvent,
-  publishEvent
-} from '../controllers/eventController.js';
+  publishEvent,
+} from "../controllers/eventController.js";
 
 import {
   getEventBookings,
-  verifyQRAndCheckIn
-} from '../controllers/bookingController.js';
+  verifyQRAndCheckIn,
+} from "../controllers/bookingController.js";
 
-import { authenticate } from '../middleware/authMiddleware.js';
-import { isAdmin } from '../middleware/roleMiddleware.js';
-import { adminStrictLimiter } from '../middleware/rateLimiter.js';
-import { handleValidationErrors } from '../middleware/validationMiddleware.js';
+import { authenticate } from "../middleware/authMiddleware.js";
+import { isAdmin } from "../middleware/roleMiddleware.js";
+import { adminStrictLimiter } from "../middleware/rateLimiter.js";
+import { handleValidationErrors } from "../middleware/validationMiddleware.js";
 
 // Validators
-import { verifyQRValidator } from '../validators/bookingValidator.js';
+import { verifyQRValidator } from "../validators/bookingValidator.js";
 import {
   createSocioValidator,
   updateSocioValidator,
@@ -80,9 +80,9 @@ import {
   statusFilterValidator,
   dateRangeValidator,
   idParamValidator,
-  yearQueryValidator
-} from '../validators/adminValidator.js';
-import { param } from 'express-validator';
+  yearQueryValidator,
+} from "../validators/adminValidator.js";
+import { param } from "express-validator";
 
 const router = express.Router();
 
@@ -94,6 +94,18 @@ router.use(authenticate);
 router.use(isAdmin);
 
 /**
+ * RUTAS: DASHBOARD Y MENÚ
+ */
+// Obtener estructura del menú del panel admin
+router.get("/menu", getAdminMenu);
+
+// Estadísticas completas del dashboard
+router.get("/dashboard/stats", getDashboardStats);
+
+// Estadísticas generales resumidas
+router.get("/stats", getGeneralStats);
+
+/**
  * MÓDULO: GESTIÓN DE USUARIOS
  */
 
@@ -101,29 +113,29 @@ router.use(isAdmin);
 // Query params: search, role, activo, email_verified, page, limit
 
 router.get(
-  '/users',
-  paginationValidator,       
-  searchQueryValidator,        
-  handleValidationErrors,      
+  "/users",
+  paginationValidator,
+  searchQueryValidator,
+  handleValidationErrors,
   listUsers
 );
 
 // Obtener detalles de un usuario específico
 // Incluye: datos de usuario, info de socio (si aplica), estadísticas de reservas
 router.get(
-  '/users/:id',
-  idParamValidator,            
-  handleValidationErrors,      
+  "/users/:id",
+  idParamValidator,
+  handleValidationErrors,
   getUserDetails
 );
 
 // Desactivar usuario básico (OPERACIÓN CRÍTICA - 20 ops/hora)
 // Solo permite desactivar usuarios con role='basico'
 router.delete(
-  '/users/:id',
-  adminStrictLimiter,          
-  idParamValidator,            
-  handleValidationErrors,      
+  "/users/:id",
+  adminStrictLimiter,
+  idParamValidator,
+  handleValidationErrors,
   deleteUser
 );
 
@@ -134,25 +146,25 @@ router.delete(
 // Cambiar rol de un usuario
 // Body: { role: 'basico' | 'socio' | 'admin' }
 router.patch(
-  '/users/:id/role',
-  idParamValidator,            
-  handleValidationErrors,      
+  "/users/:id/role",
+  idParamValidator,
+  handleValidationErrors,
   updateUserRole
 );
 
 // Aprobar usuario como socio
 router.patch(
-  '/users/:id/approve',
-  idParamValidator,            
-  handleValidationErrors,      
+  "/users/:id/approve",
+  idParamValidator,
+  handleValidationErrors,
   approveUser
 );
 
 // Rechazar solicitud de usuario
 router.patch(
-  '/users/:id/reject',
-  idParamValidator,            
-  handleValidationErrors,      
+  "/users/:id/reject",
+  idParamValidator,
+  handleValidationErrors,
   rejectUser
 );
 
@@ -162,47 +174,47 @@ router.patch(
 
 // Listar socios con filtros
 router.get(
-  '/socios',
-  paginationValidator,         
-  searchQueryValidator,         
-  statusFilterValidator,        
-  handleValidationErrors,       
+  "/socios",
+  paginationValidator,
+  searchQueryValidator,
+  statusFilterValidator,
+  handleValidationErrors,
   listSocios
 );
 
 // Obtener socios morosos
-router.get('/socios/morosos', listMorosos);
+router.get("/socios/morosos", listMorosos);
 
 // Obtener detalles de un socio específico
 router.get(
-  '/socios/:id',
-  idParamValidator,            
-  handleValidationErrors,      
+  "/socios/:id",
+  idParamValidator,
+  handleValidationErrors,
   getSocioDetails
 );
 
 // Crear socio manualmente (sin Stripe)
 router.post(
-  '/socios',
-  createSocioValidator,       
-  handleValidationErrors,      
+  "/socios",
+  createSocioValidator,
+  handleValidationErrors,
   createSocio
 );
 
 // Actualizar datos de un socio
 router.put(
-  '/socios/:id',
-  updateSocioValidator,        
-  handleValidationErrors,      
+  "/socios/:id",
+  updateSocioValidator,
+  handleValidationErrors,
   updateSocio
 );
 
 // Dar de baja a un socio (OPERACIÓN CRÍTICA - 20 ops/hora)
 router.delete(
-  '/socios/:id',
-  adminStrictLimiter,          
-  deleteSocioValidator,        
-  handleValidationErrors,      
+  "/socios/:id",
+  adminStrictLimiter,
+  deleteSocioValidator,
+  handleValidationErrors,
   deleteSocio
 );
 
@@ -214,40 +226,40 @@ router.delete(
 
 // Listar TODOS los eventos (admin ve todos los estados)
 router.get(
-  '/events',
-  paginationValidator,         
-  searchQueryValidator,         
-  statusFilterValidator,       
-  dateRangeValidator,           
-  handleValidationErrors,       
+  "/events",
+  paginationValidator,
+  searchQueryValidator,
+  statusFilterValidator,
+  dateRangeValidator,
+  handleValidationErrors,
   listAllEvents
 );
 
 // Obtener estadísticas de eventos
-router.get('/events/stats', getEventsStats);
+router.get("/events/stats", getEventsStats);
 
 // Obtener detalles completos de un evento
 router.get(
-  '/events/:id',
-  idParamValidator,            
-  handleValidationErrors,      
+  "/events/:id",
+  idParamValidator,
+  handleValidationErrors,
   getEventDetailsAdmin
 );
 
 // Crear nuevo evento
-router.post('/events', createEvent);
+router.post("/events", createEvent);
 
 // Actualizar evento existente
-router.put('/events/:id', updateEvent);
+router.put("/events/:id", updateEvent);
 
 // Eliminar evento (OPERACIÓN CRÍTICA - 20 ops/hora)
-router.delete('/events/:id', adminStrictLimiter, deleteEvent);
+router.delete("/events/:id", adminStrictLimiter, deleteEvent);
 
 // Cancelar evento (OPERACIÓN CRÍTICA - 20 ops/hora)
-router.patch('/events/:id/cancel', adminStrictLimiter, cancelEvent);
+router.patch("/events/:id/cancel", adminStrictLimiter, cancelEvent);
 
 // Publicar evento
-router.patch('/events/:id/publish', publishEvent);
+router.patch("/events/:id/publish", publishEvent);
 
 /**
  * ========================================
@@ -257,46 +269,47 @@ router.patch('/events/:id/publish', publishEvent);
 
 // Listar TODAS las reservas del sistema
 router.get(
-  '/bookings',
-  paginationValidator,         
-  searchQueryValidator,         
-  statusFilterValidator,        
-  dateRangeValidator,           
-  handleValidationErrors,       
+  "/bookings",
+  paginationValidator,
+  searchQueryValidator,
+  statusFilterValidator,
+  dateRangeValidator,
+  handleValidationErrors,
   listAllBookings
 );
 
 // Obtener estadísticas generales de reservas
-router.get('/bookings/stats', getBookingsStats);
+router.get("/bookings/stats", getBookingsStats);
 
 // Obtener reservas de un evento específico
 router.get(
-  '/bookings/event/:eventId',
-  param('eventId')
-    .isInt({ min: 1 }).withMessage('El ID del evento debe ser un número entero positivo')
+  "/bookings/event/:eventId",
+  param("eventId")
+    .isInt({ min: 1 })
+    .withMessage("El ID del evento debe ser un número entero positivo")
     .toInt(),
-  statusFilterValidator,        
-  handleValidationErrors,       
+  statusFilterValidator,
+  handleValidationErrors,
   getEventBookings
 );
 
 // Obtener detalles completos de una reserva
 router.get(
-  '/bookings/:id',
-  idParamValidator,            
-  handleValidationErrors,      
+  "/bookings/:id",
+  idParamValidator,
+  handleValidationErrors,
   getBookingDetails
 );
 
 // Cancelar reserva (OPERACIÓN CRÍTICA - 20 ops/hora)
-router.patch('/bookings/:id/cancel', adminStrictLimiter, cancelBookingAdmin);
+router.patch("/bookings/:id/cancel", adminStrictLimiter, cancelBookingAdmin);
 
 // Verificar QR y registrar asistencia
 router.post(
-  '/bookings/verify-qr',
-  verifyQRValidator,          
-  handleValidationErrors,     
-  verifyQRAndCheckIn          
+  "/bookings/verify-qr",
+  verifyQRValidator,
+  handleValidationErrors,
+  verifyQRAndCheckIn
 );
 
 /**
@@ -308,7 +321,7 @@ router.post(
 // Obtener estadísticas de galería
 // Incluye: total folders, imágenes, espacio usado, visibles, destacados
 // GET /api/admin/gallery/stats
-router.get('/gallery/stats', getGalleryStats);
+router.get("/gallery/stats", getGalleryStats);
 
 // NOTA: Las rutas CRUD de galería (crear folders, subir imágenes, etc.)
 // están en /api/gallery (galleryRoutes.js) con middleware de admin
@@ -341,25 +354,25 @@ router.get('/gallery/stats', getGalleryStats);
 
 // Listar todos los pagos del sistema
 router.get(
-  '/payments',
-  paginationValidator,         
-  searchQueryValidator,         
-  statusFilterValidator,        
-  dateRangeValidator,           
-  handleValidationErrors,       
+  "/payments",
+  paginationValidator,
+  searchQueryValidator,
+  statusFilterValidator,
+  dateRangeValidator,
+  handleValidationErrors,
   listPayments
 );
 
 // Obtener ingresos mensuales por año
 router.get(
-  '/payments/monthly',
-  yearQueryValidator,          
-  handleValidationErrors,     
+  "/payments/monthly",
+  yearQueryValidator,
+  handleValidationErrors,
   getMonthlyRevenue
 );
 
 // Obtener estadísticas de pagos
-router.get('/payments/stats', getPaymentsStats);
+router.get("/payments/stats", getPaymentsStats);
 
 /**
  * ========================================
@@ -368,7 +381,7 @@ router.get('/payments/stats', getPaymentsStats);
  */
 
 // Obtener actividad reciente del sistema
-router.get('/activity', getRecentActivity);
+router.get("/activity", getRecentActivity);
 
 /**
  * ========================================
@@ -378,19 +391,18 @@ router.get('/activity', getRecentActivity);
 
 // Exportar lista completa de socios en formato PDF
 // GET /api/admin/export/socios
-router.get('/export/socios', exportSocios);
+router.get("/export/socios", exportSocios);
 
 // Exportar lista completa de reservas en formato PDF
 // GET /api/admin/export/reservas
-router.get('/export/reservas', exportReservas);
+router.get("/export/reservas", exportReservas);
 
 // Exportar lista completa de usuarios en formato PDF
 // GET /api/admin/export/usuarios
-router.get('/export/usuarios', exportUsuarios);
+router.get("/export/usuarios", exportUsuarios);
 
 // Exportar lista completa de eventos en formato PDF
 // GET /api/admin/export/eventos
-router.get('/export/eventos', exportEventos);
-
+router.get("/export/eventos", exportEventos);
 
 export default router;

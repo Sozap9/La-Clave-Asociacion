@@ -8,14 +8,14 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-30 bg-gray-950 border-b border-gray-800 backdrop-blur-sm bg-opacity-95">
+      <nav className="sticky top-0 z-30 bg-black border-b border-[#262626] backdrop-blur-sm bg-opacity-95">
         <div className="container-custom">
           <div className="flex items-center justify-between h-20">
             <Logo />
 
             <button
               onClick={() => setMenuOpen(true)}
-              className="text-gray-300 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg"
+              className="text-gray-300 hover:text-white transition-colors p-2 hover:bg-[#1a1a1a] rounded-lg"
               aria-label="Abrir menú"
             >
               <Menu size={28} />

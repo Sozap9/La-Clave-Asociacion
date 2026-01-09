@@ -58,11 +58,11 @@ const AdminExports = () => {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Exportaciones CSV</h1>
-        <p className="text-gray-400">Descarga datos en formato CSV compatible con Excel y Google Sheets</p>
+        <h1 className="text-gradient mb-2 text-4xl">Exportaciones CSV</h1>
+        <p className="text-gray-400 text-lg">Descarga datos en formato CSV compatible con Excel y Google Sheets</p>
       </div>
 
       {/* Alertas */}
@@ -70,7 +70,7 @@ const AdminExports = () => {
       {error && <Alert type="error" message={error} onClose={() => setError('')} persistent />}
 
       {/* Info */}
-      <div className="bg-blue-500/20 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg mb-8 flex items-start gap-3">
+      <div className="bg-primary-500/20 border border-primary-500/50 text-primary-200 px-4 py-3 rounded-lg mb-8 flex items-start gap-3">
         <Info className="w-5 h-5 mt-0.5 flex-shrink-0" />
         <div>
           <p className="font-semibold mb-1">Información sobre las exportaciones</p>
@@ -89,7 +89,6 @@ const AdminExports = () => {
           title="Exportar Socios CSV"
           description="Lista completa de socios con datos personales, cuotas y estado"
           icon={UserCheck}
-          iconColor="text-purple-400"
           fields={['Número socio', 'Nombre', 'Email', 'Teléfono', 'Cuota mensual', 'Estado', 'Fecha alta']}
           loading={loading === 'socios'}
           onExport={() => handleExport('socios')}
@@ -100,7 +99,6 @@ const AdminExports = () => {
           title="Exportar Usuarios CSV"
           description="Todos los usuarios registrados (básicos, socios y admins)"
           icon={Users}
-          iconColor="text-blue-400"
           fields={['ID', 'Username', 'Nombre', 'Email', 'Rol', 'Estado', 'Fecha registro']}
           loading={loading === 'usuarios'}
           onExport={() => handleExport('usuarios')}
@@ -111,17 +109,16 @@ const AdminExports = () => {
           title="Exportar Eventos CSV"
           description="Lista de eventos con fechas, aforo y estadísticas"
           icon={Calendar}
-          iconColor="text-green-400"
           fields={['Título', 'Fecha evento', 'Ubicación', 'Aforo máximo', 'Entradas vendidas', 'Estado', 'Fecha alta']}
           loading={loading === 'eventos'}
           onExport={() => handleExport('eventos')}
         />
 
         {/* Exportar Reservas (con filtros) */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-primary-500/50 transition-colors">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
           <div className="flex items-start gap-4 mb-4">
-            <div className="bg-yellow-500/20 p-3 rounded-lg">
-              <Ticket className="w-6 h-6 text-yellow-400" />
+            <div className="bg-primary-500/20 p-3 rounded-lg">
+              <Ticket className="w-6 h-6 text-primary-300" />
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-white mb-1">Exportar Reservas CSV</h3>
@@ -132,7 +129,7 @@ const AdminExports = () => {
           </div>
 
           {/* Filtros de fecha */}
-          <div className="mb-4 space-y-3 bg-gray-800/50 p-4 rounded-lg">
+          <div className="mb-4 space-y-3 bg-[#0d0d0d] p-4 rounded-lg border border-[#1a1a1a]">
             <p className="text-white text-sm font-medium">Filtrar por fecha de reserva (opcional):</p>
             
             <div className="grid grid-cols-2 gap-3">
@@ -142,7 +139,7 @@ const AdminExports = () => {
                   type="date"
                   value={reservasFilters.fecha_desde}
                   onChange={(e) => setReservasFilters({ ...reservasFilters, fecha_desde: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+                  className="w-full bg-[#262626] border border-[#333333] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               
@@ -152,14 +149,14 @@ const AdminExports = () => {
                   type="date"
                   value={reservasFilters.fecha_hasta}
                   onChange={(e) => setReservasFilters({ ...reservasFilters, fecha_hasta: e.target.value })}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+                  className="w-full bg-[#262626] border border-[#333333] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
 
             <button
               onClick={() => setReservasFilters({ fecha_desde: '', fecha_hasta: '', event_id: '' })}
-              className="text-primary-400 text-sm hover:text-primary-300 transition-colors"
+              className="text-primary-300 text-sm hover:text-primary-400 transition-colors"
             >
               Limpiar filtros
             </button>
@@ -170,7 +167,7 @@ const AdminExports = () => {
             <p className="text-gray-400 text-sm font-medium mb-2">Campos incluidos:</p>
             <div className="flex flex-wrap gap-2">
               {['Código reserva', 'Nombre socio', 'Email', 'Evento', 'Fecha evento', 'Entradas', 'Estado', 'Fecha reserva'].map(field => (
-                <span key={field} className="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs">
+                <span key={field} className="bg-[#262626] text-gray-300 px-2 py-1 rounded text-xs border border-[#333333]">
                   {field}
                 </span>
               ))}
@@ -199,19 +196,19 @@ const AdminExports = () => {
       </div>
 
       {/* Instrucciones de uso */}
-      <div className="mt-8 bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="mt-8 bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-4">Cómo usar los archivos CSV</h3>
         <ol className="space-y-2 text-gray-400">
           <li className="flex items-start gap-2">
-            <span className="text-primary-400 font-bold">1.</span>
+            <span className="text-primary-300 font-bold">1.</span>
             <span>Haz clic en "Descargar CSV" en la exportación que necesites</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-primary-400 font-bold">2.</span>
+            <span className="text-primary-300 font-bold">2.</span>
             <span>El archivo se descargará automáticamente con la fecha actual en el nombre</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-primary-400 font-bold">3.</span>
+            <span className="text-primary-300 font-bold">3.</span>
             <span>Abre el archivo con Excel, Google Sheets o tu aplicación preferida</span>
           </li>
         </ol>
@@ -221,12 +218,12 @@ const AdminExports = () => {
 };
 
 // Componente reutilizable para cards de exportación
-const ExportCard = ({ title, description, icon: Icon, iconColor, fields, loading, onExport }) => {
+const ExportCard = ({ title, description, icon: Icon, fields, loading, onExport }) => {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-primary-500/50 transition-colors">
+    <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
       <div className="flex items-start gap-4 mb-4">
-        <div className="bg-gray-800 p-3 rounded-lg">
-          <Icon className={`w-6 h-6 ${iconColor}`} />
+        <div className="bg-primary-500/20 p-3 rounded-lg">
+          <Icon className="w-6 h-6 text-primary-300" />
         </div>
         <div className="flex-1">
           <h3 className="text-xl font-semibold text-white mb-1">{title}</h3>
@@ -238,7 +235,7 @@ const ExportCard = ({ title, description, icon: Icon, iconColor, fields, loading
         <p className="text-gray-400 text-sm font-medium mb-2">Campos incluidos:</p>
         <div className="flex flex-wrap gap-2">
           {fields.map(field => (
-            <span key={field} className="bg-gray-800 text-gray-300 px-2 py-1 rounded text-xs">
+            <span key={field} className="bg-[#262626] text-gray-300 px-2 py-1 rounded text-xs border border-[#333333]">
               {field}
             </span>
           ))}

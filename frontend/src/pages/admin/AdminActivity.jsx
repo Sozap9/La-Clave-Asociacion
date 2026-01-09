@@ -80,19 +80,19 @@ const AdminActivity = () => {
   const getAccionColor = (accion) => {
     switch (accion) {
       case 'crear':
-        return 'text-green-400';
+        return 'text-primary-300';
       case 'editar':
       case 'actualizar':
-        return 'text-blue-400';
+        return 'text-primary-300';
       case 'eliminar':
       case 'cancelar':
-        return 'text-red-400';
+        return 'text-primary-300';
       case 'aprobar':
-        return 'text-green-400';
+        return 'text-primary-300';
       case 'rechazar':
-        return 'text-red-400';
+        return 'text-primary-300';
       case 'login':
-        return 'text-primary-400';
+        return 'text-primary-300';
       case 'logout':
         return 'text-gray-400';
       default:
@@ -130,13 +130,13 @@ const AdminActivity = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Actividad Reciente</h1>
-            <p className="text-gray-400">
+            <h1 className="text-gradient mb-2 text-4xl">Actividad Reciente</h1>
+            <p className="text-gray-400 text-lg">
               {Array.isArray(activities) ? `${activities.length} evento${activities.length !== 1 ? 's' : ''} registrado${activities.length !== 1 ? 's' : ''}` : 'Monitorea acciones del sistema'}
             </p>
           </div>
@@ -170,7 +170,7 @@ const AdminActivity = () => {
             <select
               value={filterAccion}
               onChange={(e) => setFilterAccion(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white focus:border-primary-500 focus:outline-none"
+              className="w-full bg-[#1a1a1a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:border-primary-500 focus:outline-none"
             >
               <option value="all">Todas las acciones</option>
               {uniqueAcciones.map(accion => (
@@ -190,7 +190,7 @@ const AdminActivity = () => {
             <select
               value={filterEntidad}
               onChange={(e) => setFilterEntidad(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-800 rounded-lg px-4 py-2 text-white focus:border-primary-500 focus:outline-none"
+              className="w-full bg-[#1a1a1a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:border-primary-500 focus:outline-none"
             >
               <option value="all">Todas las entidades</option>
               {uniqueEntidades.map(entidad => (
@@ -208,7 +208,7 @@ const AdminActivity = () => {
               setFilterAccion('all');
               setFilterEntidad('all');
             }}
-            className="text-primary-400 hover:text-primary-300 text-sm"
+            className="text-primary-300 hover:text-primary-300 text-sm"
           >
             Limpiar filtros
           </button>
@@ -217,7 +217,7 @@ const AdminActivity = () => {
 
       {/* Timeline de actividad */}
       {filteredActivities.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Activity className="mx-auto mb-4 text-gray-600" size={48} />
           <p className="text-gray-400 text-lg">
             {filterAccion !== 'all' || filterEntidad !== 'all' 
@@ -228,7 +228,7 @@ const AdminActivity = () => {
       ) : (
         <div className="relative">
           {/* Línea vertical del timeline */}
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-800" />
+          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#262626]" />
 
           <div className="space-y-6">
             {filteredActivities.map((activity, index) => (
@@ -239,7 +239,7 @@ const AdminActivity = () => {
                 </div>
 
                 {/* Card de actividad */}
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-primary-500/50 transition-all">
+                <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -267,7 +267,7 @@ const AdminActivity = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-800">
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#262626]">
                     {activity.usuario_nombre && (
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-gray-400" />

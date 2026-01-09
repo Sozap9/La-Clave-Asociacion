@@ -21,7 +21,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-gray-900 border-t border-gray-800 mt-auto">
+    <footer className="bg-[#0a0a0a] border-t border-[#262626] mt-auto">
       <div className="container-custom py-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
@@ -40,14 +40,14 @@ const Footer = () => {
             {socialIcons.map((social) => {
               const Icon = social.icon;
               return (
-                <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" className={`text-gray-400 ${social.color} transition-colors p-2 hover:bg-gray-800 rounded-lg`} aria-label={social.label}>
+                <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" className={`text-gray-400 ${social.color} transition-colors p-2 hover:bg-[#1a1a1a] rounded-lg`} aria-label={social.label}>
                   <Icon size={20} />
                 </a>
               );
             })}
           </div>
         </div>
-        <div className="mt-6 pt-6 border-t border-gray-800">
+        <div className="mt-6 pt-6 border-t border-[#262626]">
           <p className="text-gray-500 text-sm text-center">
             © {currentYear} {APP_NAME} todos los derechos reservados.
           </p>

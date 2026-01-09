@@ -34,10 +34,10 @@ const AdminStatsReservas = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Estadísticas de Reservas</h1>
-        <p className="text-gray-400">Análisis de reservas y asistencias</p>
+        <h1 className="text-gradient mb-2 text-4xl">Estadísticas de Reservas</h1>
+        <p className="text-gray-400 text-lg">Análisis de reservas y asistencias</p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
@@ -51,13 +51,13 @@ const AdminStatsReservas = () => {
             <StatCard title="Asistencias" value={stats.general?.asistidas || 0} icon={Ticket} color="purple" />
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
             <h3 className="text-xl font-semibold text-white mb-4">Top Eventos con Más Reservas</h3>
             <div className="space-y-3">
               {stats.top_eventos?.map((evento, index) => (
-                <div key={evento.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                <div key={evento.id} className="flex items-center justify-between p-3 bg-[#262626]/50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl font-bold text-primary-400">#{index + 1}</span>
+                    <span className="text-xl font-bold text-primary-300">#{index + 1}</span>
                     <div>
                       <h4 className="text-white font-medium">{evento.titulo}</h4>
                       <p className="text-gray-400 text-sm">
@@ -80,11 +80,11 @@ const AdminStatsReservas = () => {
 };
 
 const StatCard = ({ title, value, icon: Icon, color = 'blue' }) => (
-  <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+  <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
     <div className="flex items-start justify-between mb-4">
       <div>
         <p className="text-gray-400 text-sm mb-1">{title}</p>
-        <p className="text-white text-3xl font-bold">{value}</p>
+        <p className="text-primary-300 text-3xl font-bold">{value}</p>
       </div>
       <Icon className={`w-8 h-8 text-${color}-400`} />
     </div>

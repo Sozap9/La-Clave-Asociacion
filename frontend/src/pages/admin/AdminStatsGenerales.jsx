@@ -40,25 +40,25 @@ const AdminStatsGenerales = () => {
   };
 
   const getTrendIcon = (value) => {
-    if (value > 0) return <TrendingUp className="w-4 h-4 text-green-400" />;
-    if (value < 0) return <TrendingDown className="w-4 h-4 text-red-400" />;
+    if (value > 0) return <TrendingUp className="w-4 h-4 text-primary-300" />;
+    if (value < 0) return <TrendingDown className="w-4 h-4 text-primary-300" />;
     return <Minus className="w-4 h-4 text-gray-400" />;
   };
 
   const getTrendColor = (value) => {
-    if (value > 0) return 'text-green-400';
-    if (value < 0) return 'text-red-400';
+    if (value > 0) return 'text-primary-300';
+    if (value < 0) return 'text-primary-300';
     return 'text-gray-400';
   };
 
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Estadísticas Generales</h1>
-        <p className="text-gray-400">Vista general completa del sistema</p>
+        <h1 className="text-gradient mb-2 text-4xl">Estadísticas Generales</h1>
+        <p className="text-gray-400 text-lg">Vista general completa del sistema</p>
       </div>
 
       {/* Error */}
@@ -75,7 +75,7 @@ const AdminStatsGenerales = () => {
           {/* Usuarios y Socios */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-              <Users className="w-6 h-6 text-primary-400" />
+              <Users className="w-6 h-6 text-primary-300" />
               Usuarios y Socios
             </h2>
             
@@ -117,7 +117,7 @@ const AdminStatsGenerales = () => {
           {/* Eventos */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-primary-400" />
+              <Calendar className="w-6 h-6 text-primary-300" />
               Eventos
             </h2>
             
@@ -159,7 +159,7 @@ const AdminStatsGenerales = () => {
           {/* Reservas */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-              <Ticket className="w-6 h-6 text-primary-400" />
+              <Ticket className="w-6 h-6 text-primary-300" />
               Reservas
             </h2>
             
@@ -201,7 +201,7 @@ const AdminStatsGenerales = () => {
           {/* Ingresos */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-              <DollarSign className="w-6 h-6 text-primary-400" />
+              <DollarSign className="w-6 h-6 text-primary-300" />
               Ingresos
             </h2>
             
@@ -283,25 +283,14 @@ const AdminStatsGenerales = () => {
 
 // Componente reutilizable para tarjetas de estadísticas
 const StatCard = ({ title, value, icon: Icon, color, subtitle }) => {
-  const colorClasses = {
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
-    green: 'from-green-500/20 to-green-600/10 border-green-500/30',
-    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30',
-    red: 'from-red-500/20 to-red-600/10 border-red-500/30',
-    yellow: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30',
-    gray: 'from-gray-500/20 to-gray-600/10 border-gray-500/30',
-    pink: 'from-pink-500/20 to-pink-600/10 border-pink-500/30',
-    indigo: 'from-indigo-500/20 to-indigo-600/10 border-indigo-500/30'
-  };
-
   return (
-    <div className={`bg-gradient-to-br ${colorClasses[color]} border rounded-xl p-6`}>
+    <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
       <div className="flex items-start justify-between mb-4">
         <div>
           <p className="text-gray-400 text-sm mb-1">{title}</p>
-          <p className="text-white text-3xl font-bold">{value}</p>
+          <p className="text-primary-300 text-3xl font-bold">{value}</p>
         </div>
-        <Icon className={`w-8 h-8 text-${color}-400`} />
+        <Icon className="w-8 h-8 text-primary-300" />
       </div>
       
       {subtitle && (

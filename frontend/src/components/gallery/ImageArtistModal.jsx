@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { X, Users, Plus, Trash2, Search } from 'lucide-react';
-import Button from '../common/Button';
-import Alert from '../common/Alert';
-import * as galleryApi from '../../api/galleryApi';
+import { useState, useEffect } from "react";
+import { X, Users, Plus, Trash2, Search } from "lucide-react";
+import Button from "../common/Button";
+import Alert from "../common/Alert";
+import * as galleryApi from "../../api/galleryApi";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -12,8 +12,8 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
   const [selectedArtists, setSelectedArtists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -21,46 +21,48 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
 
   const fetchData = async () => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Obtener artistas actuales de la imagen
       const currentResult = await galleryApi.getImageArtists(image.id);
-      
+
       if (currentResult.success) {
         const currentArtistsList = currentResult.data || [];
         setCurrentArtists(currentArtistsList);
-        setSelectedArtists(currentArtistsList.map(a => a.id));
+        setSelectedArtists(currentArtistsList.map((a) => a.id));
       }
 
       // Obtener todos los artistas disponibles
       try {
         const response = await fetch(`${API_URL}/artists`);
         const artistsResult = await response.json();
-        
+
         if (artistsResult.success && Array.isArray(artistsResult.data)) {
           setAvailableArtists(artistsResult.data);
         } else {
-          console.warn('No se encontraron artistas o el formato es incorrecto');
+          console.warn("No se encontraron artistas o el formato es incorrecto");
           setAvailableArtists([]);
         }
       } catch (artistError) {
-        console.warn('Endpoint /api/artists no disponible:', artistError);
+        console.warn("Endpoint /api/artists no disponible:", artistError);
         setAvailableArtists([]);
-        setError('No se pudo cargar la lista de artistas. Por favor, contacta al administrador.');
+        setError(
+          "No se pudo cargar la lista de artistas. Por favor, contacta al administrador."
+        );
       }
     } catch (err) {
-      console.error('Error fetching artists:', err);
-      setError('Error al cargar artistas');
+      console.error("Error fetching artists:", err);
+      setError("Error al cargar artistas");
     } finally {
       setLoading(false);
     }
   };
 
   const handleToggleArtist = (artistId) => {
-    setSelectedArtists(prev => {
+    setSelectedArtists((prev) => {
       if (prev.includes(artistId)) {
-        return prev.filter(id => id !== artistId);
+        return prev.filter((id) => id !== artistId);
       } else {
         return [...prev, artistId];
       }
@@ -70,22 +72,25 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setError('');
+    setError("");
 
     try {
       await onSave(selectedArtists);
     } catch (err) {
-      setError('Error al guardar artistas');
+      setError("Error al guardar artistas");
     } finally {
       setSaving(false);
     }
   };
 
   // ✅ CORRECCIÓN: Verificar que availableArtists es array antes de filtrar
-  const filteredArtists = Array.isArray(availableArtists) 
-    ? availableArtists.filter(artist =>
-        artist.nombre_artistico?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        artist.nombre_real?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredArtists = Array.isArray(availableArtists)
+    ? availableArtists.filter(
+        (artist) =>
+          artist.nombre_artistico
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          artist.nombre_real?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
 
@@ -108,10 +113,17 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col overflow-hidden"
+        >
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {error && (
-              <Alert type="error" message={error} onClose={() => setError('')} />
+              <Alert
+                type="error"
+                message={error}
+                onClose={() => setError("")}
+              />
             )}
 
             {loading ? (
@@ -128,24 +140,37 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
                       No hay artistas disponibles
                     </h3>
                     <p className="text-gray-400 mb-4">
-                      El endpoint de artistas no está configurado o no hay artistas en el sistema.
+                      El endpoint de artistas no está configurado o no hay
+                      artistas en el sistema.
                     </p>
                     <p className="text-gray-500 text-sm">
-                      Contacta al administrador para agregar artistas al sistema.
+                      Contacta al administrador para agregar artistas al
+                      sistema.
                     </p>
                   </div>
                 ) : (
                   <>
                     {/* Búsqueda */}
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                      <Search
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={20}
+                      />
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Buscar artistas..."
-                        className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full pl-10 pr-10 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
 
                     {/* Artistas seleccionados */}
@@ -155,15 +180,20 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
                           Artistas seleccionados ({selectedArtists.length})
                         </h3>
                         <div className="flex flex-wrap gap-2">
-                          {selectedArtists.map(artistId => {
-                            const artist = availableArtists.find(a => a.id === artistId);
+                          {selectedArtists.map((artistId) => {
+                            const artist = availableArtists.find(
+                              (a) => a.id === artistId
+                            );
                             if (!artist) return null;
                             return (
                               <div
                                 key={artistId}
                                 className="flex items-center gap-2 px-3 py-1.5 bg-primary-600 text-white rounded-full text-sm"
                               >
-                                <span>{artist.nombre_artistico || artist.nombre_real}</span>
+                                <span>
+                                  {artist.nombre_artistico ||
+                                    artist.nombre_real}
+                                </span>
                                 <button
                                   type="button"
                                   onClick={() => handleToggleArtist(artistId)}
@@ -189,13 +219,13 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
                             No se encontraron artistas con ese nombre
                           </p>
                         ) : (
-                          filteredArtists.map(artist => (
+                          filteredArtists.map((artist) => (
                             <label
                               key={artist.id}
                               className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                                 selectedArtists.includes(artist.id)
-                                  ? 'bg-primary-600/20 border-2 border-primary-500'
-                                  : 'bg-gray-700/50 hover:bg-gray-700 border-2 border-transparent'
+                                  ? "bg-primary-600/20 border-2 border-primary-500"
+                                  : "bg-gray-700/50 hover:bg-gray-700 border-2 border-transparent"
                               }`}
                             >
                               <input
@@ -208,11 +238,13 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
                                 <div className="text-white font-medium">
                                   {artist.nombre_artistico}
                                 </div>
-                                {artist.nombre_real && artist.nombre_real !== artist.nombre_artistico && (
-                                  <div className="text-gray-400 text-sm">
-                                    {artist.nombre_real}
-                                  </div>
-                                )}
+                                {artist.nombre_real &&
+                                  artist.nombre_real !==
+                                    artist.nombre_artistico && (
+                                    <div className="text-gray-400 text-sm">
+                                      {artist.nombre_real}
+                                    </div>
+                                  )}
                               </div>
                             </label>
                           ))
@@ -242,7 +274,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
               disabled={saving || loading || availableArtists.length === 0}
               className="flex-1"
             >
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
+              {saving ? "Guardando..." : "Guardar Cambios"}
             </Button>
           </div>
         </form>

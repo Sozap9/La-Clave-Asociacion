@@ -29,11 +29,11 @@ const EventCard = ({ event, onViewDetail }) => {
   return (
     <div 
       onClick={handleClick}
-      className="group cursor-pointer bg-gray-900 overflow-hidden border border-gray-800 
+      className="group cursor-pointer bg-[#1a1a1a] overflow-hidden border border-[#262626]
                  hover:border-purple-600 transition-all duration-300"
     >
       {/* Imagen del evento */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-gray-800">
+      <div className="relative aspect-[4/3] overflow-hidden bg-[#0a0a0a]">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -44,14 +44,14 @@ const EventCard = ({ event, onViewDetail }) => {
               console.error('Error loading image:', imageUrl);
               e.target.style.display = 'none';
               e.target.parentElement.innerHTML = `
-                <div class="w-full h-full flex items-center justify-center bg-gray-800">
+                <div class="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
                   <span class="text-gray-600 text-sm">Sin imagen</span>
                 </div>
               `;
             }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-800">
+          <div className="w-full h-full flex items-center justify-center bg-[#0a0a0a]">
             <span className="text-gray-600 text-sm">Sin imagen</span>
           </div>
         )}
@@ -82,7 +82,7 @@ const EventCard = ({ event, onViewDetail }) => {
 
         {/* Precio (si existe) */}
         {event.precio_socio && (
-          <div className="pt-2 border-t border-gray-800">
+          <div className="pt-2 border-t border-[#262626]">
             <span className="text-purple-400 text-sm font-medium">
               {event.precio_socio}€
             </span>

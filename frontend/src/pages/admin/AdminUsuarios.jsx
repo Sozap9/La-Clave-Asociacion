@@ -105,11 +105,11 @@ const AdminUsuarios = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Gestión de Usuarios Básicos</h1>
-        <p className="text-gray-400">
+        <h1 className="text-gradient mb-2 text-4xl">Gestión de Usuarios Básicos</h1>
+        <p className="text-gray-400 text-lg">
           {Array.isArray(users) ? `${users.length} usuario${users.length !== 1 ? 's' : ''} básico${users.length !== 1 ? 's' : ''}` : 'Administra usuarios registrados'}
         </p>
       </div>
@@ -130,7 +130,7 @@ const AdminUsuarios = () => {
             placeholder="Buscar por nombre, email, username o teléfono..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-800 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none"
+            className="w-full bg-[#262626] border border-[#333333] rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none transition-colors"
           />
           {search && (
             <button
@@ -145,19 +145,19 @@ const AdminUsuarios = () => {
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
           <p className="text-gray-400 text-sm mb-1">Total Usuarios</p>
-          <p className="text-white text-2xl font-bold">{users.length}</p>
+          <p className="text-primary-300 text-2xl font-bold">{users.length}</p>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
           <p className="text-gray-400 text-sm mb-1">Usuarios Activos</p>
-          <p className="text-green-400 text-2xl font-bold">
+          <p className="text-primary-300 text-2xl font-bold">
             {users.filter(u => u.activo !== false).length}
           </p>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
           <p className="text-gray-400 text-sm mb-1">Usuarios Inactivos</p>
-          <p className="text-red-400 text-2xl font-bold">
+          <p className="text-primary-300 text-2xl font-bold">
             {users.filter(u => u.activo === false).length}
           </p>
         </div>
@@ -165,7 +165,7 @@ const AdminUsuarios = () => {
 
       {/* Lista de usuarios */}
       {filteredUsers.length === 0 ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Users className="mx-auto mb-4 text-gray-600" size={48} />
           <p className="text-gray-400 text-lg">
             {search ? 'No se encontraron usuarios' : 'No hay usuarios básicos registrados'}
@@ -176,13 +176,13 @@ const AdminUsuarios = () => {
           {filteredUsers.map((user) => (
             <div
               key={user.id}
-              className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-primary-500/50 transition-all"
+              className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
             >
               <div className="flex items-start justify-between">
                 {/* Info del usuario */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-lg">
                         {user.nombre?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase() || '?'}
                       </span>
@@ -223,7 +223,7 @@ const AdminUsuarios = () => {
                     </div>
                     <div>
                       <p className="text-gray-500 text-xs mb-1">Rol</p>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-400">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#262626] text-gray-400 border border-[#333333]">
                         Usuario Básico
                       </span>
                     </div>
@@ -234,7 +234,7 @@ const AdminUsuarios = () => {
                 <div className="flex flex-col gap-2 ml-4">
                   <button
                     onClick={() => setSelectedUser(user)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
                   >
                     <Eye size={16} />
                     Ver
@@ -244,7 +244,7 @@ const AdminUsuarios = () => {
                     className={`px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                       user.activo === false
                         ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-primary-600 hover:bg-primary-700 text-white'
                     }`}
                   >
                     {user.activo === false ? (
@@ -273,7 +273,7 @@ const AdminUsuarios = () => {
           onClick={() => setSelectedUser(null)}
         >
           <div 
-            className="bg-gray-900 border border-gray-800 rounded-xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
@@ -288,8 +288,8 @@ const AdminUsuarios = () => {
 
             <div className="space-y-6">
               {/* Avatar y nombre */}
-              <div className="flex items-center gap-4 pb-6 border-b border-gray-800">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-4 pb-6 border-b border-[#262626]">
+                <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {selectedUser.nombre?.charAt(0).toUpperCase() || selectedUser.username?.charAt(0).toUpperCase() || '?'}
                   </span>
@@ -342,7 +342,7 @@ const AdminUsuarios = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-gray-500 text-sm mb-1">Rol</p>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-400">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#262626] text-gray-400 border border-[#333333]">
                       Usuario Básico
                     </span>
                   </div>

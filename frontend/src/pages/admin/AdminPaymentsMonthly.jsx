@@ -65,11 +65,11 @@ const AdminPaymentsMonthly = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Ingresos Mensuales</h1>
-        <p className="text-gray-400">Análisis de ingresos de los últimos 12 meses</p>
+        <h1 className="text-gradient mb-2 text-4xl">Ingresos Mensuales</h1>
+        <p className="text-gray-400 text-lg">Análisis de ingresos de los últimos 12 meses</p>
       </div>
 
       {/* Error */}
@@ -83,12 +83,12 @@ const AdminPaymentsMonthly = () => {
         <>
           {/* Stats principales */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-2">
-                <DollarSign className="text-green-400" size={24} />
+                <DollarSign className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Mes Actual</p>
               </div>
-              <p className="text-white text-3xl font-bold">
+              <p className="text-primary-300 text-3xl font-bold">
                 {formatCurrency(data.current_month?.total_ingresos)}
               </p>
               <p className="text-gray-500 text-sm mt-1">
@@ -96,12 +96,12 @@ const AdminPaymentsMonthly = () => {
               </p>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-2">
-                <Calendar className="text-blue-400" size={24} />
+                <Calendar className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Mes Anterior</p>
               </div>
-              <p className="text-white text-3xl font-bold">
+              <p className="text-primary-300 text-3xl font-bold">
                 {formatCurrency(data.previous_month?.total_ingresos)}
               </p>
               <p className="text-gray-500 text-sm mt-1">
@@ -109,23 +109,23 @@ const AdminPaymentsMonthly = () => {
               </p>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-2">
-                <TrendingUp className={calculateChange() >= 0 ? 'text-green-400' : 'text-red-400'} size={24} />
+                <TrendingUp className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Variación</p>
               </div>
-              <p className={`text-3xl font-bold ${calculateChange() >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <p className="text-primary-300 text-3xl font-bold">
                 {calculateChange() >= 0 ? '+' : ''}{calculateChange()}%
               </p>
               <p className="text-gray-500 text-sm mt-1">vs mes anterior</p>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-2">
-                <DollarSign className="text-primary-400" size={24} />
+                <DollarSign className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Total 12 Meses</p>
               </div>
-              <p className="text-white text-3xl font-bold">
+              <p className="text-primary-300 text-3xl font-bold">
                 {formatCurrency(data.monthly_data?.reduce((sum, m) => sum + (m.total_ingresos || 0), 0))}
               </p>
               <p className="text-gray-500 text-sm mt-1">Último año</p>
@@ -133,7 +133,7 @@ const AdminPaymentsMonthly = () => {
           </div>
 
           {/* Gráfica de barras simple */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-8 hover:border-primary-500/50 transition-all">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Evolución Mensual</h2>
               <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2">
@@ -157,7 +157,7 @@ const AdminPaymentsMonthly = () => {
                         {formatCurrency(month.total_ingresos)}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-800 rounded-full h-8 overflow-hidden">
+                    <div className="w-full bg-[#262626] rounded-full h-8 overflow-hidden">
                       <div
                         className="bg-gradient-to-r from-primary-600 to-primary-400 h-full rounded-full transition-all duration-500 flex items-center justify-end px-3"
                         style={{ width: `${percentage}%` }}
@@ -177,11 +177,11 @@ const AdminPaymentsMonthly = () => {
 
           {/* Desglose por tipo de pago */}
           {data.by_payment_type && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
               <h2 className="text-xl font-bold text-white mb-6">Desglose por Tipo de Pago</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {data.by_payment_type.map((type, index) => (
-                  <div key={index} className="bg-gray-800 rounded-lg p-4">
+                  <div key={index} className="bg-[#262626] rounded-lg p-4">
                     <p className="text-gray-400 text-sm mb-1">
                       {type.tipo_pago?.replace('_', ' ') || 'Otros'}
                     </p>

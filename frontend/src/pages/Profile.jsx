@@ -98,7 +98,7 @@ const Profile = () => {
   const RoleIcon = config.icon;
 
   return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-gray-950 to-black">
+    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-black to-black">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -107,7 +107,7 @@ const Profile = () => {
         </div>
 
         {/* Card Principal */}
-        <div className="bg-gradient-to-br from-primary-900/20 via-primary-800/10 to-gray-900/20 backdrop-blur-sm rounded-2xl border border-primary-500/10 overflow-hidden shadow-2xl">
+        <div className="bg-gradient-to-br from-primary-900/20 via-primary-800/10 to-[#1a1a1a]/20 backdrop-blur-sm rounded-2xl border border-primary-500/10 overflow-hidden shadow-2xl">
           
           {/* Header con avatar y nombre */}
           <div className="relative p-8 border-b border-primary-500/10">
@@ -170,7 +170,7 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Email */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Mail className="w-5 h-5 text-primary-400" />
                 </div>
@@ -181,7 +181,7 @@ const Profile = () => {
               </div>
 
               {/* Teléfono */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Phone className="w-5 h-5 text-primary-400" />
                 </div>
@@ -194,7 +194,7 @@ const Profile = () => {
               </div>
 
               {/* Fecha de Nacimiento */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-5 h-5 text-primary-400" />
                 </div>
@@ -213,7 +213,7 @@ const Profile = () => {
               </div>
 
               {/* DNI */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <CreditCard className="w-5 h-5 text-primary-400" />
                 </div>
@@ -226,7 +226,7 @@ const Profile = () => {
               </div>
 
               {/* Usuario */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <UserCircle className="w-5 h-5 text-primary-400" />
                 </div>
@@ -238,7 +238,7 @@ const Profile = () => {
 
               {/* Miembro desde */}
               {userData.created_at && (
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-gray-800/30 border border-gray-700/30">
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
                   <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                     <Calendar className="w-5 h-5 text-primary-400" />
                   </div>

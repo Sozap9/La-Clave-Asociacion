@@ -34,10 +34,10 @@ const AdminStatsGaleria = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Estadísticas de Galería</h1>
-        <p className="text-gray-400">Análisis de álbumes y fotografías</p>
+        <h1 className="text-gradient mb-2 text-4xl">Estadísticas de Galería</h1>
+        <p className="text-gray-400 text-lg">Análisis de álbumes y fotografías</p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
@@ -55,11 +55,11 @@ const AdminStatsGaleria = () => {
 };
 
 const StatCard = ({ title, value, icon: Icon, color = 'blue' }) => (
-  <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+  <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
     <div className="flex items-start justify-between mb-4">
       <div>
         <p className="text-gray-400 text-sm mb-1">{title}</p>
-        <p className="text-white text-3xl font-bold">{value}</p>
+        <p className="text-primary-300 text-3xl font-bold">{value}</p>
       </div>
       <Icon className={`w-8 h-8 text-${color}-400`} />
     </div>

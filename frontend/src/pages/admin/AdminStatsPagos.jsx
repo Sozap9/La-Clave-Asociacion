@@ -42,10 +42,10 @@ const AdminStatsPagos = () => {
   const totalYear = monthly.reduce((sum, month) => sum + parseFloat(month.total || 0), 0);
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Estadísticas de Pagos</h1>
-        <p className="text-gray-400">Análisis de ingresos y transacciones</p>
+        <h1 className="text-gradient mb-2 text-4xl">Estadísticas de Pagos</h1>
+        <p className="text-gray-400 text-lg">Análisis de ingresos y transacciones</p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
@@ -58,14 +58,14 @@ const AdminStatsPagos = () => {
             <StatCard title="Último Mes" value={`${(monthly[monthly.length - 1]?.total || 0)}€`} icon={DollarSign} color="purple" />
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
             <h3 className="text-xl font-semibold text-white mb-4">Ingresos por Mes (Año Actual)</h3>
             <div className="space-y-2">
               {monthly.map(month => (
-                <div key={month.mes} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                <div key={month.mes} className="flex items-center justify-between p-3 bg-[#262626]/50 rounded-lg">
                   <span className="text-white font-medium">{month.mes_nombre}</span>
                   <div className="text-right">
-                    <p className="text-green-400 font-bold">{parseFloat(month.total || 0).toFixed(2)}€</p>
+                    <p className="text-primary-300 font-bold">{parseFloat(month.total || 0).toFixed(2)}€</p>
                     <p className="text-gray-400 text-sm">{month.cantidad_pagos} pagos</p>
                   </div>
                 </div>
@@ -79,11 +79,11 @@ const AdminStatsPagos = () => {
 };
 
 const StatCard = ({ title, value, icon: Icon, color = 'blue' }) => (
-  <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+  <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
     <div className="flex items-start justify-between mb-4">
       <div>
         <p className="text-gray-400 text-sm mb-1">{title}</p>
-        <p className="text-white text-3xl font-bold">{value}</p>
+        <p className="text-primary-300 text-3xl font-bold">{value}</p>
       </div>
       <Icon className={`w-8 h-8 text-${color}-400`} />
     </div>

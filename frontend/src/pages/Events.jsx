@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react';
-import { getAllEvents } from '../api/eventsApi';
-import EventCard from '../components/events/EventCard';
-import EventFilters from '../components/events/EventFilters';
-import EventDetail from '../components/events/EventDetail';
-import Loader from '../components/common/Loader';
+import { useState, useEffect } from "react";
+import { getAllEvents } from "../api/eventsApi";
+import EventCard from "../components/events/EventCard";
+import FilterBar from "../components/UI/FilterBar";
+import SearchInput from "../components/UI/SearchInput";
+import EventDetail from "../components/events/EventDetail";
+import Loader from "../components/common/Loader";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [filters, setFilters] = useState({ 
-    status: 'upcoming',
-    search: '',
-    featured: undefined
+  const [error, setError] = useState("");
+  const [filters, setFilters] = useState({
+    status: "upcoming",
+    search: "",
+    featured: undefined,
   });
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -23,41 +24,41 @@ const Events = () => {
 
   const fetchEvents = async () => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      console.log('📥 Fetching events with filters:', filters);
-      
+      console.log("📥 Fetching events with filters:", filters);
+
       // Build query params based on filters
       const queryParams = {};
-      
+
       if (filters.featured) {
         // Si es featured, solo enviar ese parámetro
-        queryParams.featured = 'true';
+        queryParams.featured = "true";
       } else {
         // Si no, enviar status y search
         if (filters.status) {
           queryParams.status = filters.status;
         }
       }
-      
+
       if (filters.search) {
         queryParams.search = filters.search;
       }
-      
+
       const result = await getAllEvents(queryParams);
-      
-      console.log('📦 Response:', result);
-      
+
+      console.log("📦 Response:", result);
+
       if (result.success) {
         setEvents(result.data || []);
       } else {
-        setError(result.message || 'Error al cargar eventos');
+        setError(result.message || "Error al cargar eventos");
         setEvents([]);
       }
     } catch (err) {
-      console.error('❌ Error fetching events:', err);
-      setError('Error de conexión. Intenta de nuevo.');
+      console.error("❌ Error fetching events:", err);
+      setError("Error de conexión. Intenta de nuevo.");
       setEvents([]);
     } finally {
       setLoading(false);
@@ -71,25 +72,24 @@ const Events = () => {
 
   const getEmptyMessage = () => {
     if (filters.featured) {
-      return 'No hay eventos destacados disponibles';
+      return "No hay eventos destacados disponibles";
     }
-    if (filters.status === 'upcoming') {
-      return 'No hay eventos próximos disponibles';
+    if (filters.status === "upcoming") {
+      return "No hay eventos próximos disponibles";
     }
-    if (filters.status === 'past') {
-      return 'No hay eventos pasados';
+    if (filters.status === "past") {
+      return "No hay eventos pasados";
     }
-    if (filters.status === 'all') {
-      return 'No hay eventos disponibles';
+    if (filters.status === "all") {
+      return "No hay eventos disponibles";
     }
-    return 'No se encontraron eventos';
+    return "No se encontraron eventos";
   };
 
   return (
-    <div className="min-h-screen py-20 px-4">
+    <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
-        
-        {/* ✅ ACTUALIZADO: Header alineado a la izquierda (como MisEntradas) */}
+        {/* Header alineado a la izquierda */}
         <div className="mb-10">
           <h1 className="text-gradient mb-2 text-4xl">Eventos</h1>
           <p className="text-gray-400 text-lg">
@@ -98,7 +98,27 @@ const Events = () => {
         </div>
 
         {/* Filtros */}
-        <EventFilters filters={filters} onFilterChange={setFilters} />
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6 flex-wrap">
+            <FilterBar
+              filters={{ status: filters.status, featured: filters.featured }}
+              onFilterChange={(f) => setFilters(f)}
+            />
+
+            <div className="flex-1 max-w-md ml-auto">
+              <SearchInput
+                value={filters.search}
+                onChange={(val) => setFilters({ ...filters, search: val })}
+                onDebounced={(val) =>
+                  setFilters((s) => ({ ...s, search: val }))
+                }
+                onClear={() => setFilters({ ...filters, search: "" })}
+                placeholder="Buscar eventos por nombre..."
+                debounceMs={350}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Error */}
         {error && (
@@ -126,13 +146,10 @@ const Events = () => {
         {/* Sin resultados */}
         {!loading && events.length === 0 && !error && (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">
-              {filters.featured ? '⭐' : '📅'}
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-2">No se encontraron eventos</h3>
-            <p className="text-gray-400 text-lg">
-              {getEmptyMessage()}
-            </p>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              No se encontraron eventos
+            </h3>
+            <p className="text-gray-400 text-lg">{getEmptyMessage()}</p>
             {filters.search && (
               <p className="text-gray-500 text-sm mt-2">
                 Intenta con otra búsqueda

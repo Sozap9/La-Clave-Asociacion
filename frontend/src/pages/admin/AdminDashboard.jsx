@@ -1,26 +1,37 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  getAdminStats, 
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getAdminStats,
   getAllEventsAdmin,
   togglePublishEvent,
-  toggleFeatureEvent 
-} from '../../api/adminApi';
-import AdminStats from '../../components/admin/AdminStats';
-import QuickActionCard from '../../components/admin/QuickActionCard';
-import Loader from '../../components/common/Loader';
-import { 
-  AlertCircle, Plus, UserPlus, Users, Ticket, QrCode, Calendar,
-  Eye, EyeOff, Star, Edit, TrendingUp
-} from 'lucide-react';
+  toggleFeatureEvent,
+} from "../../api/adminApi";
+import AdminStats from "../../components/admin/AdminStats";
+import QuickActionCard from "../../components/admin/QuickActionCard";
+import Loader from "../../components/common/Loader";
+import {
+  AlertCircle,
+  Plus,
+  UserPlus,
+  Users,
+  Ticket,
+  QrCode,
+  Calendar,
+  Eye,
+  EyeOff,
+  Star,
+  Edit,
+  TrendingUp,
+  MapPin,
+} from "lucide-react";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [recentEvents, setRecentEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -28,15 +39,15 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
       // Fetch stats and recent events in parallel
       const [statsResult, eventsResult] = await Promise.all([
         getAdminStats(),
-        getAllEventsAdmin({ limit: 5 })
+        getAllEventsAdmin({ limit: 5 }),
       ]);
-      
+
       if (statsResult.success) {
         setStats(statsResult.data);
       } else {
@@ -44,23 +55,25 @@ const AdminDashboard = () => {
           totalEventos: 0,
           totalUsuarios: 1,
           totalReservas: 0,
-          sociosActivos: 0
+          sociosActivos: 0,
         });
       }
 
       if (eventsResult.success) {
-        setRecentEvents(Array.isArray(eventsResult.data) ? eventsResult.data : []);
+        setRecentEvents(
+          Array.isArray(eventsResult.data) ? eventsResult.data : []
+        );
       } else {
         setRecentEvents([]);
       }
     } catch (err) {
-      console.error('Error en fetchData:', err);
-      setError('No se pudieron cargar los datos del sistema');
+      console.error("Error en fetchData:", err);
+      setError("No se pudieron cargar los datos del sistema");
       setStats({
         totalEventos: 0,
         totalUsuarios: 1,
         totalReservas: 0,
-        sociosActivos: 0
+        sociosActivos: 0,
       });
       setRecentEvents([]);
     } finally {
@@ -71,32 +84,32 @@ const AdminDashboard = () => {
   const handleTogglePublish = async (eventId) => {
     try {
       const result = await togglePublishEvent(eventId);
-      
+
       if (result.success) {
         setSuccess(result.message);
         fetchData(); // Reload data
-        setTimeout(() => setSuccess(''), 3000);
+        setTimeout(() => setSuccess(""), 3000);
       } else {
-        setError(result.message || 'Error al cambiar estado');
+        setError(result.message || "Error al cambiar estado");
       }
     } catch (err) {
-      setError('Error de conexión');
+      setError("Error de conexión");
     }
   };
 
   const handleToggleFeatured = async (eventId) => {
     try {
       const result = await toggleFeatureEvent(eventId);
-      
+
       if (result.success) {
         setSuccess(result.message);
         fetchData();
-        setTimeout(() => setSuccess(''), 3000);
+        setTimeout(() => setSuccess(""), 3000);
       } else {
-        setError(result.message || 'Error al cambiar destacado');
+        setError(result.message || "Error al cambiar destacado");
       }
     } catch (err) {
-      setError('Error de conexión');
+      setError("Error de conexión");
     }
   };
 
@@ -104,33 +117,28 @@ const AdminDashboard = () => {
     const isPublished = event.visible_desde !== null;
     const estado = event.estado;
 
-    let color, text;
-    
-    if (estado === 'draft') {
-      color = 'bg-gray-500';
-      text = 'Borrador';
-    } else if (estado === 'scheduled' && isPublished) {
-      color = 'bg-green-500';
-      text = 'Publicado';
-    } else if (estado === 'scheduled' && !isPublished) {
-      color = 'bg-blue-500';
-      text = 'Programado';
-    } else if (estado === 'active') {
-      color = 'bg-purple-500';
-      text = 'En curso';
-    } else if (estado === 'completed') {
-      color = 'bg-gray-400';
-      text = 'Finalizado';
-    } else if (estado === 'cancelled') {
-      color = 'bg-red-500';
-      text = 'Cancelado';
+    let text;
+
+    if (estado === "draft") {
+      text = "Borrador";
+    } else if (estado === "scheduled" && isPublished) {
+      text = "Publicado";
+    } else if (estado === "scheduled" && !isPublished) {
+      text = "Programado";
+    } else if (estado === "active") {
+      text = "En curso";
+    } else if (estado === "completed") {
+      text = "Finalizado";
+    } else if (estado === "cancelled") {
+      text = "Cancelado";
     } else {
-      color = 'bg-gray-500';
-      text = estado || 'Desconocido';
+      text = estado || "Desconocido";
     }
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}/20 text-white`}>
+      <span
+        className="px-2 py-1 rounded-full text-xs font-medium bg-primary-500/20 text-primary-300 border border-primary-500/30"
+      >
         {text}
       </span>
     );
@@ -138,21 +146,21 @@ const AdminDashboard = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">Dashboard Admin</h1>
-        <p className="text-gray-400">Resumen general del sistema</p>
+        <h1 className="text-gradient mb-2 text-4xl">Dashboard Admin</h1>
+        <p className="text-gray-400 text-lg">Resumen general del sistema</p>
       </div>
 
       {/* Alerts */}
@@ -163,15 +171,19 @@ const AdminDashboard = () => {
             <p className="font-medium">Error</p>
             <p className="text-sm">{error}</p>
           </div>
-          <button onClick={() => setError('')} className="ml-auto font-bold">×</button>
+          <button onClick={() => setError("")} className="ml-auto font-bold">
+            ×
+          </button>
         </div>
       )}
-      
+
       {success && (
         <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-3">
           <AlertCircle size={20} />
           <p>{success}</p>
-          <button onClick={() => setSuccess('')} className="ml-auto font-bold">×</button>
+          <button onClick={() => setSuccess("")} className="ml-auto font-bold">
+            ×
+          </button>
         </div>
       )}
 
@@ -183,12 +195,13 @@ const AdminDashboard = () => {
         <div className="mt-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <TrendingUp className="text-purple-400" size={24} />
-              <h2 className="text-2xl font-bold text-white">Eventos Recientes</h2>
+              <h2 className="text-2xl font-bold text-white">
+                Eventos Recientes
+              </h2>
             </div>
             <button
-              onClick={() => navigate('/admin/eventos')}
-              className="text-purple-400 hover:text-purple-300 text-sm font-medium"
+              onClick={() => navigate("/admin/eventos")}
+              className="text-primary-300 hover:text-primary-200 text-sm font-medium"
             >
               Ver todos →
             </button>
@@ -198,18 +211,27 @@ const AdminDashboard = () => {
             {recentEvents.map((event) => {
               const isPublished = event.visible_desde !== null;
               const isFeatured = event.destacado === 1;
-              
+
               return (
                 <div
                   key={event.id}
-                  className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-purple-500/50 transition-all"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(`/admin/eventos?open=${event.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter")
+                      navigate(`/admin/eventos?open=${event.id}`);
+                  }}
+                  className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 hover:border-primary-500/50 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
                       {/* Image */}
                       {event.imagen_cartel_url && (
                         <img
-                          src={`${import.meta.env.VITE_API_URL}${event.imagen_cartel_url}`}
+                          src={`${import.meta.env.VITE_BASE_URL}${
+                            event.imagen_cartel_url
+                          }`}
                           alt={event.titulo}
                           className="w-16 h-16 object-cover rounded-lg"
                         />
@@ -222,50 +244,79 @@ const AdminDashboard = () => {
                             {event.titulo}
                           </h3>
                           {isFeatured && (
-                            <Star className="text-yellow-400" size={16} fill="currentColor" />
+                            <Star
+                              className="text-primary-300"
+                              size={16}
+                              fill="currentColor"
+                            />
                           )}
                           {getStatusBadge(event)}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span>📅 {formatDate(event.fecha_evento)}</span>
-                          <span>📍 {event.ubicacion}</span>
-                          <span>👥 {event.confirmed_bookings || 0}/{event.aforo_maximo}</span>
+                          <span className="flex items-center gap-2">
+                            <Calendar size={15} className="text-primary-300" />
+                            <span>{formatDate(event.fecha_evento)}</span>
+                          </span>
+
+                          <span className="flex items-center gap-2">
+                            <MapPin size={15} className="text-primary-300" />
+                            <span>{event.ubicacion}</span>
+                          </span>
+
+                          <span className="flex items-center gap-2">
+                            <Users size={15} className="text-primary-300" />
+                            <span>
+                              {event.confirmed_bookings || 0}/
+                              {event.aforo_maximo}
+                            </span>
+                          </span>
                         </div>
                       </div>
                     </div>
-
                     {/* Actions */}
                     <div className="flex gap-2">
                       {/* Toggle Publish */}
                       <button
-                        onClick={() => handleTogglePublish(event.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTogglePublish(event.id);
+                        }}
                         className={`p-2 rounded-lg transition-colors ${
-                          isPublished 
-                            ? 'text-orange-400 hover:bg-orange-500/20' 
-                            : 'text-green-400 hover:bg-green-500/20'
+                          isPublished
+                            ? "text-primary-700 hover:bg-primary-700/20"
+                            : "text-primary-300 hover:bg-primary-500/20"
                         }`}
-                        title={isPublished ? 'Despublicar' : 'Publicar'}
+                        title={isPublished ? "Despublicar" : "Publicar"}
                       >
                         {isPublished ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
 
                       {/* Toggle Featured */}
                       <button
-                        onClick={() => handleToggleFeatured(event.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFeatured(event.id);
+                        }}
                         className={`p-2 rounded-lg transition-colors ${
                           isFeatured
-                            ? 'text-yellow-400 hover:bg-yellow-500/20'
-                            : 'text-gray-400 hover:bg-gray-500/20'
+                            ? "text-primary-700 hover:bg-primary-700/20"
+                            : "text-gray-400 hover:bg-gray-500/20"
                         }`}
-                        title={isFeatured ? 'Quitar destacado' : 'Destacar'}
+                        title={isFeatured ? "Quitar destacado" : "Destacar"}
                       >
-                        <Star size={18} fill={isFeatured ? 'currentColor' : 'none'} />
+                        <Star
+                          size={18}
+                          fill={isFeatured ? "currentColor" : "none"}
+                        />
                       </button>
 
                       {/* Edit */}
                       <button
-                        onClick={() => navigate(`/admin/eventos/editar/${event.id}`)}
-                        className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/admin/eventos/editar/${event.id}`);
+                        }}
+                        className="p-2 text-primary-300 hover:bg-primary-500/20 rounded-lg transition-colors"
                         title="Editar"
                       >
                         <Edit size={18} />
@@ -290,7 +341,7 @@ const AdminDashboard = () => {
             iconColor="primary"
             path="/admin/eventos/nuevo"
           />
-          
+
           <QuickActionCard
             title="Crear Socio Manual"
             description="Registra un socio sin pago previo"
@@ -298,7 +349,7 @@ const AdminDashboard = () => {
             iconColor="green"
             path="/admin/socios/crear"
           />
-          
+
           <QuickActionCard
             title="Gestionar Socios"
             description="Ver, aprobar y gestionar socios"
@@ -306,15 +357,15 @@ const AdminDashboard = () => {
             iconColor="blue"
             path="/admin/socios"
           />
-          
+
           <QuickActionCard
             title="Ver Reservas"
             description="Consulta todas las reservas"
             icon={Ticket}
-            iconColor="purple"
+            iconColor="primary"
             path="/admin/reservas"
           />
-          
+
           <QuickActionCard
             title="Verificar QR"
             description="Escanear QR para check-in"
@@ -322,7 +373,7 @@ const AdminDashboard = () => {
             iconColor="orange"
             path="/admin/reservas/verificar-qr"
           />
-          
+
           <QuickActionCard
             title="Todos los Eventos"
             description="Ver y gestionar todos los eventos"

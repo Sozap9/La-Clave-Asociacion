@@ -275,7 +275,7 @@ const AdminGalleryImages = () => {
 
   if (!folder) {
     return (
-      <div className="min-h-screen bg-gray-950 pt-24 pb-12">
+      <div className="min-h-screen bg-black pt-24 pb-12">
         <div className="container mx-auto px-6">
           <Alert type="error" message="Álbum no encontrado" />
         </div>
@@ -284,7 +284,7 @@ const AdminGalleryImages = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 pt-24 pb-12">
+    <div className="min-h-screen bg-black pt-24 pb-12">
       <div className="container mx-auto px-6 space-y-8">
         {/* Header */}
         <button
@@ -297,10 +297,10 @@ const AdminGalleryImages = () => {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <h1 className="text-gradient mb-2 text-4xl">
               {folder.nombre}
             </h1>
-            <p className="text-gray-400">
+            <p className="text-gray-400 text-lg">
               {filteredImages.length} {filteredImages.length === 1 ? 'imagen' : 'imágenes'}
               {filter !== 'all' && ` (filtradas)`}
             </p>
@@ -310,7 +310,7 @@ const AdminGalleryImages = () => {
           <div className="flex gap-3">
             <button
               onClick={toggleSelectionMode}
-              className="flex items-center gap-2 px-4 py-3 rounded-lg transition-colors bg-gray-800 hover:bg-gray-700 text-white"
+              className="flex items-center gap-2 px-4 py-3 rounded-lg transition-colors bg-[#262626] hover:bg-[#333333] text-white"
             >
               {isSelectionMode ? <X size={20} /> : <Check size={20} />}
               {isSelectionMode ? 'Cancelar' : 'Seleccionar'}
@@ -360,7 +360,7 @@ const AdminGalleryImages = () => {
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${
               filter === 'all'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
             }`}
           >
             Todas ({images.length})
@@ -370,7 +370,7 @@ const AdminGalleryImages = () => {
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${
               filter === 'visible'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
             }`}
           >
             Visibles ({images.filter(img => img.visible).length})
@@ -380,7 +380,7 @@ const AdminGalleryImages = () => {
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${
               filter === 'hidden'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
             }`}
           >
             Ocultas ({images.filter(img => !img.visible).length})
@@ -390,7 +390,7 @@ const AdminGalleryImages = () => {
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${
               filter === 'featured'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
             }`}
           >
             Destacadas ({images.filter(img => img.destacado).length})
@@ -401,7 +401,7 @@ const AdminGalleryImages = () => {
       <div className="container mx-auto px-6 mt-8">
         {/* Grid de Imágenes */}
         {filteredImages.length === 0 ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
             <Image size={64} className="text-gray-600 mx-auto mb-4" />
             <h3 className="text-white text-xl font-semibold mb-2">
               {filter === 'all' ? 'No hay imágenes en este álbum' : 'No hay imágenes con este filtro'}
@@ -495,7 +495,7 @@ const BulkActionsBar = ({
           <div className="flex items-center gap-3">
             <button
               onClick={selectedCount === totalImages ? onDeselectAll : onSelectAll}
-              className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors"
+              className="px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors"
             >
               {selectedCount === totalImages ? 'Deseleccionar todas' : 'Seleccionar todas'}
             </button>
@@ -504,7 +504,7 @@ const BulkActionsBar = ({
 
             <button
               onClick={onBulkShow}
-              className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+              className="px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors flex items-center gap-1"
             >
               <Eye size={16} />
               Mostrar
@@ -512,7 +512,7 @@ const BulkActionsBar = ({
 
             <button
               onClick={onBulkHide}
-              className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+              className="px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors flex items-center gap-1"
             >
               <EyeOff size={16} />
               Ocultar
@@ -520,7 +520,7 @@ const BulkActionsBar = ({
 
             <button
               onClick={onBulkFeature}
-              className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+              className="px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors flex items-center gap-1"
             >
               <Star size={16} />
               Destacar
@@ -528,7 +528,7 @@ const BulkActionsBar = ({
 
             <button
               onClick={onBulkUnfeature}
-              className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+              className="px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors flex items-center gap-1"
             >
               <Star size={16} fill="currentColor" />
               Quitar
@@ -538,7 +538,7 @@ const BulkActionsBar = ({
 
             <button
               onClick={onBulkDelete}
-              className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+              className="px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors flex items-center gap-1"
             >
               <Trash2 size={16} />
               Eliminar
@@ -590,7 +590,7 @@ const ImageCard = ({
       )}
 
       {/* Imagen - SIN HOVER */}
-      <div className="aspect-square bg-gray-800 relative">
+      <div className="aspect-square bg-[#262626] relative">
         <img
           src={fullImageUrl}
           alt={image.titulo || 'Imagen'}
@@ -612,7 +612,7 @@ const ImageCard = ({
               DESTACADO
             </div>
           )}
-          <div className="px-2 py-1 rounded bg-gray-700 text-gray-300 text-xs font-semibold">
+          <div className="px-2 py-1 rounded bg-primary-600 text-white text-xs font-semibold">
             {image.visible ? 'VISIBLE' : 'OCULTO'}
           </div>
         </div>
@@ -630,7 +630,7 @@ const ImageCard = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => onEdit(image)}
-              className="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
+              className="px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
             >
               <Edit size={14} />
               Editar
@@ -638,7 +638,7 @@ const ImageCard = ({
 
             <button
               onClick={() => onManageArtists(image)}
-              className="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
+              className="px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
             >
               <Users size={14} />
               Artistas
@@ -648,7 +648,7 @@ const ImageCard = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => onToggleVisibility(image)}
-              className="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
+              className="px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
             >
               {image.visible ? <EyeOff size={14} /> : <Eye size={14} />}
               {image.visible ? 'Ocultar' : 'Mostrar'}
@@ -659,7 +659,7 @@ const ImageCard = ({
               className={`px-2 py-1.5 rounded text-xs transition-colors flex items-center justify-center gap-1 ${
                 image.destacado
                   ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                  : 'bg-gray-800 hover:bg-gray-700 text-white'
+                  : 'bg-[#262626] hover:bg-[#333333] text-white'
               }`}
             >
               <Star size={14} />
@@ -672,7 +672,7 @@ const ImageCard = ({
             className={`w-full px-2 py-1.5 rounded text-xs transition-colors flex items-center justify-center gap-1 ${
               isCover
                 ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                : 'bg-gray-800 hover:bg-gray-700 text-white'
+                : 'bg-[#262626] hover:bg-[#333333] text-white'
             }`}
           >
             <ImageIcon size={14} />
@@ -681,7 +681,7 @@ const ImageCard = ({
           
           <button
             onClick={() => onDelete(image)}
-            className="w-full px-2 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
+            className="w-full px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
           >
             <Trash2 size={14} />
             Eliminar

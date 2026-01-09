@@ -107,18 +107,16 @@ const AdminSidebar = () => {
   const activeMenu = getActiveMenu();
 
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-800 h-screen sticky top-0 flex flex-col">
+    <aside className="w-64 bg-[#0a0a0a] border-r border-[#262626] h-screen sticky top-0 flex flex-col">
       {/* Botón Volver a la Web */}
-      <a
-        href="/"
-        className="flex items-center gap-3 px-6 py-4 text-gray-400 hover:text-white hover:bg-gray-800 transition-all border-b border-gray-800"
-      >
-        <Home size={20} />
-        <span className="font-medium">Volver a la Web</span>
-      </a>
+      
+        <a href="/" className="flex items-center gap-3 px-6 py-4 text-gray-400 hover:text-white hover:bg-[#1a1a1a] transition-all border-b border-[#262626]">
+          <Home size={20} />
+          <span className="font-medium">Volver a la Web</span>
+        </a>
 
       {/* Header */}
-      <div className="p-6 border-b border-gray-800">
+      <div className="p-6 border-b border-[#262626]">
         <h2 className="text-2xl font-display text-white">Panel Admin</h2>
       </div>
 
@@ -132,7 +130,7 @@ const AdminSidebar = () => {
             `flex items-center gap-3 px-4 py-3 mb-4 rounded-lg transition-all ${
               isActive
                 ? 'bg-primary-600 text-white shadow-glow'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white'
             }`
           }
         >
@@ -217,10 +215,10 @@ const AdminSidebar = () => {
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-[#262626]">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-all w-full"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:bg-[#1a1a1a] hover:text-white transition-all w-full"
         >
           <LogOut size={20} />
           <span className="font-medium">Cerrar Sesión</span>

@@ -77,14 +77,14 @@ const EventDetail = ({ event, isOpen, onClose }) => {
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-90 z-50 animate-fade-in"
+        className="fixed inset-0 bg-black bg-opacity-95 z-50 animate-fade-in"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-gray-900 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl 
-                        border border-gray-800 animate-slide-up">
+        <div className="bg-[#0a0a0a] max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl 
+                        border border-[#262626] animate-slide-up">
           
           {/* Header con imagen */}
           <div className="relative h-80">
@@ -95,17 +95,17 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+              <div className="w-full h-full bg-[#1a1a1a] flex items-center justify-center">
                 <span className="text-gray-600">Sin imagen</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-black/60 to-transparent" />
             
             {/* Botón cerrar */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 bg-gray-900/80 hover:bg-gray-800 text-white p-3 
-                        rounded-full transition-colors border border-gray-700"
+              className="absolute top-4 right-4 bg-black/90 hover:bg-[#1a1a1a] text-white p-3 
+                        rounded-full transition-colors border border-[#333333]"
               aria-label="Cerrar"
             >
               <X size={24} />
@@ -120,7 +120,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
           </div>
 
           {/* Contenido */}
-          <div className="p-8 space-y-6 bg-gray-900">
+          <div className="p-8 space-y-6 bg-[#0a0a0a]">
             
             {/* Alertas */}
             {error && (
@@ -196,7 +196,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
 
             {/* Precios */}
             {(precio_socio || precio_invitado) && (
-              <div className="bg-gray-800/50 border border-gray-800 rounded-lg p-4">
+              <div className="bg-[#1a1a1a]/50 border border-[#262626] rounded-lg p-4">
                 <p className="text-gray-400 text-sm font-light mb-2">Precio</p>
                 <div className="space-y-1">
                   {precio_socio > 0 && (

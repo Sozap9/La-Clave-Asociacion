@@ -4,13 +4,13 @@ import main from '../../assets/main.png';
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Imagen de fondo con overlay */}
+      {/* Imagen de fondo con overlay más oscuro */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-gray-950 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-black z-10" />
         <img
           src={main}
           alt="Club background"
-          className="w-full h-full object-cover opacity-30"
+          className="w-full h-full object-cover opacity-20"
         />
       </div>
 
