@@ -1,4 +1,4 @@
-import { X, User, LogOut, Shield, Crown, Sparkles } from 'lucide-react';
+import { X, LogOut, Shield, Crown, Sparkles, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { NAV_ROUTES } from '../../utils/constants';
@@ -28,8 +28,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
   // Menú para usuarios BÁSICOS
   const basicItems = [
     { label: 'Inicio', href: NAV_ROUTES.HOME },
-    { label: 'Estatutos', href: NAV_ROUTES.STATUTES },
-    { label: 'Mi Perfil', href: NAV_ROUTES.PROFILE, icon: User }
+    { label: 'Estatutos', href: NAV_ROUTES.STATUTES }
   ];
 
   // Menú para SOCIOS
@@ -38,16 +37,14 @@ const MobileMenu = ({ isOpen, onClose }) => {
     { label: 'Eventos', href: NAV_ROUTES.EVENTS },
     { label: 'Galería', href: NAV_ROUTES.GALLERY },
     { label: 'Mis Entradas', href: NAV_ROUTES.MY_BOOKINGS },
-    { label: 'Estatutos', href: NAV_ROUTES.STATUTES },
-    { label: 'Mi Perfil', href: NAV_ROUTES.PROFILE, icon: User }
+    { label: 'Estatutos', href: NAV_ROUTES.STATUTES }
   ];
 
   // Menú para ADMINS
   const adminItems = [
     { label: 'Inicio', href: NAV_ROUTES.HOME },
     { label: 'Eventos', href: NAV_ROUTES.EVENTS },
-    { label: 'Galería', href: NAV_ROUTES.GALLERY },
-    { label: 'Mi Perfil', href: NAV_ROUTES.PROFILE, icon: User }
+    { label: 'Galería', href: NAV_ROUTES.GALLERY }
   ];
 
   const getNavItems = () => {
@@ -75,7 +72,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
       return {
         label: 'Usuario',
         icon: User,
-        className: 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+        className: 'bg-[#262626]/20 text-gray-400 border-[#262626]/30'
       };
     }
   };
@@ -99,7 +96,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#262626]">
-          <h2 className="text-xl font-display text-white">
+          <h2 className="menu-title text-white">
             {isAuthenticated ? `Hola, ${user?.nombre}` : 'Menú'}
           </h2>
           <button
@@ -121,7 +118,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 <button
                   key={item.href}
                   onClick={() => handleNavigation(item.href)}
-                  className="w-full text-left text-gray-300 hover:text-white hover:bg-[#1a1a1a] text-lg transition-all py-3 px-4 rounded-lg flex items-center gap-3"
+                  className="w-full text-left text-gray-300 hover:text-white hover:bg-[#1a1a1a] menu-nav-item transition-all py-3 px-4 rounded-lg flex items-center gap-3"
                 >
                   {ItemIcon && <ItemIcon size={20} />}
                   {item.label}
@@ -134,24 +131,35 @@ const MobileMenu = ({ isOpen, onClose }) => {
           <div className="p-6 border-t border-[#262626] space-y-4 bg-black">
             {isAuthenticated ? (
               <>
-                {/* Info del usuario */}
-                <div className="flex items-center gap-3 mb-4 p-3 bg-[#1a1a1a] rounded-lg">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center shadow-glow">
-                    <span className="text-white font-bold text-lg">
-                      {user?.nombre?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium">
+                {/* Mi Perfil */}
+                <button
+                  onClick={() => handleNavigation(NAV_ROUTES.PROFILE)}
+                  className="w-full flex items-center gap-3 mb-4 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#262626] transition-colors cursor-pointer"
+                >
+                  {/* Avatar del usuario o inicial */}
+                  {user?.avatar_url ? (
+                    <img 
+                      src={user.avatar_url}
+                      alt={`${user.nombre} ${user.apellidos}`}
+                      className="w-12 h-12 rounded-full object-cover shadow-glow"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center shadow-glow">
+                      <span className="text-white font-bold text-lg">
+                        {user?.avatar_url?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1 text-left">
+                    <p className="menu-user-name text-white">
                       {user?.nombre} {user?.apellidos}
                     </p>
-                    <p className="text-gray-400 text-sm">{user?.email}</p>
-                    <span className={`text-xs px-2 py-1 rounded mt-1 inline-flex items-center gap-1 border ${roleBadge.className}`}>
+                    <span className={`menu-badge px-2 py-1 rounded mt-1 inline-flex items-center gap-1 border ${roleBadge.className}`}>
                       <RoleIcon size={12} />
                       {roleBadge.label}
                     </span>
                   </div>
-                </div>
+                </button>
                 
                 {/* Botón Panel Admin/Socio */}
                 {(isAdmin || isSocio) && (
@@ -169,20 +177,18 @@ const MobileMenu = ({ isOpen, onClose }) => {
                   <Button
                     variant="primary"
                     onClick={() => handleNavigation(NAV_ROUTES.UPGRADE)}
-                    className="w-full bg-gradient-to-r from-primary-500 to-primary-600"
+                    className="w-full"
                   >
-                    <Sparkles size={16} className="inline mr-2" />
                     Hazte Socio
                   </Button>
                 )}
 
                 {/* Botón Cerrar Sesión */}
                 <Button
-                  variant="outline"
+                  variant="primary"
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2"
+                  className="w-full"
                 >
-                  <LogOut size={16} />
                   Cerrar Sesión
                 </Button>
               </>

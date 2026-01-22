@@ -4,7 +4,6 @@ import DatePicker from 'react-datepicker';
 import { registerLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
-import Button from '../common/Button';
 
 // Registrar locale español
 registerLocale('es', es);
@@ -72,16 +71,22 @@ const FolderModal = ({ folder, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-primary-500/20 shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-6 flex items-center justify-between">
+        <div className="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
             {folder ? 'Editar Álbum' : 'Crear Álbum'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            className="w-10 h-10 rounded-lg hover:bg-gray-800/50 flex items-center justify-center transition-colors"
+            type="button"
           >
             <X size={24} className="text-gray-400" />
           </button>
@@ -99,7 +104,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-primary-500 focus:outline-none"
+              className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
               placeholder=""
               required
             />
@@ -115,7 +120,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
               value={formData.descripcion}
               onChange={handleChange}
               rows={4}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-primary-500 focus:outline-none resize-none"
+              className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
               placeholder=""
             />
           </div>
@@ -131,7 +136,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
               locale="es"
               dateFormat="dd/MM/yyyy"
               placeholderText=""
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-primary-500 focus:outline-none"
+              className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
               wrapperClassName="w-full"
             />
           </div>
@@ -146,7 +151,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
               name="imagen_portada_url"
               value={formData.imagen_portada_url}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-primary-500 focus:outline-none"
+              className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
               placeholder=""
             />
             <p className="text-gray-500 text-sm mt-1">
@@ -187,21 +192,19 @@ const FolderModal = ({ folder, onClose, onSave }) => {
 
           {/* Botones */}
           <div className="flex gap-3 pt-4">
-            <Button
+            <button
               type="submit"
-              variant="primary"
-              className="flex-1"
+              className="flex-1 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
             >
               {folder ? 'Guardar Cambios' : 'Crear Álbum'}
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              variant="secondary"
               onClick={onClose}
-              className="flex-1"
+              className="flex-1 px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-colors"
             >
               Cancelar
-            </Button>
+            </button>
           </div>
         </form>
       </div>

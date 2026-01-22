@@ -1,6 +1,23 @@
+/**
+ * ARCHIVO ACTUALIZADO: AdminBookings.jsx
+ * 
+ * CAMBIOS IMPLEMENTADOS:
+ * 1. Importado FilterBar y SearchInput de UI
+ * 2. INVERTIDO orden: FilterBar arriba, SearchInput abajo
+ * 3. Eliminados filtros inline custom
+ * 4. Ahora usa FilterBar genérico con customFilters
+ * 5. Mantiene toda la funcionalidad actual
+ * 
+ * DISEÑO ACTUALIZADO:
+ * Antes: [Búsqueda] → [Filtros en línea]
+ * Ahora: [FilterBar horizontal] → [SearchInput]
+ */
+
 import { useState, useEffect } from 'react';
-import { Ticket, Calendar, User, Search, Filter, X } from 'lucide-react';
+import { Ticket, Calendar, User } from 'lucide-react';
 import Loader from '../../components/common/Loader';
+import FilterBar from '../../components/UI/FilterBar';
+import SearchInput from '../../components/UI/SearchInput';
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -123,71 +140,44 @@ const AdminBookings = () => {
         </div>
       )}
 
-      {/* Filtros y Búsqueda */}
+      {/* Filtros y Búsqueda con orden correcto */}
       <div className="mb-6 space-y-4">
-        {/* Búsqueda */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Buscar por código, nombre, email o evento..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#262626] border border-[#333333] rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none transition-colors"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-            >
-              <X size={20} />
-            </button>
-          )}
-        </div>
+        {/* FilterBar arriba */}
+        <FilterBar
+          customFilters={[
+            { 
+              value: 'all', 
+              label: 'Todas', 
+              count: bookings.length 
+            },
+            { 
+              value: 'confirmada', 
+              label: 'Confirmadas', 
+              count: bookings.filter(b => b.estado === 'confirmada').length 
+            },
+            { 
+              value: 'asistida', 
+              label: 'Asistidas', 
+              count: bookings.filter(b => b.estado === 'asistida').length 
+            },
+            { 
+              value: 'cancelada', 
+              label: 'Canceladas', 
+              count: bookings.filter(b => b.estado === 'cancelada').length 
+            }
+          ]}
+          activeFilter={filter}
+          onFilterChange={(value) => setFilter(value)}
+          showCounts={true}
+        />
 
-        {/* Filtros por estado */}
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === 'all'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
-            }`}
-          >
-            Todas ({bookings.length})
-          </button>
-          <button
-            onClick={() => setFilter('confirmada')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === 'confirmada'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
-            }`}
-          >
-            Confirmadas ({bookings.filter(b => b.estado === 'confirmada').length})
-          </button>
-          <button
-            onClick={() => setFilter('asistida')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === 'asistida'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
-            }`}
-          >
-            Asistidas ({bookings.filter(b => b.estado === 'asistida').length})
-          </button>
-          <button
-            onClick={() => setFilter('cancelada')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === 'cancelada'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:bg-[#333333]'
-            }`}
-          >
-            Canceladas ({bookings.filter(b => b.estado === 'cancelada').length})
-          </button>
-        </div>
+        {/* SearchInput abajo */}
+        <SearchInput
+          value={search}
+          onChange={(val) => setSearch(val)}
+          onClear={() => setSearch('')}
+          placeholder="Buscar por código, nombre, email o evento..."
+        />
       </div>
 
       {/* Lista de reservas */}
@@ -287,7 +277,7 @@ const AdminBookings = () => {
                 onClick={() => setSelectedBooking(null)}
                 className="text-gray-400 hover:text-white"
               >
-                <X size={24} />
+                ×
               </button>
             </div>
 

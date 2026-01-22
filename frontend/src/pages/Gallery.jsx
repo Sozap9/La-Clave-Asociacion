@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import {
   Image,
-  Filter,
   X,
   Calendar,
   User,
   Plus,
   Upload,
-  Search,
-  ArrowUpDown,
 } from "lucide-react";
 import * as galleryApi from "../api/galleryApi";
 import * as eventsApi from "../api/eventsApi";
@@ -37,8 +34,10 @@ const Gallery = () => {
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [showFilters, setShowFilters] = useState(false);
+  const [sortOrder, setSortOrder] = useState("all"); // 'all', 'desc', 'asc'
+  
+  // Estados para botones admin
+  const [activeAdminAction, setActiveAdminAction] = useState(null); // 'upload' | 'create' | null
 
   // Modales
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -124,11 +123,14 @@ const Gallery = () => {
       );
     }
 
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.created_at || a.fecha_evento);
-      const dateB = new Date(b.created_at || b.fecha_evento);
-      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
-    });
+    // Ordenar solo si no es "all"
+    if (sortOrder !== "all") {
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.fecha_evento);
+        const dateB = new Date(b.created_at || b.fecha_evento);
+        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+      });
+    }
 
     setFilteredFolders(filtered);
   };
@@ -137,7 +139,7 @@ const Gallery = () => {
     setSelectedArtist(null);
     setSelectedEvent(null);
     setSearchTerm("");
-    setSortOrder("desc");
+    setSortOrder("all");
   };
 
   const handleCreateFolder = async (folderData) => {
@@ -146,6 +148,7 @@ const Gallery = () => {
       if (result.success) {
         setSuccess("Álbum creado exitosamente");
         setShowCreateFolder(false);
+        setActiveAdminAction(null);
         fetchGalleryData();
       } else {
         setError(result.message || "Error al crear álbum");
@@ -158,48 +161,71 @@ const Gallery = () => {
   const handleImageUploaded = () => {
     setSuccess("Imagen subida exitosamente");
     setShowUploadImage(false);
+    setActiveAdminAction(null);
     fetchGalleryData();
+  };
+
+  const handleUploadClick = () => {
+    setActiveAdminAction('upload');
+    setShowUploadImage(true);
+  };
+
+  const handleCreateClick = () => {
+    setActiveAdminAction('create');
+    setShowCreateFolder(true);
   };
 
   const hasActiveFilters =
     selectedArtist ||
     selectedEvent ||
     searchTerm.trim() ||
-    sortOrder !== "desc";
+    sortOrder !== "all";
 
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="min-h-screen bg-black py-12">
-      <div className="container mx-auto px-4">
-        <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="min-h-screen py-20 px-4 bg-black">
+      <div className="container-custom">
+        
+        {/* Header con botones a la derecha */}
+        <div className="mb-10 flex items-start justify-between">
           <div>
-            <h1 className="text-gradient text-5xl font-bold mb-4">Galería</h1>
+            <h1 className="text-gradient mb-2 text-4xl">Galería</h1>
             <p className="text-gray-400 text-lg">
               Explora nuestros álbumes de fotos de eventos y conciertos
             </p>
           </div>
 
+          {/* Botones Admin - Estilo filtros (negros) */}
           {isAdmin && (
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button
-                onClick={() => setShowUploadImage(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
+                onClick={handleUploadClick}
+                className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                  activeAdminAction === 'upload'
+                    ? "bg-primary-600 text-white shadow-glow"
+                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                }`}
               >
-                <Upload size={20} />
+                <Upload size={18} />
                 Subir Imagen
               </button>
               <button
-                onClick={() => setShowCreateFolder(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+                onClick={handleCreateClick}
+                className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                  activeAdminAction === 'create'
+                    ? "bg-primary-600 text-white shadow-glow"
+                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                }`}
               >
-                <Plus size={20} />
+                <Plus size={18} />
                 Crear Álbum
               </button>
             </div>
           )}
         </div>
 
+        {/* Alerts */}
         {error && (
           <Alert type="error" message={error} onClose={() => setError("")} />
         )}
@@ -212,147 +238,83 @@ const Gallery = () => {
           />
         )}
 
-        <div className="mb-8 space-y-4">
-          <div className="relative">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar álbumes por nombre o descripción..."
-              className="w-full pl-12 pr-12 py-3 bg-[#1a1a1a] border border-[#333333] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-            {searchTerm && (
+        {/* Filtros y Búsqueda */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-6 flex-wrap">
+            
+            {/* Filtros */}
+            <div className="flex flex-wrap gap-4">
               <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                onClick={() => setSortOrder("all")}
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                  sortOrder === "all"
+                    ? "bg-primary-600 text-white shadow-glow"
+                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                }`}
               >
-                ✕
+                Todos
               </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white rounded-lg transition-colors"
-            >
-              <Filter size={20} />
-              {showFilters ? "Ocultar Filtros" : "Filtros Avanzados"}
-            </button>
-
-            <button
-              onClick={() =>
-                setSortOrder(sortOrder === "desc" ? "asc" : "desc")
-              }
-              className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white rounded-lg transition-colors"
-            >
-              <ArrowUpDown size={20} />
-              {sortOrder === "desc" ? "Más Reciente" : "Más Antiguo"}
-            </button>
-
-            {hasActiveFilters && (
               <button
-                onClick={clearFilters}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                onClick={() => setSortOrder("desc")}
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                  sortOrder === "desc"
+                    ? "bg-primary-600 text-white shadow-glow"
+                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                }`}
               >
-                <X size={20} />
-                Limpiar Filtros
+                Más Recientes
               </button>
-            )}
-
-            <div className="ml-auto text-gray-400 text-sm">
-              {filteredFolders.length}{" "}
-              {filteredFolders.length === 1 ? "álbum" : "álbumes"}
+              <button
+                onClick={() => setSortOrder("asc")}
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                  sortOrder === "asc"
+                    ? "bg-primary-600 text-white shadow-glow"
+                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                }`}
+              >
+                Más Antiguos
+              </button>
             </div>
-          </div>
 
-          {showFilters && (
-            <div className="bg-[#1a1a1a] rounded-xl p-6 border border-[#262626]">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-gray-300 font-medium mb-3">
-                    Filtrar por Artista
-                  </label>
-                  {allArtists.length === 0 ? (
-                    <p className="text-gray-500 text-sm">
-                      No hay artistas disponibles
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                      {allArtists.map((artist) => (
-                        <button
-                          key={artist.id}
-                          onClick={() =>
-                            setSelectedArtist(
-                              selectedArtist?.id === artist.id ? null : artist
-                            )
-                          }
-                          className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                            selectedArtist?.id === artist.id
-                              ? "bg-primary-600 text-white"
-                              : "bg-[#0a0a0a] text-gray-300 hover:bg-[#2a2a2a]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <User size={14} />
-                            <span className="truncate">{artist.nombre}</span>
-                          </div>
-                          <span className="text-xs opacity-70">
-                            {artist.tipo === "artista"
-                              ? "Artista"
-                              : "Colectivo"}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+            {/* Barra de búsqueda a la derecha */}
+            <div className="flex-1 max-w-md ml-auto">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar álbumes por nombre..."
+                  className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-primary-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
+                />
+                
+                <svg
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
 
-                <div>
-                  <label className="block text-gray-300 font-medium mb-3">
-                    Filtrar por Evento
-                  </label>
-                  {allEvents.length === 0 ? (
-                    <p className="text-gray-500 text-sm">
-                      No hay eventos disponibles
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
-                      {allEvents.map((event) => (
-                        <button
-                          key={event.id}
-                          onClick={() =>
-                            setSelectedEvent(
-                              selectedEvent?.id === event.id ? null : event
-                            )
-                          }
-                          className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                            selectedEvent?.id === event.id
-                              ? "bg-primary-600 text-white"
-                              : "bg-[#0a0a0a] text-gray-300 hover:bg-[#2a2a2a]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Calendar size={14} />
-                            <span className="truncate">{event.titulo}</span>
-                          </div>
-                          <span className="text-xs opacity-70">
-                            {new Date(event.fecha).toLocaleDateString("es-ES")}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
+        {/* Grid de álbumes */}
         {filteredFolders.length === 0 ? (
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
             <Image size={64} className="text-gray-600 mx-auto mb-4" />
@@ -376,9 +338,13 @@ const Gallery = () => {
         )}
       </div>
 
+      {/* Modales */}
       {showCreateFolder && (
         <FolderModal
-          onClose={() => setShowCreateFolder(false)}
+          onClose={() => {
+            setShowCreateFolder(false);
+            setActiveAdminAction(null);
+          }}
           onSave={handleCreateFolder}
         />
       )}
@@ -386,7 +352,10 @@ const Gallery = () => {
       {showUploadImage && (
         <QuickImageUploadModal
           folders={folders}
-          onClose={() => setShowUploadImage(false)}
+          onClose={() => {
+            setShowUploadImage(false);
+            setActiveAdminAction(null);
+          }}
           onSuccess={handleImageUploaded}
         />
       )}
@@ -445,7 +414,7 @@ const AlbumCard = ({ folder }) => {
           </span>
         </div>
 
-        {folder.destacado && (
+        {folder.destacado === 1 && (
           <div className="absolute top-3 left-3 bg-primary-600/90 backdrop-blur-sm px-3 py-1 rounded-full">
             <span className="text-white text-xs font-semibold">DESTACADO</span>
           </div>

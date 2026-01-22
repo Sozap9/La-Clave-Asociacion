@@ -12,9 +12,8 @@ const InfoSection = ({ title, description, imageSrc, buttonText, buttonHref, rev
               <img
                 src={imageSrc}
                 alt={title}
-                className="w-full h-[450px] md:h-[550px] object-cover grayscale group-hover:grayscale-0 
-                          transition-all duration-700"
-              />
+                className="w-full h-[450px] md:h-[550px] object-cover grayscale group-hover:grayscale-0 transition-all duration-700"/>
+                
               {/* Overlay sutil */}
               <div className="absolute inset-0 bg-black/30 group-hover:bg-black/0 transition-all duration-700" />
             </div>

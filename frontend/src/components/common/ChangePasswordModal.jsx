@@ -79,13 +79,13 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
         onClick={onClose}
       />
 
-      <div className="relative bg-gray-900/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
         
-        <div className="sticky top-0 bg-gray-900/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold text-white">Cambiar Contraseña</h2>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-lg hover:bg-gray-800/50 flex items-center justify-center transition-colors"
+            className="w-10 h-10 rounded-lg hover:bg-[#1a1a1a]/50 flex items-center justify-center transition-colors"
             type="button"
           >
             <X className="w-5 h-5 text-gray-400" />
@@ -127,7 +127,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
                 name="currentPassword"
                 value={formData.currentPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 placeholder="Tu contraseña actual"
                 required
               />
@@ -142,7 +142,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 placeholder="Mínimo 6 caracteres"
                 required
               />
@@ -157,7 +157,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 placeholder="Repite la nueva contraseña"
                 required
               />
@@ -172,7 +172,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+              className="flex-1 px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-colors"
             >
               Cancelar
             </button>

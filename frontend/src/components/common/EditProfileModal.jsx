@@ -108,7 +108,6 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
         }
       });
 
-      console.log('📤 Datos a enviar:', updateData);
 
       if (Object.keys(updateData).length === 0) {
         setError('No hay cambios para guardar');
@@ -135,7 +134,6 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
       }
 
       const response = await api.put('/users/profile', updateData);
-      console.log('✅ Respuesta del servidor:', response.data);
 
       if (response.data.success) {
         setSuccess('✓ Perfil actualizado correctamente');
@@ -167,14 +165,14 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
       />
 
       {/* Modal FIJO - Sin overflow en contenedor principal */}
-      <div className="relative bg-gray-900/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-6xl max-h-[90vh] shadow-2xl flex flex-col">
+      <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-6xl max-h-[90vh] shadow-2xl flex flex-col">
         
         {/* Header FIJO */}
-        <div className="bg-gray-900/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
+        <div className="bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-white">Editar Perfil</h2>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-lg hover:bg-gray-800/50 flex items-center justify-center transition-colors"
+            className="w-10 h-10 rounded-lg hover:bg-[#1a1a1a]/50 flex items-center justify-center transition-colors"
             type="button"
           >
             <X className="w-5 h-5 text-gray-400" />
@@ -246,7 +244,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   name="nombre"
                   value={formData.nombre}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                   placeholder="Tu nombre"
                 />
               </div>
@@ -258,7 +256,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   name="apellidos"
                   value={formData.apellidos}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                   placeholder="Tus apellidos"
                 />
               </div>
@@ -270,7 +268,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                   placeholder="tu@email.com"
                 />
               </div>
@@ -282,7 +280,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                   placeholder="612345678"
                 />
               </div>
@@ -294,7 +292,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   name="fecha_nacimiento"
                   value={formData.fecha_nacimiento}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors [color-scheme:dark]"
+                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 />
               </div>
 
@@ -306,7 +304,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   value={formData.dni}
                   onChange={handleChange}
                   maxLength={9}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors uppercase"
+                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                   placeholder="12345678A"
                 />
               </div>
@@ -394,7 +392,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                className="flex-1 px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-colors"
               >
                 Cancelar
               </button>

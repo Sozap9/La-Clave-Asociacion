@@ -5,7 +5,7 @@ import * as galleryApi from '../api/galleryApi';
 import Loader from '../components/common/Loader';
 import Alert from '../components/common/Alert';
 
-// ✅ CORRECCIÓN: URL base sin /api para servir archivos estáticos
+// URL base sin /api para servir archivos estáticos
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
 
 const GalleryAlbum = () => {
@@ -82,7 +82,7 @@ const GalleryAlbum = () => {
 
   if (error || !folder) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 py-12 flex items-center justify-center">
+      <div className="min-h-screen bg-black py-20 px-4 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-white text-2xl font-bold mb-4">Álbum no encontrado</h2>
           <button
@@ -97,8 +97,8 @@ const GalleryAlbum = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 py-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-black py-20 px-4">
+      <div className="container-custom">
         <button
           onClick={() => navigate('/galeria')}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
@@ -110,7 +110,7 @@ const GalleryAlbum = () => {
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-gradient text-5xl font-bold mb-4">
+              <h1 className="text-gradient text-4xl mb-2">
                 {folder.nombre}
               </h1>
               {folder.descripcion && (
@@ -150,7 +150,7 @@ const GalleryAlbum = () => {
                 {artists.map(artist => (
                   <div
                     key={artist.id}
-                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg hover:border-primary-500/50 transition-colors"
+                    className="px-4 py-2 bg-[#1a1a1a] border border-[#262626] rounded-lg hover:border-primary-500/50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <User size={14} className="text-primary-400" />
@@ -175,7 +175,7 @@ const GalleryAlbum = () => {
         )}
 
         {images.length === 0 ? (
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-12 text-center">
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
             <Image size={64} className="text-gray-600 mx-auto mb-4" />
             <h3 className="text-white text-xl font-semibold mb-2">
               No hay imágenes en este álbum
@@ -184,7 +184,7 @@ const GalleryAlbum = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {images.map((image, index) => {
-              // ✅ CORRECCIÓN: Construir URL completa
+              // Construir URL completa
               const imageUrl = image.thumbnail_url || image.imagen_url;
               const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
               
@@ -192,7 +192,7 @@ const GalleryAlbum = () => {
                 <div
                   key={image.id}
                   onClick={() => openImageModal(image, index)}
-                  className="aspect-square bg-gray-800 rounded-lg overflow-hidden cursor-pointer group relative"
+                  className="aspect-square bg-[#1a1a1a] rounded-lg overflow-hidden cursor-pointer group relative"
                 >
                   <img
                     src={fullImageUrl}
@@ -235,7 +235,7 @@ const GalleryAlbum = () => {
 
           <div className="max-w-5xl w-full">
             {(() => {
-              // ✅ CORRECCIÓN: Construir URL completa para modal
+              // Construir URL completa para modal
               const modalImageUrl = selectedImage.imagen_url.startsWith('http') 
                 ? selectedImage.imagen_url 
                 : `${API_BASE_URL}${selectedImage.imagen_url}`;
@@ -253,7 +253,7 @@ const GalleryAlbum = () => {
               );
             })()}
 
-            <div className="mt-4 bg-gray-900/80 backdrop-blur-sm rounded-lg p-4">
+            <div className="mt-4 bg-[#1a1a1a]/90 backdrop-blur-sm rounded-lg p-4">
               {selectedImage.titulo && (
                 <h3 className="text-white text-xl font-bold mb-2">
                   {selectedImage.titulo}

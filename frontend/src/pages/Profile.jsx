@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { User, Mail, Phone, Calendar, CreditCard, Shield, Crown, UserCircle, Edit, Lock } from 'lucide-react';
 import api from '../api/axios';
@@ -8,6 +9,7 @@ import ChangePasswordModal from '../components/common/ChangePasswordModal';
 
 const Profile = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,13 +49,17 @@ const Profile = () => {
     fetchUserData();
   };
 
+  const handleUpgradeClick = () => {
+    navigate('/mejorar-cuenta');
+  };
+
   if (loading) {
-    return <Loader />;
+    return <Loader fullScreen />;
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center">
           <p className="text-red-400 text-xl mb-4">{error}</p>
           <button onClick={fetchUserData} className="btn-primary">Reintentar</button>
@@ -64,7 +70,7 @@ const Profile = () => {
 
   if (!userData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
         <div className="text-center">
           <p className="text-white text-xl mb-4">No se encontraron datos del perfil</p>
           <button onClick={fetchUserData} className="btn-primary">Reintentar</button>
@@ -83,8 +89,8 @@ const Profile = () => {
     socio: {
       label: 'Socio',
       icon: Crown,
-      bgColor: 'bg-gradient-to-r from-purple-500/20 to-pink-500/20',
-      borderColor: 'border-purple-500/30'
+      bgColor: 'bg-gradient-to-r from-primary-500/20 to-pink-500/20',
+      borderColor: 'border-primary-500/30'
     },
     basico: {
       label: 'Usuario Básico',
@@ -96,25 +102,27 @@ const Profile = () => {
 
   const config = roleConfig[userData.role] || roleConfig.basico;
   const RoleIcon = config.icon;
+  const isBasicUser = userData.role === 'basico';
 
   return (
-    <div className="min-h-screen py-20 px-4 bg-gradient-to-b from-black to-black">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen p-8 bg-[#0a0a0a]">
+      <div className="max-w-6xl mx-auto">
+        
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-gradient mb-4">Mi Perfil</h1>
+        <div className="mb-8">
+          <h1 className="text-gradient mb-2 text-4xl">Mi Perfil</h1>
           <p className="text-gray-400 text-lg">Información de tu cuenta</p>
         </div>
 
         {/* Card Principal */}
-        <div className="bg-gradient-to-br from-primary-900/20 via-primary-800/10 to-[#1a1a1a]/20 backdrop-blur-sm rounded-2xl border border-primary-500/10 overflow-hidden shadow-2xl">
+        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl overflow-hidden shadow-2xl">
           
           {/* Header con avatar y nombre */}
-          <div className="relative p-8 border-b border-primary-500/10">
-            <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="relative p-8 border-b border-[#262626]">
+            <div className="flex flex-col lg:flex-row items-start gap-8">
               
               {/* Avatar con badge */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-4xl font-bold shadow-2xl">
                   {userData.avatar_url ? (
                     <img 
@@ -130,36 +138,39 @@ const Profile = () => {
                   )}
                 </div>
                 
+                {/* Badge simple - sin funcionalidad de click */}
                 <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${config.bgColor} ${config.borderColor} border-2 rounded-full px-3 py-1 flex items-center gap-1.5 shadow-lg backdrop-blur-sm whitespace-nowrap`}>
                   <RoleIcon className="w-4 h-4 flex-shrink-0" />
                   <span className="text-xs font-semibold text-white">{config.label}</span>
                 </div>
               </div>
 
-              {/* Nombre y botones */}
-              <div className="flex-1 text-center md:text-left">
-                <h2 className="text-3xl font-bold text-white mb-2">
-                  {userData.nombre || 'Usuario'} {userData.apellidos || ''}
-                </h2>
-                
-                <div className="h-1 w-20 bg-gradient-to-r from-primary-500 to-pink-500 rounded-full mx-auto md:mx-0 mb-4"></div>
-                
-                {/* Botones */}
-                <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                  <button
-                    onClick={() => setShowEditModal(true)}
-                    className="btn-secondary flex items-center gap-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Editar Perfil
-                  </button>
-                  <button
-                    onClick={() => setShowPasswordModal(true)}
-                    className="btn-secondary flex items-center gap-2"
-                  >
-                    <Lock className="w-4 h-4" />
-                    Cambiar Contraseña
-                  </button>
+              {/* Información */}
+              <div className="flex-1 w-full">
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-2">
+                    {userData.nombre || 'Usuario'} {userData.apellidos || ''}
+                  </h2>
+                  {/* Línea más fina y solo morado */}
+                  <div className="h-0.5 w-20 bg-primary-500 rounded-full mb-4"></div>
+                  
+                  {/* Botones debajo del nombre */}
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-all border border-[#262626] hover:border-primary-500/50 flex items-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Editar Perfil
+                    </button>
+                    <button
+                      onClick={() => setShowPasswordModal(true)}
+                      className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-all border border-[#262626] hover:border-primary-500/50 flex items-center gap-2"
+                    >
+                      <Lock className="w-4 h-4" />
+                      Cambiar Contraseña
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -170,7 +181,7 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Email */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Mail className="w-5 h-5 text-primary-400" />
                 </div>
@@ -181,7 +192,7 @@ const Profile = () => {
               </div>
 
               {/* Teléfono */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Phone className="w-5 h-5 text-primary-400" />
                 </div>
@@ -194,7 +205,7 @@ const Profile = () => {
               </div>
 
               {/* Fecha de Nacimiento */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-5 h-5 text-primary-400" />
                 </div>
@@ -213,7 +224,7 @@ const Profile = () => {
               </div>
 
               {/* DNI */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <CreditCard className="w-5 h-5 text-primary-400" />
                 </div>
@@ -226,7 +237,7 @@ const Profile = () => {
               </div>
 
               {/* Usuario */}
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
+              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <UserCircle className="w-5 h-5 text-primary-400" />
                 </div>
@@ -238,7 +249,7 @@ const Profile = () => {
 
               {/* Miembro desde */}
               {userData.created_at && (
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a1a]/30 border border-[#333333]/30">
+                <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                   <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                     <Calendar className="w-5 h-5 text-primary-400" />
                   </div>
@@ -256,6 +267,28 @@ const Profile = () => {
               )}
             </div>
           </div>
+
+          {/* Call-to-Action grande para usuarios básicos - ÚNICA OPCIÓN */}
+          {isBasicUser && (
+            <div className="p-8 pt-0">
+              <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-sm rounded-xl p-6 border border-primary-500/20 text-center">
+                <Crown className="w-12 h-12 text-primary-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  Mejora tu Experiencia
+                </h3>
+                <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                  Únete como socio por solo 10€/mes y disfruta de acceso completo a todos los eventos, 
+                  galería exclusiva y beneficios especiales de la comunidad.
+                </p>
+                <button
+                  onClick={handleUpgradeClick}
+                  className="px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white rounded-lg font-bold transition-all shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50 hover:scale-105"
+                >
+                  Ver Planes de Membresía →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

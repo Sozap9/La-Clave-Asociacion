@@ -18,7 +18,7 @@ const Loader = ({ size = 'md', fullScreen = false }) => {
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-gray-950 bg-opacity-75 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-[#0a0a0a] bg-opacity-75 flex items-center justify-center z-50">
         {spinner}
       </div>
     );

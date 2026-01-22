@@ -40,7 +40,7 @@ const FeaturedEventsCarousel = () => {
 
   if (loading) {
     return (
-      <section className="py-24 bg-gray-950">
+      <section className="py-24 bg-[#0a0a0a]">
         <div className="container-custom">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
@@ -51,7 +51,7 @@ const FeaturedEventsCarousel = () => {
   }
 
   return (
-    <section className="py-24 bg-gray-950 border-t border-gray-900">
+    <section className="py-24 bg-[#0a0a0a] border-t border-[#262626]">
       <div className="container-custom px-6">
         {/* Header centrado */}
         <div className="text-center mb-16">

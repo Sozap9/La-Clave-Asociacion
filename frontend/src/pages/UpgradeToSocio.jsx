@@ -104,7 +104,7 @@ const UpgradeToSocio = () => {
         {/* Comparación de Planes */}
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           {/* Usuario Básico */}
-          <div className="bg-gray-900/50 backdrop-blur-lg rounded-2xl p-8 border border-gray-700">
+          <div className="bg-[#0a0a0a]/50 backdrop-blur-lg rounded-2xl p-8 border border-[#262626]">
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold text-gray-400 mb-2">Usuario Básico</h3>
               <p className="text-4xl font-bold text-white">Gratis</p>
@@ -148,7 +148,7 @@ const UpgradeToSocio = () => {
 
           <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
             {/* Paso 1: Subir DNI */}
-            <div className="bg-gray-900/50 rounded-xl p-6">
+            <div className="bg-[#0a0a0a]/50 rounded-xl p-6">
               <h3 className="text-xl font-semibold text-white mb-4">
                 Paso 1: Verificación de Identidad
               </h3>
@@ -211,7 +211,7 @@ const UpgradeToSocio = () => {
             </div>
 
             {/* Paso 2: Pago */}
-            <div className="bg-gray-900/50 rounded-xl p-6">
+            <div className="bg-[#0a0a0a]/50 rounded-xl p-6">
               <h3 className="text-xl font-semibold text-white mb-4">
                 Paso 2: Configurar Pago
               </h3>

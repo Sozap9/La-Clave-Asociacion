@@ -1,12 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Zen+Dots&family=Roboto:wght@300;400;500;700;900&display=swap");
+
+@import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Kodchasan:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&family=Orbitron:wght@400..900&family=Oxanium:wght@200..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ========================================
-   ESTILOS GLOBALES - LA CLAVE (DARK THEME)
-======================================== */
 
 @layer base {
   * {
@@ -15,8 +14,11 @@
 
   body {
     @apply bg-black text-white antialiased;
-    font-family: "Inter", sans-serif;
+    font-family: "Oxanium", sans-serif;
   }
+
+
+/* Tipografías para títulos */
 
   h1,
   h2,
@@ -24,8 +26,9 @@
   h4,
   h5,
   h6 {
-    font-family: "Poppins", sans-serif;
-    @apply font-bold;
+    font-family: "Zen Dots", sans-serif;
+    @apply font-normal;
+    letter-spacing: 0.05em;
   }
 
   h1 {
@@ -40,9 +43,31 @@
     @apply text-3xl md:text-4xl;
   }
 
-  /* Scrollbar personalizado - más oscuro */
+
+/* Tipografías para párrafos y textos generales */
+
+p,
+span,
+a, 
+li
+label { 
+    font-family: "ubuntu", sans-serif;
+    @apply text-base md:text-lg;
+}
+
+button,
+input,
+select,
+option ,
+textarea{ 
+    font-family: "Ubuntu", sans-serif;
+    @apply text-base md:text-lg;
+}
+
+
+  /* Scrollbar personalizado */
   ::-webkit-scrollbar {
-    width: 7px;
+    width: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -50,7 +75,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary-600 rounded-full;
+    @apply bg-primary-600 ;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -59,9 +84,29 @@
 }
 
 @layer components {
-  /* ========================================
-     BOTONES
-  ======================================== */
+
+/* Menú Hamburguesa */
+  .menu-title {
+    font-family: "Zen Dots", sans-serif;
+    @apply text-xl font-normal tracking-wider;
+  }
+
+  .menu-nav-item {
+    font-family: "Ubuntu", sans-serif;
+    @apply text-lg font-medium tracking-wide;
+  }
+
+  .menu-user-name {
+    font-family: "Ubuntu", sans-serif;
+    @apply text-base font-semibold;
+  }
+
+  .menu-badge {
+    font-family: "Ubuntu", sans-serif;
+    @apply text-xs font-normal uppercase tracking-wider;
+  }
+
+
   .btn {
     @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 
            inline-flex items-center justify-center gap-2 disabled:opacity-50 
@@ -86,9 +131,6 @@
     @apply bg-transparent hover:bg-[#1a1a1a] text-gray-300 hover:text-white;
   }
 
-  /* ========================================
-     CARDS
-  ======================================== */
   .card {
     @apply bg-[#1a1a1a] rounded-xl border border-[#262626] overflow-hidden 
         transition-all duration-300 hover:border-primary-600 hover:shadow-lg hover:shadow-primary-600/20;
@@ -99,9 +141,6 @@
         border border-primary-500/30 shadow-lg shadow-primary-600/20;
   }
 
-  /* ========================================
-     INPUTS
-  ======================================== */
   .input {
     @apply w-full px-4 py-3 bg-[#1a1a1a] border border-[#333333] rounded-lg 
         text-white placeholder-gray-500 
@@ -117,9 +156,6 @@
     @apply block text-sm font-medium text-gray-300 mb-2;
   }
 
-  /* ========================================
-     CONTENEDORES
-  ======================================== */
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
@@ -128,9 +164,6 @@
     @apply py-16 md:py-24;
   }
 
-  /* ========================================
-     EFECTOS
-  ======================================== */
   .text-gradient {
     @apply bg-gradient-to-r from-primary-300 via-primary-400 to-primary-600 
         bg-clip-text text-transparent;
@@ -141,9 +174,6 @@
     -webkit-backdrop-filter: blur(10px);
   }
 
-  /* ========================================
-    ANIMACIONES
-  ======================================== */
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;
   }
@@ -153,7 +183,6 @@
   }
 }
 
-/* Animaciones adicionales */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -184,9 +213,6 @@
   animation: slideUp 0.8s ease-out 0.2s both;
 }
 
-/* ========================================
-  UTILIDADES PERSONALIZADAS
-======================================== */
 @layer utilities {
   .text-shadow {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -206,7 +232,6 @@
       radial-gradient(at 0% 50%, rgba(178, 132, 216, 0.08) 0px, transparent 50%);
   }
 
-  /* Animación slide desde la derecha */
   @keyframes slideLeft {
     from {
       transform: translateX(100%);
@@ -219,12 +244,14 @@
   .animate-slide-left {
     animation: slideLeft 0.3s ease-out;
   }
+
+  .font-display {
+    font-family: "Zen Dots", sans-serif;
+    letter-spacing: 0.1em;
+  }
 }
 
-/* ========================================
-  REACT DATEPICKER - ESTILOS PERSONALIZADOS (DARK)
-======================================== */
-
+/* [... React Datepicker styles iguales ...] */
 .react-datepicker {
   background-color: #1a1a1a !important;
   border: 1px solid #333333 !important;
