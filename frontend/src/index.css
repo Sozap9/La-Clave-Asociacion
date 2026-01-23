@@ -21,14 +21,18 @@
 /* Tipografías para títulos */
 
   h1,
-  h2,
+  h2 {
+    font-family: "Zen Dots", sans-serif;
+    @apply font-normal;
+    letter-spacing: 0.05em;
+  }
+
   h3,
   h4,
   h5,
   h6 {
-    font-family: "Zen Dots", sans-serif;
-    @apply font-normal;
-    letter-spacing: 0.05em;
+    font-family: "Kodchasan", sans-serif;
+    @apply font-medium;
   }
 
   h1 {
@@ -46,21 +50,22 @@
 
 /* Tipografías para párrafos y textos generales */
 
-p,
+button,
 span,
-a, 
-li
-label { 
-    font-family: "ubuntu", sans-serif;
+
+li { 
+    font-family: "Ubuntu", sans-serif;
     @apply text-base md:text-lg;
 }
 
-button,
+p,
+a,
+label,
 input,
 select,
 option ,
 textarea{ 
-    font-family: "Ubuntu", sans-serif;
+    font-family: "Kodchasan", sans-serif;
     @apply text-base md:text-lg;
 }
 

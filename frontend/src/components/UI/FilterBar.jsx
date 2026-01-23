@@ -1,7 +1,6 @@
 /**
- * COMPONENTE ACTUALIZADO: FilterBar.jsx
- * 
- * CAMBIO IMPLEMENTADO:
+  * Componente FilterBar
+  * 
  * - Ahora es GENÉRICO y acepta filtros personalizados vía props
  * - MANTIENE compatibilidad con uso actual en AdminEvents.jsx y Events.jsx
  * - Si no se pasan filtros custom, usa los de eventos por defecto
@@ -27,19 +26,18 @@
  */
 
 import React from "react";
-import { Star } from "lucide-react";
+
 
 const FilterBar = ({ 
-  filters,           // Para modo eventos (compatibilidad)
+  filters,           // Para modo eventos 
   onFilterChange,    // Callback
-  customFilters,     // Para modo genérico (nuevo)
-  activeFilter,      // Para modo genérico (nuevo)
+  customFilters,     // Para modo genérico 
+  activeFilter,      // Para modo genérico 
   showCounts = false // Opcional: mostrar contadores
 }) => {
   
-  // ========================================
-  // MODO GENÉRICO (nuevo)
-  // ========================================
+  // MODO GENÉRICO 
+
   if (customFilters) {
     return (
       <div className="flex flex-wrap gap-4">
@@ -61,9 +59,8 @@ const FilterBar = ({
     );
   }
 
-  // ========================================
   // MODO EVENTOS (mantiene compatibilidad)
-  // ========================================
+
   const handleStatusChange = (status) => {
     onFilterChange({ ...filters, status, featured: undefined });
   };
@@ -121,7 +118,6 @@ const FilterBar = ({
             : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
         }`}
       >
-        <Star size={18} fill={isFeaturedActive ? "currentColor" : "none"} />
         Destacados
       </button>
     </div>

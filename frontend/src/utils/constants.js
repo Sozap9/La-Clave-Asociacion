@@ -1,13 +1,15 @@
+
+
 // Constantes de la aplicación
 export const APP_NAME = 'La Clave';
 
 // URLs de redes sociales (temporales - actualizar luego)
 export const SOCIAL_LINKS = {
-  whatsapp: 'https://wa.me/34600000000',
-  soundcloud: 'https://soundcloud.com/laclave',
-  youtube: 'https://youtube.com/@laclave',
-  facebook: 'https://facebook.com/laclave',
-  instagram: 'https://instagram.com/laclave'
+  whatsapp: '',
+  soundcloud: 'https://soundcloud.com/hochspannung12',
+  youtube: '',
+  facebook: '',
+  instagram: 'https://www.instagram.com/essenzclub/'
 };
 
 // Links del footer
@@ -15,7 +17,7 @@ export const FOOTER_LINKS = {
   privacy: '/privacidad',
   terms: '/terminos',
   statutes: '/estatutos',
-  location: '/ubicacion'
+  location: 'https://maps.app.goo.gl/XK1mSxFxQnQvSMod6'
 };
 
 // Rutas de navegación

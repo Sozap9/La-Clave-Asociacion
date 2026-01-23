@@ -27,8 +27,6 @@ const Events = () => {
     setError("");
 
     try {
-      console.log("📥 Fetching events with filters:", filters);
-
       // Build query params based on filters
       const queryParams = {};
 
@@ -48,8 +46,6 @@ const Events = () => {
 
       const result = await getAllEvents(queryParams);
 
-      console.log("📦 Response:", result);
-
       if (result.success) {
         setEvents(result.data || []);
       } else {
@@ -57,7 +53,6 @@ const Events = () => {
         setEvents([]);
       }
     } catch (err) {
-      console.error("❌ Error fetching events:", err);
       setError("Error de conexión. Intenta de nuevo.");
       setEvents([]);
     } finally {
@@ -89,11 +84,11 @@ const Events = () => {
   return (
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
-        {/* Header alineado a la izquierda */}
+        {/* Header*/}
         <div className="mb-10">
           <h1 className="text-gradient mb-2 text-4xl">Eventos</h1>
           <p className="text-gray-400 text-lg">
-            Descubre los mejores eventos y reserva tu plaza
+            Descubre nuestros eventos y reserva tu plaza.
           </p>
         </div>
 
@@ -113,7 +108,7 @@ const Events = () => {
                   setFilters((s) => ({ ...s, search: val }))
                 }
                 onClear={() => setFilters({ ...filters, search: "" })}
-                placeholder="Buscar eventos por nombre..."
+                placeholder="Buscar eventos..."
                 debounceMs={350}
               />
             </div>

@@ -139,7 +139,7 @@ const AdminDraftEvents = () => {
   if (loading && events.length === 0) return <Loader fullScreen />;
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black min-h-screen">
       {/* Header*/}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -187,7 +187,7 @@ const AdminDraftEvents = () => {
       )}
 
       {/* Search */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
+      <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-6">
         <SearchInput
           value={search}
           onChange={(val) => {
@@ -223,7 +223,7 @@ const AdminDraftEvents = () => {
             return (
               <div
                 key={event.id}
-                className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-primary-500/50 transition-all"
+                className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
               >
                 <div className="flex items-start justify-between">
                   {/* Info del evento */}
@@ -305,7 +305,7 @@ const AdminDraftEvents = () => {
                       onClick={() => handleToggleFeatured(event.id)}
                       className={`p-2 rounded-lg transition-colors ${
                         isFeatured
-                          ? "text-primary-700 hover:bg-primary-700/20"
+                          ? "text-primary-300 hover:bg-primary-500/20"
                           : "text-gray-400 hover:bg-gray-500/20"
                       }`}
                       title={isFeatured ? "Quitar destacado" : "Destacar"}
@@ -321,7 +321,7 @@ const AdminDraftEvents = () => {
                       onClick={() =>
                         navigate(`/admin/eventos/editar/${event.id}`)
                       }
-                      className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                      className="p-2 text-primary-300 hover:bg-primary-500/20 rounded-lg transition-colors"
                       title="Editar"
                     >
                       <Edit size={20} />

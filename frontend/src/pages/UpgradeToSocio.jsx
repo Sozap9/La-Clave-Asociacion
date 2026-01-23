@@ -60,21 +60,15 @@ const UpgradeToSocio = () => {
   };
 
   const beneficiosSocio = [
-    'Acceso completo a todos los eventos',
-    'Reservas prioritarias',
+    'Acceso a todos los eventos',
+    'Reservar entradas ',
     'Galería de fotos exclusiva',
-    'Descuentos en merchandising',
-    'Invitaciones a eventos especiales',
-    'Newsletter exclusiva'
   ];
 
   const comparacion = [
     { feature: 'Acceso a eventos', basico: false, socio: true },
     { feature: 'Reservar entradas', basico: false, socio: true },
     { feature: 'Galería de fotos', basico: false, socio: true },
-    { feature: 'Eventos especiales', basico: false, socio: true },
-    { feature: 'Descuentos', basico: false, socio: true },
-    { feature: 'Newsletter', basico: false, socio: true },
   ];
 
   return (
@@ -94,10 +88,10 @@ const UpgradeToSocio = () => {
         
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Conviértete en Socio de La Clave
+            Conviértete en socio de La Clave
           </h1>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-            Desbloquea acceso completo a eventos, galería y beneficios exclusivos por solo 10€/mes
+            Desbloquea acceso completo todos los beneficios por solo 10€/mes
           </p>
         </div>
 
@@ -126,8 +120,7 @@ const UpgradeToSocio = () => {
             </div>
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold text-white mb-2">Socio</h3>
-              <p className="text-5xl font-bold text-primary-400 mb-1">10€</p>
-              <p className="text-gray-300">/mes</p>
+              <p className="text-4xl font-bold text-primary-400 mb-1">10€/mes</p>
             </div>
             <ul className="space-y-3">
               {beneficiosSocio.map((beneficio, index) => (
@@ -142,17 +135,14 @@ const UpgradeToSocio = () => {
 
         {/* Formulario de Upgrade */}
         <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20">
-          <h2 className="text-3xl font-bold text-white text-center mb-8">
-            Comienza tu Membresía
-          </h2>
 
           <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
             {/* Paso 1: Subir DNI */}
             <div className="bg-[#0a0a0a]/50 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">
+              <h3 className="text-xl font-semibold text-white mb-4 text-center">
                 Paso 1: Verificación de Identidad
               </h3>
-              <p className="text-gray-400 mb-6">
+              <p className="text-gray-400 mb-6 text-center">
                 Para cumplir con la normativa, necesitamos verificar tu identidad. 
                 Por favor, sube ambas caras de tu DNI o NIE.
               </p>
@@ -212,16 +202,16 @@ const UpgradeToSocio = () => {
 
             {/* Paso 2: Pago */}
             <div className="bg-[#0a0a0a]/50 rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">
+              <h3 className="text-xl font-semibold text-white mb-4 text-center">
                 Paso 2: Configurar Pago
               </h3>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-400 mb-4 text-center">
                 Serás redirigido a Stripe para configurar tu método de pago de forma segura.
               </p>
               <div className="flex items-center justify-center gap-4 text-gray-400">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" 
-                     alt="Stripe" 
-                     className="h-8 opacity-70" />
+                    alt="Stripe" 
+                    className="h-8 opacity-70" />
                 <span>Pago 100% seguro</span>
               </div>
             </div>

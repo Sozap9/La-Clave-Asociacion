@@ -55,7 +55,7 @@ const AdminStatsEventos = () => {
           Estadísticas de Eventos
         </h1>
         <p className="text-gray-400">
-          Análisis detallado de eventos y ocupación
+          Estadísticas detalladas sobre el rendimiento y la participación en los eventos.
         </p>
       </div>
 
@@ -65,7 +65,7 @@ const AdminStatsEventos = () => {
 
       {stats && (
         <>
-          {/* Stats principales */}
+          {/* Principales */}
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <StatCard
               title="Total Eventos"
@@ -76,26 +76,23 @@ const AdminStatsEventos = () => {
               title="Publicados"
               value={stats.publicados || 0}
               icon={Calendar}
-              color="green"
             />
             <StatCard
               title="Próximos"
               value={stats.proximos || 0}
               icon={TrendingUp}
-              color="blue"
             />
             <StatCard
               title="Promedio Reservas"
               value={stats.promedio_reservas || 0}
               icon={Users}
-              color="primary"
             />
           </div>
 
           {/* Top Eventos */}
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-8">
             <h3 className="text-xl font-semibold text-white mb-4">
-              Top 5 Eventos (últimos 90 días)
+              Top 5 Eventos 
             </h3>
             <div className="space-y-3">
               {stats.top_eventos?.map((evento, index) => (

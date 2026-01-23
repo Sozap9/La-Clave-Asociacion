@@ -1,16 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import DatePicker from "react-datepicker";
-import { registerLocale } from "react-datepicker";
-import es from "date-fns/locale/es";
-import "react-datepicker/dist/react-datepicker.css";
 import { createEvent, updateEvent } from "../../api/adminApi";
 import { getEventById } from "../../api/eventsApi";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
-
-// Registrar locale español
-registerLocale("es", es);
+import DatePickerInput from "../../components/common/DatePickerInput";
 
 const AdminEventForm = () => {
   const navigate = useNavigate();
@@ -55,8 +49,8 @@ const AdminEventForm = () => {
           fecha: event.fecha_evento
             ? event.fecha_evento.split("T")[0]
             : event.fecha
-            ? event.fecha.split("T")[0]
-            : "",
+              ? event.fecha.split("T")[0]
+              : "",
           hora_inicio: event.hora_evento || event.hora_inicio || "",
           hora_fin: event.hora_fin || "",
           ubicacion: event.ubicacion || "",
@@ -81,18 +75,40 @@ const AdminEventForm = () => {
   };
 
   // Manejar blur (cuando el usuario sale del campo) para autocompletar minutos
-  const handleTimeBlur = (e) => {
-    const { name, value } = e.target;
+  // Autocompletar hora_inicio cuando se escriben 2 dígitos
+  const handleHoraInicioChange = (e) => {
+    let value = e.target.value;
 
-    if (value && !value.includes(":")) {
-      // Si solo escribió la hora sin minutos
-      const hora = value.trim().padStart(2, "0");
-      const horaNum = parseInt(hora);
+    // Solo permitir números y dos puntos
+    value = value.replace(/[^0-9:]/g, "");
 
-      if (horaNum >= 0 && horaNum <= 23) {
-        setFormData((prev) => ({ ...prev, [name]: `${hora}:00` }));
+    // Si escribe 2 dígitos (ej: "23"), añadir :00
+    if (value.length === 2 && !value.includes(":")) {
+      const hora = parseInt(value);
+      if (hora >= 0 && hora <= 23) {
+        value = `${value}:00`;
       }
     }
+
+    setFormData((prev) => ({ ...prev, hora_inicio: value }));
+  };
+
+  // Autocompletar hora_fin cuando se escriben 2 dígitos
+  const handleHoraFinChange = (e) => {
+    let value = e.target.value;
+
+    // Solo permitir números y dos puntos
+    value = value.replace(/[^0-9:]/g, "");
+
+    // Si escribe 2 dígitos (ej: "14"), añadir :00
+    if (value.length === 2 && !value.includes(":")) {
+      const hora = parseInt(value);
+      if (hora >= 0 && hora <= 23) {
+        value = `${value}:00`;
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, hora_fin: value }));
   };
 
   const handleDateChange = (date) => {
@@ -134,7 +150,7 @@ const AdminEventForm = () => {
       formDataToSend.append("titulo", formData.nombre);
       formDataToSend.append("descripcion", formData.descripcion);
       formDataToSend.append("fecha_evento", formData.fecha);
-      formDataToSend.append("hora_evento", formData.hora_inicio); // Usar hora_inicio como hora del evento
+      formDataToSend.append("hora_evento", formData.hora_inicio);
       formDataToSend.append("ubicacion", formData.ubicacion);
       formDataToSend.append("aforo_maximo", formData.aforo_maximo);
       formDataToSend.append("precio_socio", formData.precio || "0");
@@ -176,8 +192,8 @@ const AdminEventForm = () => {
         </h1>
         <p className="text-gray-400 text-lg">
           {isEditMode
-            ? "Actualiza la información del evento"
-            : "Completa los datos del nuevo evento"}
+            ? "Actualiza la información del evento."
+            : "Completa los datos del nuevo evento."}
         </p>
       </div>
 
@@ -190,7 +206,7 @@ const AdminEventForm = () => {
 
       {success && (
         <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded-lg mb-6">
-          ¡Evento guardado exitosamente! Redirigiendo...
+          ¡Evento creado!
         </div>
       )}
 
@@ -201,7 +217,7 @@ const AdminEventForm = () => {
       >
         {/* Nombre */}
         <div>
-          <label className="label">Nombre del Evento *</label>
+          <label className="label"> Nombre del Evento </label>
           <input
             type="text"
             name="nombre"
@@ -214,7 +230,7 @@ const AdminEventForm = () => {
 
         {/* Descripción */}
         <div>
-          <label className="label">Descripción *</label>
+          <label className="label"> Descripción </label>
           <textarea
             name="descripcion"
             value={formData.descripcion}
@@ -227,39 +243,37 @@ const AdminEventForm = () => {
         {/* Fecha y Horarios */}
         <div className="grid md:grid-cols-3 gap-6">
           <div>
-            <label className="label">Fecha *</label>
-            <DatePicker
+            <label className="label"> Fecha </label>
+            <DatePickerInput
               selected={selectedDate}
               onChange={handleDateChange}
-              locale="es"
-              dateFormat="dd/MM/yyyy"
               minDate={new Date()}
-              placeholderText=""
-              className="input w-full"
               required
             />
           </div>
           <div>
-            <label className="label">Hora Inicio *</label>
+            <label className="label"> Hora Inicio </label>
             <input
-              type="time"
+              type="text"
               name="hora_inicio"
+              placeholder="Ej: 22 o 22:30"
               value={formData.hora_inicio}
-              onChange={handleChange}
-              onBlur={handleTimeBlur}
+              onChange={handleHoraInicioChange}
               className="input"
+              maxLength="5"
               required
             />
           </div>
           <div>
-            <label className="label">Hora Fin *</label>
+            <label className="label"> Hora Fin </label>
             <input
-              type="time"
+              type="text"
               name="hora_fin"
+              placeholder="Ej: 02 o 02:30"
               value={formData.hora_fin}
-              onChange={handleChange}
-              onBlur={handleTimeBlur}
+              onChange={handleHoraFinChange}
               className="input"
+              maxLength="5"
               required
             />
           </div>
@@ -268,7 +282,7 @@ const AdminEventForm = () => {
         {/* Ubicación y Aforo */}
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <label className="label">Ubicación *</label>
+            <label className="label"> Ubicación </label>
             <input
               type="text"
               name="ubicacion"
@@ -279,13 +293,13 @@ const AdminEventForm = () => {
             />
           </div>
           <div>
-            <label className="label">Aforo Máximo *</label>
+            <label className="label"> Aforo Máximo</label>
             <input
               type="number"
               name="aforo_maximo"
               value={formData.aforo_maximo}
               onChange={handleChange}
-              className="input"
+              className="input [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&[type=number]]:[-moz-appearance:textfield]"
               min="1"
               required
             />
@@ -294,13 +308,13 @@ const AdminEventForm = () => {
 
         {/* Precio */}
         <div>
-          <label className="label">Precio (€) - Opcional</label>
+          <label className="label">Precio (€) - Opcional </label>
           <input
             type="number"
             name="precio"
             value={formData.precio}
             onChange={handleChange}
-            className="input"
+            className="input [&::-webkit-outer-spin-button]:[-webkit-appearance:none] [&::-webkit-inner-spin-button]:[-webkit-appearance:none] [&[type=number]]:[-moz-appearance:textfield]"
             min="0"
             step="0.01"
           />
@@ -308,16 +322,16 @@ const AdminEventForm = () => {
 
         {/* Imagen */}
         <div>
-          <label className="label">Imagen del Evento</label>
+          <label className="label"> Imagen del Evento </label>
           <input
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            className="input"
+            className="input file:px-3 file:py-1.5 file:text-sm file:font-medium file:bg-primary-600 file:text-white file:border-0 file:rounded file:cursor-pointer file:mr-4 text-xs"
           />
           {imagePreview && (
             <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-2">Vista previa:</p>
+              <p className="text-gray-400 text-sm mb-2"> Vista previa </p>
               <img
                 src={imagePreview}
                 alt="Preview"
@@ -338,8 +352,8 @@ const AdminEventForm = () => {
             {loading
               ? "Guardando..."
               : isEditMode
-              ? "Actualizar Evento"
-              : "Crear Evento"}
+                ? "Actualizar Evento"
+                : "Crear Evento"}
           </Button>
           <Button
             type="button"

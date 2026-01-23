@@ -1,38 +1,39 @@
-import { useState } from 'react';
-import Button from '../components/common/Button';
-import { NAV_ROUTES } from '../utils/constants';
+import { useState } from "react";
+import Button from "../components/common/Button";
+import DatePickerInput from "../components/common/DatePickerInput";
+import { NAV_ROUTES } from "../utils/constants";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    nombre: '',
-    apellidos: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    telefono: '',
-    fecha_nacimiento: '',
-    dni: ''
+    username: "",
+    nombre: "",
+    apellidos: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    telefono: "",
+    fecha_nacimiento: "",
+    dni: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     // Validar que las contraseñas coincidan
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError("Las contraseñas no coinciden");
       setLoading(false);
       return;
     }
@@ -41,13 +42,16 @@ const Register = () => {
       // Preparar datos SIN confirmPassword
       const { confirmPassword, ...dataToSend } = formData;
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/basic`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/register/basic`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dataToSend),
         },
-        body: JSON.stringify(dataToSend)
-      });
+      );
 
       const data = await response.json();
 
@@ -55,18 +59,18 @@ const Register = () => {
         setSuccess(true);
         // Guardar tokens si vienen
         if (data.data.accessToken) {
-          localStorage.setItem('accessToken', data.data.accessToken);
-          localStorage.setItem('refreshToken', data.data.refreshToken);
+          localStorage.setItem("accessToken", data.data.accessToken);
+          localStorage.setItem("refreshToken", data.data.refreshToken);
         }
         setTimeout(() => {
           window.location.href = NAV_ROUTES.HOME;
         }, 2000);
       } else {
-        setError(data.message || 'Error al registrarse');
+        setError(data.message || "Error al registrarse");
       }
     } catch (err) {
-      console.error('Error en registro:', err);
-      setError('Error de conexión. Intenta de nuevo.');
+      console.error("Error en registro:", err);
+      setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -86,22 +90,24 @@ const Register = () => {
 
       {/* Contenido */}
       <div className="relative z-20 container-custom max-w-4xl">
-        
         {/* Texto Explicativo */}
         <div className="text-center mb-12">
           <p className="text-gray-300 text-lg leading-relaxed max-w-3xl mx-auto">
-            Únete a La Clave y disfruta de eventos exclusivos, descuentos y mucho más.
+            Únete a La Clave y disfruta de eventos exclusivos, descuentos y
+            mucho más.
           </p>
           <p className="text-gray-400 mt-4 leading-relaxed max-w-3xl mx-auto">
-            Regístrate como usuario básico de forma gratuita. Si quieres acceder a beneficios exclusivos, 
-            podrás mejorar tu membresía a socio más adelante.
+            Regístrate como usuario básico de forma gratuita. Si quieres acceder
+            a los beneficios exclusivos de la Clave, registrate como socio y
+            disfruta de todas las ventajas.
           </p>
         </div>
 
         {/* Formulario */}
         <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20 max-w-xl mx-auto">
-          
-          <h2 className="text-3xl font-bold text-white text-center mb-8">Registro</h2>
+          <h2 className="text-3xl font-bold text-white text-center mb-8">
+            Registro
+          </h2>
 
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
@@ -118,14 +124,13 @@ const Register = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Username */}
             <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Username</label>
+              <label className="text-gray-300 text-right">Usuario</label>
               <input
                 type="text"
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
                 className="input col-span-2"
-                placeholder="usuario123"
                 required
               />
             </div>
@@ -185,7 +190,7 @@ const Register = () => {
 
             {/* Confirm Password */}
             <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Confirmar</label>
+              <label className="text-gray-300 text-right"> Confirmar </label>
               <input
                 type="password"
                 name="confirmPassword"
@@ -199,41 +204,51 @@ const Register = () => {
 
             {/* Teléfono */}
             <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Teléfono</label>
+              <label className="text-gray-300 text-right"> Teléfono </label>
               <input
                 type="tel"
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleChange}
                 className="input col-span-2"
-                placeholder="600123456"
                 required
               />
             </div>
 
             {/* Fecha Nacimiento */}
             <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Fecha Nac.</label>
-              <input
-                type="date"
-                name="fecha_nacimiento"
-                value={formData.fecha_nacimiento}
-                onChange={handleChange}
-                className="input col-span-2"
+              <label className="text-gray-300 text-right"> Fecha Nac. </label>
+              <DatePickerInput
+                selected={
+                  formData.fecha_nacimiento
+                    ? new Date(formData.fecha_nacimiento)
+                    : null
+                }
+                onChange={(date) => {
+                  if (date) {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, "0");
+                    const day = String(date.getDate()).padStart(2, "0");
+                    setFormData({
+                      ...formData,
+                      fecha_nacimiento: `${year}-${month}-${day}`,
+                    });
+                  }
+                }}
                 required
+                className="col-span-2"
               />
             </div>
 
             {/* DNI (solo texto) */}
             <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">DNI/NIE</label>
+              <label className="text-gray-300 text-right"> DNI/NIE </label>
               <input
                 type="text"
                 name="dni"
                 value={formData.dni}
                 onChange={handleChange}
                 className="input col-span-2"
-                placeholder="12345678A"
                 maxLength={9}
                 required
               />
@@ -247,7 +262,7 @@ const Register = () => {
                 disabled={loading}
                 className="w-full"
               >
-                {loading ? 'Registrando...' : 'Registrarse'}
+                {loading ? "Registrando..." : "Registrarse"}
               </Button>
             </div>
           </form>
@@ -255,15 +270,21 @@ const Register = () => {
           {/* Links */}
           <div className="mt-6 space-y-2 text-center">
             <p className="text-gray-400">
-              ¿Ya tienes cuenta?{' '}
-              <a href={NAV_ROUTES.LOGIN} className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+              ¿Ya tienes cuenta?{" "}
+              <a
+                href={NAV_ROUTES.LOGIN}
+                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+              >
                 Inicia sesión aquí
               </a>
             </p>
             <p className="text-gray-400">
-              ¿Quieres ser socio desde el inicio?{' '}
-              <a href={NAV_ROUTES.REGISTER_SOCIO} className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
-                Regístrate como socio
+              ¿Quieres unirte como socio?{" "}
+              <a
+                href={NAV_ROUTES.REGISTER_SOCIO}
+                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+              >
+                Regístrate aquí.
               </a>
             </p>
           </div>

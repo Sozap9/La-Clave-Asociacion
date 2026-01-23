@@ -87,8 +87,9 @@ const GalleryAlbum = () => {
           <h2 className="text-white text-2xl font-bold mb-4">Álbum no encontrado</h2>
           <button
             onClick={() => navigate('/galeria')}
-            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex items-center gap-2 mx-auto"
           >
+            <ArrowLeft size={20} />
             Volver a Galería
           </button>
         </div>
@@ -99,6 +100,7 @@ const GalleryAlbum = () => {
   return (
     <div className="min-h-screen bg-black py-20 px-4">
       <div className="container-custom">
+        {/* Botón volver */}
         <button
           onClick={() => navigate('/galeria')}
           className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
@@ -107,9 +109,10 @@ const GalleryAlbum = () => {
           Volver a Galería
         </button>
 
+        {/* Header del álbum */}
         <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div>
+          <div className="flex items-start justify-between mb-4 flex-wrap gap-4">
+            <div className="flex-1">
               <h1 className="text-gradient text-4xl mb-2">
                 {folder.nombre}
               </h1>
@@ -120,13 +123,15 @@ const GalleryAlbum = () => {
               )}
             </div>
             
-            {folder.destacado && (
+            {/* Badge de destacado solo si es 1 o true */}
+            {(folder.destacado === 1 || folder.destacado === true) && (
               <div className="bg-primary-600/20 border border-primary-500/50 px-4 py-2 rounded-lg">
                 <span className="text-primary-400 font-semibold">DESTACADO</span>
               </div>
             )}
           </div>
 
+          {/* Metadatos */}
           <div className="flex flex-wrap items-center gap-4 text-gray-400">
             {folder.fecha_evento && (
               <div className="flex items-center gap-2">
@@ -140,6 +145,7 @@ const GalleryAlbum = () => {
             </div>
           </div>
 
+          {/* Artistas del álbum */}
           {artists.length > 0 && (
             <div className="mt-6">
               <div className="flex items-center gap-2 mb-3">
@@ -156,9 +162,11 @@ const GalleryAlbum = () => {
                       <User size={14} className="text-primary-400" />
                       <span className="text-white font-medium">{artist.nombre}</span>
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {artist.tipo === 'artista' ? 'Artista' : 'Colectivo'}
-                    </span>
+                    {artist.tipo && (
+                      <span className="text-xs text-gray-500">
+                        {artist.tipo === 'artista' ? 'Artista' : 'Colectivo'}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -166,6 +174,7 @@ const GalleryAlbum = () => {
           )}
         </div>
 
+        {/* Alert de error */}
         {error && (
           <Alert 
             type="error" 
@@ -174,6 +183,7 @@ const GalleryAlbum = () => {
           />
         )}
 
+        {/* Grid de imágenes */}
         {images.length === 0 ? (
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
             <Image size={64} className="text-gray-600 mx-auto mb-4" />
@@ -215,8 +225,10 @@ const GalleryAlbum = () => {
         )}
       </div>
 
+      {/* Modal de imagen */}
       {selectedImage && (
         <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
+          {/* Botón cerrar */}
           <button
             onClick={closeImageModal}
             className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
@@ -224,6 +236,7 @@ const GalleryAlbum = () => {
             <X size={24} className="text-white" />
           </button>
 
+          {/* Botón anterior */}
           {images.length > 1 && (
             <button
               onClick={() => navigateImage('prev')}
@@ -233,6 +246,7 @@ const GalleryAlbum = () => {
             </button>
           )}
 
+          {/* Imagen y detalles */}
           <div className="max-w-5xl w-full">
             {(() => {
               // Construir URL completa para modal
@@ -253,6 +267,7 @@ const GalleryAlbum = () => {
               );
             })()}
 
+            {/* Info de la imagen */}
             <div className="mt-4 bg-[#1a1a1a]/90 backdrop-blur-sm rounded-lg p-4">
               {selectedImage.titulo && (
                 <h3 className="text-white text-xl font-bold mb-2">
@@ -265,6 +280,7 @@ const GalleryAlbum = () => {
                 </p>
               )}
               
+              {/* Artistas de la imagen */}
               {imageArtists.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   <span className="text-gray-400 text-sm">Artistas:</span>
@@ -281,6 +297,7 @@ const GalleryAlbum = () => {
             </div>
           </div>
 
+          {/* Botón siguiente */}
           {images.length > 1 && (
             <button
               onClick={() => navigateImage('next')}

@@ -28,7 +28,7 @@ const SearchInput = ({
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
     }
-    // no debounce: notify parent immediately
+    // no debounce
     onChange && onChange(internal);
     onDebounced && onDebounced(internal);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -49,8 +49,8 @@ const SearchInput = ({
         value={internal}
         onChange={(e) => setInternal(e.target.value)}
         className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-primary-500/30 rounded-lg \
-                   text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 \
-                   focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
+                  text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 \
+                  focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
       />
 
       <svg

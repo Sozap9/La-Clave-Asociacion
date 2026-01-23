@@ -206,12 +206,12 @@ const AdminEventList = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header (match Events.jsx style) */}
+      {/* Header  */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-gradient mb-2 text-4xl">Eventos</h1>
           <p className="text-gray-400 text-lg">
-            Descubre los mejores eventos y reserva tu plaza
+            
           </p>
         </div>
         <Link
@@ -234,7 +234,7 @@ const AdminEventList = () => {
         />
       )}
 
-      {/* Filters - use unified FilterBar + SearchInput */}
+      {/* Filtros*/}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-6 flex-wrap bg-transparent">
           <FilterBar
@@ -271,7 +271,7 @@ const AdminEventList = () => {
         </div>
       </div>
 
-      {/* Events Table */}
+      {/* Lista de eventos */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <Loader />
@@ -309,7 +309,7 @@ const AdminEventList = () => {
                     />
                   ) : (
                     <div className="w-16 h-16 bg-gray-800 rounded-lg flex items-center justify-center">
-                      📅
+                      <Calendar size={32} className="text-gray-600" />
                     </div>
                   )}
 
@@ -319,7 +319,7 @@ const AdminEventList = () => {
                         {event.titulo}
                       </div>
                       {event.destacado === 1 && (
-                        <span className="text-primary-300">⭐</span>
+                        <span className="text-primary-300">destacado</span>
                       )}
                       <div className="ml-2">{getStatusBadge(event)}</div>
                     </div>

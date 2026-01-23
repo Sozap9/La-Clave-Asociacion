@@ -381,7 +381,7 @@ const AlbumCard = ({ folder }) => {
     }
   };
 
-  // ✅ CORRECCIÓN: Construir URL completa de imagen de portada
+  // Construir URL completa de imagen de portada
   const coverImageUrl = folder.imagen_portada_url
     ? folder.imagen_portada_url.startsWith("http")
       ? folder.imagen_portada_url
@@ -397,7 +397,6 @@ const AlbumCard = ({ folder }) => {
             alt={folder.nombre}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
             onError={(e) => {
-              console.error("Error loading cover image:", coverImageUrl);
               e.target.style.display = "none";
             }}
           />
@@ -408,7 +407,6 @@ const AlbumCard = ({ folder }) => {
         )}
 
         <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-2">
-          <Image size={14} className="text-primary-400" />
           <span className="text-white text-sm font-medium">
             {folder.total_imagenes || 0} fotos
           </span>
@@ -471,7 +469,6 @@ const AlbumCard = ({ folder }) => {
           onClick={() => (window.location.href = `/galeria/${folder.slug}`)}
           className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
         >
-          <Image size={18} />
           Ver Álbum
         </button>
       </div>

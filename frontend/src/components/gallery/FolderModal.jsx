@@ -1,35 +1,31 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import DatePicker from 'react-datepicker';
-import { registerLocale } from 'react-datepicker';
-import es from 'date-fns/locale/es';
-import 'react-datepicker/dist/react-datepicker.css';
-
-// Registrar locale español
-registerLocale('es', es);
+import { useState, useEffect } from "react";
+import { X } from "lucide-react";
+import DatePickerInput from "../common/DatePickerInput";
 
 const FolderModal = ({ folder, onClose, onSave }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    fecha_evento: '',
-    imagen_portada_url: '',
+    nombre: "",
+    descripcion: "",
+    fecha_evento: "",
+    imagen_portada_url: "",
     visible: true,
-    destacado: false
+    destacado: false,
   });
 
   useEffect(() => {
     if (folder) {
       setFormData({
-        nombre: folder.nombre || '',
-        descripcion: folder.descripcion || '',
-        fecha_evento: folder.fecha_evento ? folder.fecha_evento.split('T')[0] : '',
-        imagen_portada_url: folder.imagen_portada_url || '',
+        nombre: folder.nombre || "",
+        descripcion: folder.descripcion || "",
+        fecha_evento: folder.fecha_evento
+          ? folder.fecha_evento.split("T")[0]
+          : "",
+        imagen_portada_url: folder.imagen_portada_url || "",
         visible: folder.visible === 1,
-        destacado: folder.destacado === 1
+        destacado: folder.destacado === 1,
       });
-      
+
       // Establecer fecha seleccionada si existe
       if (folder.fecha_evento) {
         setSelectedDate(new Date(folder.fecha_evento));
@@ -39,9 +35,9 @@ const FolderModal = ({ folder, onClose, onSave }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -49,21 +45,21 @@ const FolderModal = ({ folder, onClose, onSave }) => {
     setSelectedDate(date);
     if (date) {
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
       const fechaFormateada = `${year}-${month}-${day}`;
-      setFormData(prev => ({ ...prev, fecha_evento: fechaFormateada }));
+      setFormData((prev) => ({ ...prev, fecha_evento: fechaFormateada }));
     } else {
-      setFormData(prev => ({ ...prev, fecha_evento: '' }));
+      setFormData((prev) => ({ ...prev, fecha_evento: "" }));
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validar nombre
     if (!formData.nombre.trim()) {
-      alert('El nombre del álbum es obligatorio');
+      alert("El nombre del álbum es obligatorio");
       return;
     }
 
@@ -72,16 +68,16 @@ const FolderModal = ({ folder, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div 
+      <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-primary-500/20 shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
-            {folder ? 'Editar Álbum' : 'Crear Álbum'}
+            {folder ? "Editar Álbum" : "Crear Álbum"}
           </h2>
           <button
             onClick={onClose}
@@ -130,14 +126,9 @@ const FolderModal = ({ folder, onClose, onSave }) => {
             <label className="block text-gray-300 font-medium mb-2">
               Fecha del Evento
             </label>
-            <DatePicker
+            <DatePickerInput
               selected={selectedDate}
               onChange={handleDateChange}
-              locale="es"
-              dateFormat="dd/MM/yyyy"
-              placeholderText=""
-              className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-              wrapperClassName="w-full"
             />
           </div>
 
@@ -171,7 +162,9 @@ const FolderModal = ({ folder, onClose, onSave }) => {
               />
               <div>
                 <span className="text-white font-medium">Visible</span>
-                <p className="text-gray-500 text-sm">El álbum será visible para los socios</p>
+                <p className="text-gray-500 text-sm">
+                  El álbum será visible para los socios
+                </p>
               </div>
             </label>
 
@@ -185,7 +178,9 @@ const FolderModal = ({ folder, onClose, onSave }) => {
               />
               <div>
                 <span className="text-white font-medium">Destacado</span>
-                <p className="text-gray-500 text-sm">Aparecerá en la sección de destacados</p>
+                <p className="text-gray-500 text-sm">
+                  Aparecerá en la sección de destacados
+                </p>
               </div>
             </label>
           </div>
@@ -196,7 +191,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
               type="submit"
               className="flex-1 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
             >
-              {folder ? 'Guardar Cambios' : 'Crear Álbum'}
+              {folder ? "Guardar Cambios" : "Crear Álbum"}
             </button>
             <button
               type="button"

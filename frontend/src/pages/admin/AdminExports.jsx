@@ -1,59 +1,67 @@
-import { useState } from 'react';
-import Alert from '../../components/common/Alert';
-import { 
-  exportSocios, 
-  exportUsuarios, 
-  exportEventos, 
-  exportReservas 
-} from '../../api/adminApi';
-import { Download, Users, Calendar, Ticket, UserCheck, Info } from 'lucide-react';
+import { useState } from "react";
+import Alert from "../../components/common/Alert";
+import DatePickerInput from "../../components/common/DatePickerInput";
+import {
+  exportSocios,
+  exportUsuarios,
+  exportEventos,
+  exportReservas,
+} from "../../api/adminApi";
+import {
+  Download,
+  Users,
+  Calendar,
+  Ticket,
+  UserCheck,
+  Info,
+} from "lucide-react";
 
 const AdminExports = () => {
-  const [loading, setLoading] = useState('');
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
-  
+  const [loading, setLoading] = useState("");
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
   // Filtros para reservas
   const [reservasFilters, setReservasFilters] = useState({
-    fecha_desde: '',
-    fecha_hasta: '',
-    event_id: ''
+    fecha_desde: "",
+    fecha_hasta: "",
+    event_id: "",
   });
 
   const handleExport = async (type) => {
     setLoading(type);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     try {
       let result;
       switch (type) {
-        case 'socios':
+        case "socios":
           result = await exportSocios();
           break;
-        case 'usuarios':
+        case "usuarios":
           result = await exportUsuarios();
           break;
-        case 'eventos':
+        case "eventos":
           result = await exportEventos();
           break;
-        case 'reservas':
+        case "reservas":
           result = await exportReservas(reservasFilters);
           break;
         default:
-          throw new Error('Tipo de exportación no válido');
+          throw new Error("Tipo de exportación no válido");
       }
 
       if (result.success) {
         setSuccess(`Exportación de ${type} completada exitosamente`);
       } else {
-        setError(result.message || 'Error en la exportación');
+        setError(result.message || "Error en la exportación");
       }
     } catch (err) {
       console.error(`Error exportando ${type}:`, err);
       setError(`Error al exportar ${type}.`);
     } finally {
-      setLoading('');
+      setLoading("");
     }
   };
 
@@ -62,22 +70,45 @@ const AdminExports = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-gradient mb-2 text-4xl">Exportaciones CSV</h1>
-        <p className="text-gray-400 text-lg">Descarga datos en formato CSV compatible con Excel y Google Sheets</p>
+        <p className="text-gray-400 text-lg">
+          Descarga datos en formato CSV compatible con Excel y Google Sheets
+        </p>
       </div>
 
       {/* Alertas */}
-      {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
-      {error && <Alert type="error" message={error} onClose={() => setError('')} persistent />}
+      {success && (
+        <Alert
+          type="success"
+          message={success}
+          onClose={() => setSuccess("")}
+        />
+      )}
+      {error && (
+        <Alert
+          type="error"
+          message={error}
+          onClose={() => setError("")}
+          persistent
+        />
+      )}
 
       {/* Info */}
       <div className="bg-primary-500/20 border border-primary-500/50 text-primary-200 px-4 py-3 rounded-lg mb-8 flex items-start gap-3">
         <Info className="w-5 h-5 mt-0.5 flex-shrink-0" />
         <div>
-          <p className="font-semibold mb-1">Información sobre las exportaciones</p>
+          <p className="font-semibold mb-1">
+            Información sobre las exportaciones
+          </p>
           <ul className="text-sm space-y-1 list-disc list-inside">
-            <li>Los archivos se generan con codificación UTF-8 y separador de punto y coma (;)</li>
+            <li>
+              Los archivos se generan con codificación UTF-8 y separador de
+              punto y coma (;)
+            </li>
             <li>Compatibles con Excel, Google Sheets y otras aplicaciones</li>
-            <li>El archivo se descargará automáticamente con la fecha actual en el nombre</li>
+            <li>
+              El archivo se descargará automáticamente con la fecha actual en el
+              nombre
+            </li>
           </ul>
         </div>
       </div>
@@ -89,9 +120,17 @@ const AdminExports = () => {
           title="Exportar Socios CSV"
           description="Lista completa de socios con datos personales, cuotas y estado"
           icon={UserCheck}
-          fields={['Número socio', 'Nombre', 'Email', 'Teléfono', 'Cuota mensual', 'Estado', 'Fecha alta']}
-          loading={loading === 'socios'}
-          onExport={() => handleExport('socios')}
+          fields={[
+            "Número socio",
+            "Nombre",
+            "Email",
+            "Teléfono",
+            "Cuota mensual",
+            "Estado",
+            "Fecha alta",
+          ]}
+          loading={loading === "socios"}
+          onExport={() => handleExport("socios")}
         />
 
         {/* Exportar Usuarios */}
@@ -99,9 +138,17 @@ const AdminExports = () => {
           title="Exportar Usuarios CSV"
           description="Todos los usuarios registrados (básicos, socios y admins)"
           icon={Users}
-          fields={['ID', 'Username', 'Nombre', 'Email', 'Rol', 'Estado', 'Fecha registro']}
-          loading={loading === 'usuarios'}
-          onExport={() => handleExport('usuarios')}
+          fields={[
+            "ID",
+            "Username",
+            "Nombre",
+            "Email",
+            "Rol",
+            "Estado",
+            "Fecha registro",
+          ]}
+          loading={loading === "usuarios"}
+          onExport={() => handleExport("usuarios")}
         />
 
         {/* Exportar Eventos */}
@@ -109,9 +156,17 @@ const AdminExports = () => {
           title="Exportar Eventos CSV"
           description="Lista de eventos con fechas, aforo y estadísticas"
           icon={Calendar}
-          fields={['Título', 'Fecha evento', 'Ubicación', 'Aforo máximo', 'Entradas vendidas', 'Estado', 'Fecha alta']}
-          loading={loading === 'eventos'}
-          onExport={() => handleExport('eventos')}
+          fields={[
+            "Título",
+            "Fecha evento",
+            "Ubicación",
+            "Aforo máximo",
+            "Entradas vendidas",
+            "Estado",
+            "Fecha alta",
+          ]}
+          loading={loading === "eventos"}
+          onExport={() => handleExport("eventos")}
         />
 
         {/* Exportar Reservas (con filtros) */}
@@ -121,7 +176,9 @@ const AdminExports = () => {
               <Ticket className="w-6 h-6 text-primary-300" />
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-white mb-1">Exportar Reservas CSV</h3>
+              <h3 className="text-xl font-semibold text-white mb-1">
+                Exportar Reservas CSV
+              </h3>
               <p className="text-gray-400 text-sm">
                 Todas las reservas con datos de usuario y evento
               </p>
@@ -130,32 +187,65 @@ const AdminExports = () => {
 
           {/* Filtros de fecha */}
           <div className="mb-4 space-y-3 bg-[#0d0d0d] p-4 rounded-lg border border-[#1a1a1a]">
-            <p className="text-white text-sm font-medium">Filtrar por fecha de reserva (opcional):</p>
-            
+            <p className="text-white text-sm font-medium">
+              Filtrar por fecha de reserva (opcional):
+            </p>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-gray-400 text-sm mb-1">Desde:</label>
-                <input
-                  type="date"
-                  value={reservasFilters.fecha_desde}
-                  onChange={(e) => setReservasFilters({ ...reservasFilters, fecha_desde: e.target.value })}
-                  className="w-full bg-[#262626] border border-[#333333] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                <DatePickerInput
+                  selected={
+                    reservasFilters.fecha_desde
+                      ? new Date(reservasFilters.fecha_desde)
+                      : null
+                  }
+                  onChange={(date) => {
+                    if (date) {
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, "0");
+                      const day = String(date.getDate()).padStart(2, "0");
+                      setReservasFilters({
+                        ...reservasFilters,
+                        fecha_desde: `${year}-${month}-${day}`,
+                      });
+                    }
+                  }}
+                  dateFormat="dd/MM/yyyy"
                 />
               </div>
               
               <div>
                 <label className="block text-gray-400 text-sm mb-1">Hasta:</label>
-                <input
-                  type="date"
-                  value={reservasFilters.fecha_hasta}
-                  onChange={(e) => setReservasFilters({ ...reservasFilters, fecha_hasta: e.target.value })}
-                  className="w-full bg-[#262626] border border-[#333333] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                <DatePickerInput
+                  selected={
+                    reservasFilters.fecha_hasta
+                      ? new Date(reservasFilters.fecha_hasta)
+                      : null
+                  }
+                  onChange={(date) => {
+                    if (date) {
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, "0");
+                      const day = String(date.getDate()).padStart(2, "0");
+                      setReservasFilters({
+                        ...reservasFilters,
+                        fecha_hasta: `${year}-${month}-${day}`,
+                      });
+                    }
+                  }}
+                  dateFormat="dd/MM/yyyy"
                 />
               </div>
-            </div>
 
             <button
-              onClick={() => setReservasFilters({ fecha_desde: '', fecha_hasta: '', event_id: '' })}
+              onClick={() =>
+                setReservasFilters({
+                  fecha_desde: "",
+                  fecha_hasta: "",
+                  event_id: "",
+                })
+              }
               className="text-primary-300 text-sm hover:text-primary-400 transition-colors"
             >
               Limpiar filtros
@@ -164,10 +254,24 @@ const AdminExports = () => {
 
           {/* Campos incluidos */}
           <div className="mb-4">
-            <p className="text-gray-400 text-sm font-medium mb-2">Campos incluidos:</p>
+            <p className="text-gray-400 text-sm font-medium mb-2">
+              Campos incluidos:
+            </p>
             <div className="flex flex-wrap gap-2">
-              {['Código reserva', 'Nombre socio', 'Email', 'Evento', 'Fecha evento', 'Entradas', 'Estado', 'Fecha reserva'].map(field => (
-                <span key={field} className="bg-[#262626] text-gray-300 px-2 py-1 rounded text-xs border border-[#333333]">
+              {[
+                "Código reserva",
+                "Nombre socio",
+                "Email",
+                "Evento",
+                "Fecha evento",
+                "Entradas",
+                "Estado",
+                "Fecha reserva",
+              ].map((field) => (
+                <span
+                  key={field}
+                  className="bg-[#262626] text-gray-300 px-2 py-1 rounded text-xs border border-[#333333]"
+                >
                   {field}
                 </span>
               ))}
@@ -176,11 +280,11 @@ const AdminExports = () => {
 
           {/* Botón de descarga */}
           <button
-            onClick={() => handleExport('reservas')}
-            disabled={loading === 'reservas'}
+            onClick={() => handleExport("reservas")}
+            disabled={loading === "reservas"}
             className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
-            {loading === 'reservas' ? (
+            {loading === "reservas" ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 Exportando...
@@ -197,19 +301,28 @@ const AdminExports = () => {
 
       {/* Instrucciones de uso */}
       <div className="mt-8 bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
-        <h3 className="text-xl font-semibold text-white mb-4">Cómo usar los archivos CSV</h3>
+        <h3 className="text-xl font-semibold text-white mb-4">
+          Cómo usar los archivos CSV
+        </h3>
         <ol className="space-y-2 text-gray-400">
           <li className="flex items-start gap-2">
             <span className="text-primary-300 font-bold">1.</span>
-            <span>Haz clic en "Descargar CSV" en la exportación que necesites</span>
+            <span>
+              Haz clic en "Descargar CSV" en la exportación que necesites
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary-300 font-bold">2.</span>
-            <span>El archivo se descargará automáticamente con la fecha actual en el nombre</span>
+            <span>
+              El archivo se descargará automáticamente con la fecha actual en el
+              nombre
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-primary-300 font-bold">3.</span>
-            <span>Abre el archivo con Excel, Google Sheets o tu aplicación preferida</span>
+            <span>
+              Abre el archivo con Excel, Google Sheets o tu aplicación preferida
+            </span>
           </li>
         </ol>
       </div>
@@ -218,7 +331,14 @@ const AdminExports = () => {
 };
 
 // Componente reutilizable para cards de exportación
-const ExportCard = ({ title, description, icon: Icon, fields, loading, onExport }) => {
+const ExportCard = ({
+  title,
+  description,
+  icon: Icon,
+  fields,
+  loading,
+  onExport,
+}) => {
   return (
     <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
       <div className="flex items-start gap-4 mb-4">
@@ -232,10 +352,15 @@ const ExportCard = ({ title, description, icon: Icon, fields, loading, onExport 
       </div>
 
       <div className="mb-4">
-        <p className="text-gray-400 text-sm font-medium mb-2">Campos incluidos:</p>
+        <p className="text-gray-400 text-sm font-medium mb-2">
+          Campos incluidos:
+        </p>
         <div className="flex flex-wrap gap-2">
-          {fields.map(field => (
-            <span key={field} className="bg-[#262626] text-gray-300 px-2 py-1 rounded text-xs border border-[#333333]">
+          {fields.map((field) => (
+            <span
+              key={field}
+              className="bg-[#262626] text-gray-300 px-2 py-1 rounded text-xs border border-[#333333]"
+            >
               {field}
             </span>
           ))}

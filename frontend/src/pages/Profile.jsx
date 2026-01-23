@@ -6,6 +6,7 @@ import api from '../api/axios';
 import Loader from '../components/common/Loader';
 import EditProfileModal from '../components/common/EditProfileModal';
 import ChangePasswordModal from '../components/common/ChangePasswordModal';
+import { ArrowRight } from 'lucide-react';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -110,8 +111,8 @@ const Profile = () => {
         
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-gradient mb-2 text-4xl">Mi Perfil</h1>
-          <p className="text-gray-400 text-lg">Información de tu cuenta</p>
+          <h1 className="text-gradient mb-2 text-4xl"> Mi Perfil</h1>
+          <p className="text-gray-400 text-lg"> Información de tu cuenta.</p>
         </div>
 
         {/* Card Principal */}
@@ -272,19 +273,18 @@ const Profile = () => {
           {isBasicUser && (
             <div className="p-8 pt-0">
               <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-sm rounded-xl p-6 border border-primary-500/20 text-center">
-                <Crown className="w-12 h-12 text-primary-400 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-white mb-2">
                   Mejora tu Experiencia
                 </h3>
                 <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                  Únete como socio por solo 10€/mes y disfruta de acceso completo a todos los eventos, 
-                  galería exclusiva y beneficios especiales de la comunidad.
+                  Convierte en socio por solo 10€/mes y disfruta de acceso completo a todos los eventos, 
+                  galería exclusiva y beneficios especiales de La Clave.
                 </p>
                 <button
                   onClick={handleUpgradeClick}
                   className="px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white rounded-lg font-bold transition-all shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50 hover:scale-105"
                 >
-                  Ver Planes de Membresía →
+                  Conviértete en socio <ArrowRight className="inline-block w-5 h-5 ml-2" />
                 </button>
               </div>
             </div>

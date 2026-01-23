@@ -1,35 +1,36 @@
-import { useState } from 'react';
-import Button from '../components/common/Button';
-import { NAV_ROUTES } from '../utils/constants';
+import { useState } from "react";
+import Button from "../components/common/Button";
+import DatePickerInput from "../components/common/DatePickerInput";
+import { NAV_ROUTES } from "../utils/constants";
 
 const RegisterSocio = () => {
   const [formData, setFormData] = useState({
     // Datos básicos
-    username: '',
-    nombre: '',
-    apellidos: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    telefono: '',
-    fecha_nacimiento: '',
-    dni: '', // DNI como texto (12345678A)
-    
+    username: "",
+    nombre: "",
+    apellidos: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    telefono: "",
+    fecha_nacimiento: "",
+    dni: "",
+
     // Archivos DNI (solo para socios)
     dni_cara_a: null,
     dni_cara_b: null,
-    
+
     // Stripe/Pago se manejará por separado
   });
-  
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -38,26 +39,26 @@ const RegisterSocio = () => {
     if (file) {
       setFormData({
         ...formData,
-        [field]: file
+        [field]: file,
       });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     // Validar contraseñas
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError("Las contraseñas no coinciden");
       setLoading(false);
       return;
     }
 
     // Validar que se hayan subido ambas caras del DNI
     if (!formData.dni_cara_a || !formData.dni_cara_b) {
-      setError('Debes subir ambas caras del DNI');
+      setError("Debes subir ambas caras del DNI");
       setLoading(false);
       return;
     }
@@ -65,38 +66,41 @@ const RegisterSocio = () => {
     try {
       // Crear FormData porque incluye archivos
       const formDataToSend = new FormData();
-      
-      // Añadir campos de texto
-      formDataToSend.append('username', formData.username);
-      formDataToSend.append('nombre', formData.nombre);
-      formDataToSend.append('apellidos', formData.apellidos);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('password', formData.password);
-      formDataToSend.append('telefono', formData.telefono);
-      formDataToSend.append('fecha_nacimiento', formData.fecha_nacimiento);
-      formDataToSend.append('dni', formData.dni);
-      
-      // Añadir archivos
-      formDataToSend.append('dni_cara_a', formData.dni_cara_a);
-      formDataToSend.append('dni_cara_b', formData.dni_cara_b);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/socio`, {
-        method: 'POST',
-        body: formDataToSend
-        // NO enviar Content-Type, el navegador lo añade automáticamente con boundary para FormData
-      });
+      // Añadir campos de texto
+      formDataToSend.append("username", formData.username);
+      formDataToSend.append("nombre", formData.nombre);
+      formDataToSend.append("apellidos", formData.apellidos);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("password", formData.password);
+      formDataToSend.append("telefono", formData.telefono);
+      formDataToSend.append("fecha_nacimiento", formData.fecha_nacimiento);
+      formDataToSend.append("dni", formData.dni);
+
+      // Añadir archivos
+      formDataToSend.append("dni_cara_a", formData.dni_cara_a);
+      formDataToSend.append("dni_cara_b", formData.dni_cara_b);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/register/socio`,
+        {
+          method: "POST",
+          body: formDataToSend,
+          // NO enviar Content-Type, el navegador lo añade automáticamente con boundary para FormData
+        },
+      );
 
       const data = await response.json();
 
       if (data.success) {
         setSuccess(true);
-        
+
         // Si el backend devuelve tokens, guardarlos
         if (data.data.accessToken) {
-          localStorage.setItem('accessToken', data.data.accessToken);
-          localStorage.setItem('refreshToken', data.data.refreshToken);
+          localStorage.setItem("accessToken", data.data.accessToken);
+          localStorage.setItem("refreshToken", data.data.refreshToken);
         }
-        
+
         // Si hay que ir a Stripe, redirigir
         if (data.data.stripeCheckoutUrl) {
           window.location.href = data.data.stripeCheckoutUrl;
@@ -107,11 +111,11 @@ const RegisterSocio = () => {
           }, 2000);
         }
       } else {
-        setError(data.message || 'Error al registrarse como socio');
+        setError(data.message || "Error al registrarse como socio");
       }
     } catch (err) {
-      console.error('Error en registro socio:', err);
-      setError('Error de conexión. Intenta de nuevo.');
+      console.error("Error en registro socio:", err);
+      setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -131,22 +135,22 @@ const RegisterSocio = () => {
 
       {/* Contenido */}
       <div className="relative z-20 container-custom max-w-5xl">
-        
         {/* Texto Explicativo */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-white mb-4">Registro de Socio</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Registro de Socio
+          </h1>
           <p className="text-gray-300 text-lg leading-relaxed max-w-3xl mx-auto">
-            Conviértete en socio de La Clave y disfruta de ventajas exclusivas: acceso prioritario a eventos, 
-            descuentos especiales, y mucho más.
+            Conviértete en socio de La Clave y disfruta de ventajas exclusivas:
+            acceso prioritario a eventos, descuentos especiales, y mucho más.
           </p>
           <p className="text-primary-400 mt-4 text-xl font-semibold">
-            Cuota mensual: {import.meta.env.VITE_CUOTA_MENSUAL || '10'}€/mes
+            Cuota mensual: {import.meta.env.VITE_CUOTA_MENSUAL || "10"}€/mes
           </p>
         </div>
 
         {/* Formulario */}
         <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-10 shadow-2xl border border-primary-500/20">
-          
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
               {error}
@@ -159,7 +163,10 @@ const RegisterSocio = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-x-12 gap-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="grid md:grid-cols-2 gap-x-12 gap-y-6"
+          >
             {/* Columna Izquierda - Datos Personales */}
             <div className="space-y-6">
               <h3 className="text-xl font-semibold text-white mb-4 border-b border-primary-500/30 pb-2">
@@ -271,12 +278,26 @@ const RegisterSocio = () => {
               {/* Fecha */}
               <div>
                 <label className="label">Fecha de Nacimiento</label>
-                <input
-                  type="date"
-                  name="fecha_nacimiento"
-                  value={formData.fecha_nacimiento}
-                  onChange={handleChange}
-                  className="input"
+                <DatePickerInput
+                  selected={
+                    formData.fecha_nacimiento
+                      ? new Date(formData.fecha_nacimiento)
+                      : null
+                  }
+                  onChange={(date) => {
+                    if (date) {
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(
+                        2,
+                        "0",
+                      );
+                      const day = String(date.getDate()).padStart(2, "0");
+                      setFormData({
+                        ...formData,
+                        fecha_nacimiento: `${year}-${month}-${day}`,
+                      });
+                    }
+                  }}
                   required
                 />
               </div>
@@ -302,16 +323,16 @@ const RegisterSocio = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Cara A */}
                   <div>
-                    <label 
-                      htmlFor="cara_a" 
+                    <label
+                      htmlFor="cara_a"
                       className="btn btn-secondary w-full cursor-pointer text-center block"
                     >
-                      {formData.dni_cara_a ? '✓ Cara A' : 'Cara A'}
+                      {formData.dni_cara_a ? "✓ Cara A" : "Cara A"}
                     </label>
                     <input
                       type="file"
                       id="cara_a"
-                      onChange={(e) => handleFileChange(e, 'dni_cara_a')}
+                      onChange={(e) => handleFileChange(e, "dni_cara_a")}
                       accept="image/*"
                       className="hidden"
                       required
@@ -325,16 +346,16 @@ const RegisterSocio = () => {
 
                   {/* Cara B */}
                   <div>
-                    <label 
-                      htmlFor="cara_b" 
+                    <label
+                      htmlFor="cara_b"
                       className="btn btn-secondary w-full cursor-pointer text-center block"
                     >
-                      {formData.dni_cara_b ? '✓ Cara B' : 'Cara B'}
+                      {formData.dni_cara_b ? "✓ Cara B" : "Cara B"}
                     </label>
                     <input
                       type="file"
                       id="cara_b"
-                      onChange={(e) => handleFileChange(e, 'dni_cara_b')}
+                      onChange={(e) => handleFileChange(e, "dni_cara_b")}
                       accept="image/*"
                       className="hidden"
                       required
@@ -347,15 +368,19 @@ const RegisterSocio = () => {
                   </div>
                 </div>
                 <p className="text-gray-400 text-xs mt-2">
-                  * Es obligatorio cargar ambas caras del DNI para el registro como socio
+                  * Es obligatorio cargar ambas caras del DNI para el registro
+                  como socio
                 </p>
               </div>
 
               {/* Información de pago */}
               <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4">
                 <p className="text-gray-300 text-sm">
-                  <span className="font-semibold text-white">💳 Pago seguro:</span> Después de completar 
-                  el registro, serás redirigido a Stripe para configurar tu método de pago de forma segura.
+                  <span className="font-semibold text-white">
+                    💳 Pago seguro:
+                  </span>{" "}
+                  Después de completar el registro, serás redirigido a Stripe
+                  para configurar tu método de pago de forma segura.
                 </p>
               </div>
             </div>
@@ -368,7 +393,7 @@ const RegisterSocio = () => {
                 disabled={loading}
                 className="w-full max-w-md mx-auto block"
               >
-                {loading ? 'Procesando...' : 'Continuar al pago'}
+                {loading ? "Procesando..." : "Continuar al pago"}
               </Button>
             </div>
           </form>
@@ -376,14 +401,20 @@ const RegisterSocio = () => {
           {/* Links */}
           <div className="mt-8 space-y-2 text-center">
             <p className="text-gray-400">
-              ¿Ya tienes cuenta?{' '}
-              <a href={NAV_ROUTES.LOGIN} className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+              ¿Ya tienes cuenta?{" "}
+              <a
+                href={NAV_ROUTES.LOGIN}
+                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+              >
                 Inicia sesión aquí
               </a>
             </p>
             <p className="text-gray-400">
-              ¿Solo quieres registrarte como usuario básico?{' '}
-              <a href={NAV_ROUTES.REGISTER} className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+              ¿Solo quieres registrarte como usuario básico?{" "}
+              <a
+                href={NAV_ROUTES.REGISTER}
+                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+              >
                 Registro gratuito
               </a>
             </p>

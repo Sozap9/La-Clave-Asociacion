@@ -246,9 +246,9 @@ const AdminGestionImagenes = () => {
     <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Gestión Global de Imágenes</h1>
+        <h1 className="text-gradient mb-2 text-4xl">Estadísticas de Galería</h1>
         <p className="text-gray-400 text-lg">
-          Gestiona todas las imágenes de la galería desde un solo lugar
+          Resumen de las imágenes en la galería.
         </p>
       </div>
 
@@ -269,14 +269,6 @@ const AdminGestionImagenes = () => {
               className="w-full pl-10 pr-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
-          <Button
-            onClick={fetchData}
-            variant="secondary"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw size={20} />
-            Refrescar
-          </Button>
         </div>
 
         {/* Filtros */}
@@ -300,7 +292,7 @@ const AdminGestionImagenes = () => {
             <option value="all">Todos los álbumes</option>
             {folders.map((folder) => (
               <option key={folder.id} value={folder.id}>
-                {folder.nombre} ({folder.total_imagenes || 0})
+                {folder.nombre} 
               </option>
             ))}
           </select>
@@ -310,51 +302,55 @@ const AdminGestionImagenes = () => {
             variant={isSelectionMode ? 'primary' : 'secondary'}
             className="flex items-center gap-2"
           >
-            <Check size={20} />
-            {isSelectionMode ? 'Modo Selección ON' : 'Seleccionar Múltiples'}
+            {isSelectionMode ? 'Modo Selección ON' : 'Seleccionar Varios'}
           </Button>
         </div>
 
         {/* Acciones múltiples */}
         {isSelectionMode && (
           <div className="flex gap-3 p-4 bg-[#1a1a1a] border border-primary-500/30 rounded-lg">
+
             <Button onClick={selectAll} variant="secondary" size="sm">
-              Seleccionar Todo ({filteredImages.length})
+              Marcar todo ({filteredImages.length})
             </Button>
             <Button onClick={deselectAll} variant="secondary" size="sm">
-              Deseleccionar Todo
+              Desmarcar todo
             </Button>
+
             <div className="flex-1" />
-            <span className="text-white self-center">
-              {selectedImages.length} seleccionadas
-            </span>
-            <Button
-              onClick={handleBulkToggleVisible}
-              variant="secondary"
-              size="sm"
-              disabled={selectedImages.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Eye size={16} />
-              Hacer Visibles
-            </Button>
-            <Button
-              onClick={handleBulkToggleHidden}
-              variant="secondary"
-              size="sm"
-              disabled={selectedImages.length === 0}
-              className="flex items-center gap-2"
-            >
+              <span className="text-primary self-center">
+                {selectedImages.length} seleccionadas
+              </span>
+
+              <Button
+                onClick={handleBulkToggleVisible}
+                variant="secondary"
+                size="sm"
+                disabled={selectedImages.length === 0}
+                className="flex items-center gap-2"
+              >
+                <Eye size={16} />
+                Hacer Visibles
+              </Button>
+
+              <Button
+                onClick={handleBulkToggleHidden}
+                variant="secondary"
+                size="sm"
+                disabled={selectedImages.length === 0}
+                className="flex items-center gap-2"
+              >
               <EyeOff size={16} />
-              Ocultar
-            </Button>
-            <Button
-              onClick={handleBulkDelete}
-              variant="secondary"
-              size="sm"
-              disabled={selectedImages.length === 0}
-              className="flex items-center gap-2 text-red-400 hover:text-red-300"
-            >
+                Ocultar
+              </Button>
+
+              <Button
+                onClick={handleBulkDelete}
+                variant="secondary"
+                size="sm"
+                disabled={selectedImages.length === 0}
+                className="flex items-center gap-2"
+              >
               <Trash2 size={16} />
               Eliminar ({selectedImages.length})
             </Button>
@@ -366,23 +362,26 @@ const AdminGestionImagenes = () => {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4">
           <p className="text-gray-400 text-sm">Total Imágenes</p>
-          <p className="text-2xl font-bold text-white">{images.length}</p>
+          <p className="text-2xl text-primary">{images.length}</p>
         </div>
+
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4">
           <p className="text-gray-400 text-sm">Visibles</p>
-          <p className="text-2xl font-bold text-green-400">
+          <p className="text-2xl text-primary">
             {images.filter(img => img.visible).length}
           </p>
         </div>
+
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4">
           <p className="text-gray-400 text-sm">Ocultas</p>
-          <p className="text-2xl font-bold text-gray-400">
+          <p className="text-2xl text-primary">
             {images.filter(img => !img.visible).length}
           </p>
         </div>
+        
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Mostrando</p>
-          <p className="text-2xl font-bold text-primary-400">{filteredImages.length}</p>
+          <p className="text-gray-400 text-sm"> Mostrando </p>
+          <p className="text-2xl text-primary">{filteredImages.length}</p>
         </div>
       </div>
 
@@ -435,28 +434,35 @@ const AdminGestionImagenes = () => {
 
               {/* Info */}
               <div className="p-3">
+
                 <p className="text-white text-sm font-medium truncate mb-1">
+                  <Image size={12} className='inline mr-1'/>
                   {image.titulo || 'Sin título'}
                 </p>
+
                 <p className="text-gray-500 text-xs truncate mb-2">
+                  <FolderUp size={12} className='inline mr-1'/>
                   {image.folder_nombre || 'Sin álbum'}
                 </p>
 
                 {/* Badges */}
                 <div className="flex gap-1 mb-2">
                   {image.visible ? (
-                    <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                    <span className="text-xs px-2 py-0.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors">
                       Visible
                     </span>
                   ) : (
-                    <span className="text-xs px-2 py-0.5 bg-gray-500/20 text-gray-400 rounded">
+                    <span className="text-xs px-2 py-0.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors">
                       Oculta
                     </span>
                   )}
-                  {image.destacado && (
+
+                  {image.destacado ?(
                     <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded flex items-center gap-1">
                       <Star size={10} />
-                      Destacada
+                    </span>
+                  ):(<span className="text-xs px-2 py-0.5 bg-[#262626] hover:bg-[#333333] rounded flex items-center gap-1">
+                      <Star size={10} />
                     </span>
                   )}
                 </div>
@@ -465,7 +471,7 @@ const AdminGestionImagenes = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleEditImage(image)}
-                    className="flex-1 px-2 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
+                    className="flex-1 px-2 py-1.5 bg-primary-500/20 text-primary-400 text-xs transition-colors flex items-center justify-center gap-1"
                     title="Editar"
                   >
                     <Edit size={14} />
@@ -480,7 +486,7 @@ const AdminGestionImagenes = () => {
                   </button>
                   <button
                     onClick={() => handleDeleteImage(image)}
-                    className="px-2 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded text-xs transition-colors"
+                    className="px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors"
                     title="Eliminar"
                   >
                     <Trash2 size={14} />

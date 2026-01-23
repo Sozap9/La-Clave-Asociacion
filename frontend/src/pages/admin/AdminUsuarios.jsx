@@ -1,31 +1,50 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, X, Eye, Ban, CheckCircle } from 'lucide-react';
-import Button from '../../components/common/Button';
+import { getAllUsers, updateUserRole } from '../../api/adminApi';
+import { Users, X, Eye, Ban, CheckCircle, Shield } from 'lucide-react';
 import Loader from '../../components/common/Loader';
+import FilterBar from '../../components/UI/FilterBar';
+import SearchInput from '../../components/UI/SearchInput';
+
+/**
+ * AdminUsuarios - Lista TODOS los usuarios (básicos, socios y admins)
+ */
+
+// Filtros de rol disponibles
+const roleFilters = [
+  { value: 'all', label: 'Todos' },
+  { value: 'basico', label: 'Básicos' },
+  { value: 'socio', label: 'Socios' },
+  { value: 'admin', label: 'Admins' }
+];
 
 const AdminUsuarios = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line
+  }, [roleFilter, search]);
 
   const fetchUsers = async () => {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const params = {};
+      
+      if (roleFilter && roleFilter !== 'all') {
+        params.role = roleFilter;
+      }
+      
+      if (search) {
+        params.search = search;
+      }
 
-      const result = await response.json();
+      const result = await getAllUsers(params);
       
       if (result.success) {
         let usersData = [];
@@ -37,9 +56,7 @@ const AdminUsuarios = () => {
           usersData = result.data.items;
         }
         
-        // Filtrar solo usuarios básicos (no socios ni admins)
-        const basicUsers = usersData.filter(u => u.role === 'basico');
-        setUsers(basicUsers);
+        setUsers(usersData);
       } else {
         setError(result.message || 'Error al cargar usuarios');
         setUsers([]);
@@ -81,17 +98,25 @@ const AdminUsuarios = () => {
     }
   };
 
-  const filteredUsers = Array.isArray(users) ? users.filter(user => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      user.nombre?.toLowerCase().includes(searchLower) ||
-      user.apellidos?.toLowerCase().includes(searchLower) ||
-      user.email?.toLowerCase().includes(searchLower) ||
-      user.username?.toLowerCase().includes(searchLower) ||
-      user.telefono?.includes(search)
-    );
-  }) : [];
+  const handleChangeRole = async (userId, newRole) => {
+    if (!confirm(`¿Cambiar el rol del usuario a ${newRole}?`)) return;
+
+    try {
+      const result = await updateUserRole(userId, newRole);
+      if (result.success) {
+        setUsers(prevUsers =>
+          prevUsers.map(user =>
+            user.id === userId ? { ...user, role: newRole } : user
+          )
+        );
+        alert('Rol actualizado exitosamente');
+      } else {
+        alert(result.message || 'Error al cambiar rol');
+      }
+    } catch (err) {
+      alert('Error de conexión');
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -102,15 +127,36 @@ const AdminUsuarios = () => {
     });
   };
 
+  const getRoleBadge = (role) => {
+    const styles = {
+      admin: 'bg-red-500/20 text-red-400',
+      socio: 'bg-primary-500/20 text-primary-400',
+      basico: 'bg-gray-700 text-gray-400'
+    };
+    return styles[role] || styles.basico;
+  };
+
+  const getRoleLabel = (role) => {
+    const labels = {
+      admin: 'Administrador',
+      socio: 'Socio',
+      basico: 'Usuario Básico'
+    };
+    return labels[role] || role;
+  };
+
   if (loading) return <Loader fullScreen />;
 
   return (
     <div className="p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Gestión de Usuarios Básicos</h1>
+        <h1 className="text-gradient mb-2 text-4xl">Gestión de Usuarios</h1>
+        <p className='text-gray-200 text-lg'>
+          Administra todos los usuarios.
+        </p>
         <p className="text-gray-400 text-lg">
-          {Array.isArray(users) ? `${users.length} usuario${users.length !== 1 ? 's' : ''} básico${users.length !== 1 ? 's' : ''}` : 'Administra usuarios registrados'}
+          {users.length} usuario{users.length !== 1 ? 's' : ''} {roleFilter !== 'all' ? `(${roleFilter})` : ''}
         </p>
       </div>
 
@@ -121,59 +167,36 @@ const AdminUsuarios = () => {
         </div>
       )}
 
-      {/* Búsqueda */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, email, username o teléfono..."
+      {/* Filtros y búsqueda - Igual que en otras páginas */}
+      <div className="mb-6 flex flex-wrap gap-4 items-center">
+        {/* Filtros a la izquierda */}
+        <FilterBar
+          customFilters={roleFilters}
+          activeFilter={roleFilter}
+          onFilterChange={setRoleFilter}
+        />
+        
+        {/* Búsqueda a la derecha */}
+        <div className="flex-1 max-w-md ml-auto">
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#262626] border border-[#333333] rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none transition-colors"
+            onChange={setSearch}
+            onClear={() => setSearch('')}
+            placeholder="Buscar por nombre, email, username..."
+            debounceMs={350}
           />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-            >
-              <X size={20} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
-          <p className="text-gray-400 text-sm mb-1">Total Usuarios</p>
-          <p className="text-primary-300 text-2xl font-bold">{users.length}</p>
-        </div>
-        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
-          <p className="text-gray-400 text-sm mb-1">Usuarios Activos</p>
-          <p className="text-primary-300 text-2xl font-bold">
-            {users.filter(u => u.activo !== false).length}
-          </p>
-        </div>
-        <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
-          <p className="text-gray-400 text-sm mb-1">Usuarios Inactivos</p>
-          <p className="text-primary-300 text-2xl font-bold">
-            {users.filter(u => u.activo === false).length}
-          </p>
         </div>
       </div>
 
       {/* Lista de usuarios */}
-      {filteredUsers.length === 0 ? (
+      {users.length === 0 ? (
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Users className="mx-auto mb-4 text-gray-600" size={48} />
-          <p className="text-gray-400 text-lg">
-            {search ? 'No se encontraron usuarios' : 'No hay usuarios básicos registrados'}
-          </p>
+          <p className="text-gray-400 text-lg">No hay usuarios en esta categoría</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredUsers.map((user) => (
+          {users.map((user) => (
             <div
               key={user.id}
               className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
@@ -184,17 +207,19 @@ const AdminUsuarios = () => {
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-lg">
-                        {user.nombre?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase() || '?'}
+                        {user.nombre?.charAt(0).toUpperCase() ||
+                          user.username?.charAt(0).toUpperCase() ||
+                          '?'}
                       </span>
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-xl font-bold text-white">
-                          {user.nombre && user.apellidos 
+                          {user.nombre && user.apellidos
                             ? `${user.nombre} ${user.apellidos}`
                             : user.username}
                         </h3>
-                        {user.activo === false && (
+                        {!user.activo && (
                           <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
                             Inactivo
                           </span>
@@ -204,7 +229,8 @@ const AdminUsuarios = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Grid de información */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     {user.telefono && (
                       <div>
                         <p className="text-gray-500 text-xs mb-1">Teléfono</p>
@@ -223,14 +249,28 @@ const AdminUsuarios = () => {
                     </div>
                     <div>
                       <p className="text-gray-500 text-xs mb-1">Rol</p>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#262626] text-gray-400 border border-[#333333]">
-                        Usuario Básico
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(user.role)}`}>
+                        {getRoleLabel(user.role)}
                       </span>
                     </div>
                   </div>
+
+                  {/* Selector de rol */}
+                  <div className="flex items-center gap-2">
+                    <Shield size={16} className="text-gray-400" />
+                    <select
+                      value={user.role}
+                      onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                      className="bg-[#262626] text-white border border-gray-700 rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-primary-500 transition-colors"
+                    >
+                      <option value="basico">Básico</option>
+                      <option value="socio">Socio</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
                 </div>
 
-                {/* Acciones */}
+                {/* Botones a la derecha */}
                 <div className="flex flex-col gap-2 ml-4">
                   <button
                     onClick={() => setSelectedUser(user)}
@@ -266,7 +306,7 @@ const AdminUsuarios = () => {
         </div>
       )}
 
-      {/* Modal de detalles */}
+      {/* Modal de detalles - Tu diseño original */}
       {selectedUser && (
         <div 
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -280,118 +320,63 @@ const AdminUsuarios = () => {
               <h2 className="text-2xl font-bold text-white">Detalles del Usuario</h2>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white transition-colors"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div className="space-y-6">
-              {/* Avatar y nombre */}
-              <div className="flex items-center gap-4 pb-6 border-b border-[#262626]">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-3xl">
-                    {selectedUser.nombre?.charAt(0).toUpperCase() || selectedUser.username?.charAt(0).toUpperCase() || '?'}
-                  </span>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-500 text-sm">Nombre completo</p>
+                <p className="text-white text-lg">
+                  {selectedUser.nombre && selectedUser.apellidos
+                    ? `${selectedUser.nombre} ${selectedUser.apellidos}`
+                    : selectedUser.username}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-gray-500 text-sm">Email</p>
+                <p className="text-white">{selectedUser.email}</p>
+              </div>
+
+              {selectedUser.telefono && (
                 <div>
-                  <h3 className="text-2xl font-bold text-white">
-                    {selectedUser.nombre && selectedUser.apellidos 
-                      ? `${selectedUser.nombre} ${selectedUser.apellidos}`
-                      : selectedUser.username}
-                  </h3>
-                  <p className="text-gray-400">{selectedUser.email}</p>
-                  {selectedUser.activo === false && (
-                    <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
-                      Usuario Inactivo
-                    </span>
-                  )}
+                  <p className="text-gray-500 text-sm">Teléfono</p>
+                  <p className="text-white">{selectedUser.telefono}</p>
                 </div>
-              </div>
+              )}
 
-              {/* Información personal */}
+              {selectedUser.fecha_nacimiento && (
+                <div>
+                  <p className="text-gray-500 text-sm">Fecha de nacimiento</p>
+                  <p className="text-white">{formatDate(selectedUser.fecha_nacimiento)}</p>
+                </div>
+              )}
+
               <div>
-                <h4 className="text-white font-semibold mb-3">Información Personal</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-500 text-sm mb-1">Username</p>
-                    <p className="text-white">{selectedUser.username || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm mb-1">Email</p>
-                    <p className="text-white">{selectedUser.email}</p>
-                  </div>
-                  {selectedUser.telefono && (
-                    <div>
-                      <p className="text-gray-500 text-sm mb-1">Teléfono</p>
-                      <p className="text-white">{selectedUser.telefono}</p>
-                    </div>
-                  )}
-                  {selectedUser.fecha_nacimiento && (
-                    <div>
-                      <p className="text-gray-500 text-sm mb-1">Fecha de Nacimiento</p>
-                      <p className="text-white">{formatDate(selectedUser.fecha_nacimiento)}</p>
-                    </div>
-                  )}
-                </div>
+                <p className="text-gray-500 text-sm">Rol</p>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleBadge(selectedUser.role)}`}>
+                  {getRoleLabel(selectedUser.role)}
+                </span>
               </div>
 
-              {/* Información de cuenta */}
               <div>
-                <h4 className="text-white font-semibold mb-3">Información de Cuenta</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-500 text-sm mb-1">Rol</p>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#262626] text-gray-400 border border-[#333333]">
-                      Usuario Básico
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm mb-1">Estado</p>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      selectedUser.activo === false
-                        ? 'bg-red-500/20 text-red-400'
-                        : 'bg-green-500/20 text-green-400'
-                    }`}>
-                      {selectedUser.activo === false ? 'Inactivo' : 'Activo'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-sm mb-1">Fecha de Registro</p>
-                    <p className="text-white">{formatDate(selectedUser.created_at)}</p>
-                  </div>
-                  {selectedUser.updated_at && (
-                    <div>
-                      <p className="text-gray-500 text-sm mb-1">Última Actualización</p>
-                      <p className="text-white">{formatDate(selectedUser.updated_at)}</p>
-                    </div>
-                  )}
-                </div>
+                <p className="text-gray-500 text-sm">Estado</p>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedUser.activo
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {selectedUser.activo ? 'Activo' : 'Inactivo'}
+                </span>
               </div>
-            </div>
 
-            <div className="mt-8 flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedUser(null)}
-                className="flex-1"
-              >
-                Cerrar
-              </Button>
-              <Button
-                variant={selectedUser.activo === false ? 'primary' : 'outline'}
-                onClick={() => {
-                  handleToggleActive(selectedUser.id, selectedUser.activo !== false);
-                  setSelectedUser(null);
-                }}
-                className={`flex-1 ${
-                  selectedUser.activo === false
-                    ? ''
-                    : 'border-red-500 text-red-400 hover:bg-red-500/20'
-                }`}
-              >
-                {selectedUser.activo === false ? 'Activar Usuario' : 'Desactivar Usuario'}
-              </Button>
+              <div>
+                <p className="text-gray-500 text-sm">Fecha de registro</p>
+                <p className="text-white">{formatDate(selectedUser.created_at)}</p>
+              </div>
             </div>
           </div>
         </div>

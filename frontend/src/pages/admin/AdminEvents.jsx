@@ -276,12 +276,12 @@ const AdminEvents = () => {
 
   return (
     <div className="p-8 bg-black min-h-screen">
-      {/* Header (match Events.jsx style) */}
+      {/* Header  */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-gradient mb-2 text-4xl">Eventos</h1>
+          <h1 className="text-gradient mb-2 text-4xl"> Gestion de eventos </h1>
           <p className="text-gray-400 text-lg">
-            Descubre los mejores eventos y reserva tu plaza
+            Administra todos tus eventos.
           </p>
         </div>
 
@@ -328,7 +328,7 @@ const AdminEvents = () => {
         </div>
       )}
 
-      {/* Filters - match public Events layout */}
+      {/* Filtros */}
       <div className="mb-12">
         <div className="flex items-center gap-4 mb-8 flex-wrap">
           <FilterBar
@@ -336,7 +336,7 @@ const AdminEvents = () => {
             onFilterChange={(f) => setFilters(f)}
           />
 
-          {/* Admin-only extra filters kept */}
+          {/* sólo Admin */}
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => {
@@ -421,6 +421,7 @@ const AdminEvents = () => {
                 <div className="flex items-start justify-between">
                   {/* Info del evento */}
                   <div className="flex gap-6 flex-1">
+
                     {/* Imagen */}
                     {event.imagen_cartel_url && (
                       <img
@@ -493,8 +494,8 @@ const AdminEvents = () => {
                       }
                       className={`p-2 rounded-lg transition-colors ${
                         isPublished
-                          ? "text-primary-700 hover:bg-primary-700/20"
-                          : "text-primary-300 hover:bg-primary-500/20"
+                          ? "text-primary-300 hover:bg-primary-300/20"
+                          : "text-primary-300 hover:bg-primary-300/20"
                       }`}
                       title={isPublished ? "Despublicar" : "Publicar"}
                     >
@@ -506,8 +507,8 @@ const AdminEvents = () => {
                       onClick={() => handleToggleFeatured(event.id)}
                       className={`p-2 rounded-lg transition-colors ${
                         isFeatured
-                          ? "text-primary-700 hover:bg-primary-700/20"
-                          : "text-gray-400 hover:bg-gray-500/20"
+                          ? "text-primary-300 hover:bg-primary-300/20"
+                          : "text-primary-300 hover:bg-gray-300/20"
                       }`}
                       title={isFeatured ? "Quitar destacado" : "Destacar"}
                     >

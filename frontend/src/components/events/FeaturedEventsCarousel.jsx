@@ -6,7 +6,7 @@ import EventCard from './EventCard';
 const FeaturedEventsCarousel = () => {
   const navigate = useNavigate();
   const handleClick = (event) => {
-    navigate(`/eventos/${event.id}`);  // ✅ Va al detalle del evento específico
+    navigate(`/eventos/${event.id}`);  //  Va al detalle del evento específico
   };
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,7 @@ const FeaturedEventsCarousel = () => {
     }
   };
 
-  // Don't render if no events or error
+  // No se ve si no hay eventos destacados o hay un error
   if (error || events.length === 0) {
     return null;
   }
@@ -53,15 +53,14 @@ const FeaturedEventsCarousel = () => {
   return (
     <section className="py-24 bg-[#0a0a0a] border-t border-[#262626]">
       <div className="container-custom px-6">
-        {/* Header centrado */}
+        {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-light text-white mb-4 uppercase tracking-wider">
             Eventos Destacados
           </h2>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent mx-auto mb-6" />
           <p className="text-gray-400 text-base md:text-lg font-light max-w-2xl mx-auto">
-            Lorem ipsum dolor sit amet consectetur adipiscing elit placerat elementum, 
-            lacus pellentesque ridiculus porta nisi nulla iaculis.
+            Disfruta de la mejor selección de nuestros eventos.
           </p>
         </div>
 

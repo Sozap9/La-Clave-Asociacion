@@ -44,7 +44,8 @@ const MobileMenu = ({ isOpen, onClose }) => {
   const adminItems = [
     { label: 'Inicio', href: NAV_ROUTES.HOME },
     { label: 'Eventos', href: NAV_ROUTES.EVENTS },
-    { label: 'Galería', href: NAV_ROUTES.GALLERY }
+    { label: 'Galería', href: NAV_ROUTES.GALLERY },
+    { label: 'Estatutos', href: NAV_ROUTES.STATUTES }
   ];
 
   const getNavItems = () => {
@@ -161,7 +162,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                   </div>
                 </button>
                 
-                {/* Botón Panel Admin/Socio */}
+                {/* Botón perfil Admin/Socio */}
                 {(isAdmin || isSocio) && (
                   <Button
                     variant="primary"
