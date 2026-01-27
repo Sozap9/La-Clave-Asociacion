@@ -14,6 +14,7 @@ import {
   Trash2,
   Plus,
   Eye,
+  EyeOff,
   Star,
   Calendar,
   Clock,
@@ -30,18 +31,18 @@ const AdminDraftEvents = () => {
   const [success, setSuccess] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [search, setSearch] = useState("");
+  const [featuredFilter, setFeaturedFilter] = useState("all");
 
   useEffect(() => {
     fetchDraftEvents();
   }, []);
 
-  // Debounce search: call fetchDraftEvents when `search` changes after 350ms
+  // Debounce 
   useEffect(() => {
     const t = setTimeout(() => {
       fetchDraftEvents();
     }, 350);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   const fetchDraftEvents = async () => {
@@ -50,7 +51,6 @@ const AdminDraftEvents = () => {
     setSuccess("");
 
     try {
-      // Filtrar solo eventos en estado 'draft'
       const params = { estado: "draft" };
       if (search) params.search = search;
 
@@ -70,8 +70,6 @@ const AdminDraftEvents = () => {
       setLoading(false);
     }
   };
-
-  // Search handled by SearchInput (debounced)
 
   const handleDelete = async (id) => {
     if (!confirm("¿Estás seguro de eliminar este borrador?")) return;
@@ -99,7 +97,7 @@ const AdminDraftEvents = () => {
 
       if (result.success) {
         setSuccess("Evento publicado exitosamente");
-        fetchDraftEvents(); // Recargar para actualizar la lista
+        fetchDraftEvents(); 
         setTimeout(() => setSuccess(""), 3000);
       } else {
         setError(result.message || "Error al publicar evento");
@@ -126,29 +124,28 @@ const AdminDraftEvents = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "Sin fecha";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("es-ES", {
+    return new Date(dateString).toLocaleDateString("es-ES", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
   };
 
-  // Mostrar loader fullScreen sólo en la carga inicial (cuando aún no hay borradores)
+  const getEmptyMessage = () => {
+    if (featuredFilter === "featured")
+      return "No hay eventos destacados disponibles";
+  };
+
   if (loading && events.length === 0) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="space-y-6">
       {/* Header*/}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex justify-between items-center">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <FileText className="text-gray-400" size={32} />
-            <h1 className="text-gradient mb-2 text-4xl">Eventos</h1>
-          </div>
+          <h1 className="text-gradient mb-2 text-4xl">Eventos en Borrador</h1>
           <p className="text-gray-400 text-lg">
-            Descubre los mejores eventos y reserva tu plaza
+            {events.length} evento{events.length !== 1 ? 's' : ''} en borrador
           </p>
         </div>
         <Button
@@ -157,7 +154,7 @@ const AdminDraftEvents = () => {
           className="flex items-center gap-2"
         >
           <Plus size={20} />
-          Crear Evento
+          Crear evento
         </Button>
       </div>
 
@@ -209,11 +206,13 @@ const AdminDraftEvents = () => {
             No se encontraron eventos
           </h3>
           <p className="text-gray-400 text-lg mb-4">
-            No hay eventos en borrador
+            {search ? 'No se encontraron eventos con esos criterios' : 'No hay eventos en borrador'}
           </p>
-          <p className="text-gray-500 text-sm mb-6">
-            Los borradores son eventos guardados que aún no han sido publicados
-          </p>
+          {!search && (
+            <p className="text-gray-500 text-sm mb-6">
+              Los borradores son eventos guardados que aún no han sido publicados
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -223,120 +222,123 @@ const AdminDraftEvents = () => {
             return (
               <div
                 key={event.id}
-                className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
+                className={`bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-primary-500/50 transition-all ${
+                  isFeatured ? "ring-1 ring-primary-500/20" : ""
+                }`}
               >
-                <div className="flex items-start justify-between">
-                  {/* Info del evento */}
-                  <div className="flex gap-6 flex-1">
-                    {/* Imagen */}
-                    {event.imagen_cartel_url && (
-                      <img
-                        src={`${import.meta.env.VITE_BASE_URL}${
-                          event.imagen_cartel_url
-                        }`}
-                        alt={event.titulo}
-                        className="w-32 h-32 object-cover rounded-lg"
-                      />
-                    )}
+                <div className="flex items-center gap-4">
+                  {/* Imagen */}
+                  {event.imagen_cartel_url ? (
+                    <img
+                      src={`${import.meta.env.VITE_BASE_URL}${
+                        event.imagen_cartel_url
+                      }`}
+                      alt={event.titulo}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-800 rounded-lg flex items-center justify-center">
+                      <Calendar size={32} className="text-gray-600" />
+                    </div>
+                  )}
 
-                    {/* Detalles */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-2xl font-bold text-white">
-                          {event.titulo}
-                        </h3>
-                        {isFeatured && (
-                          <Star
-                            className="text-primary-300"
-                            size={16}
-                            fill="currentColor"
-                          />
-                        )}
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
-                          Borrador
-                        </span>
+                  {/* Detalles */}
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-lg font-semibold text-white">
+                        {event.titulo}
+                      </div>
+                      {isFeatured && (
+                        <span className="text-primary-300">destacado</span>
+                      )}
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                        Borrador
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-400 line-clamp-2 max-w-xl">
+                      {event.descripcion}
+                    </div>
+                    <div className="flex gap-3 items-center text-sm text-gray-400 mt-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-primary-300" />
+                        <span>{formatDate(event.fecha_evento)}</span>
                       </div>
 
-                      <p className="text-gray-400 text-sm mb-3 line-clamp-2">
-                        {event.descripcion}
-                      </p>
-
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                      {event.hora_evento && (
                         <div className="flex items-center gap-2">
-                          <Calendar size={16} className="text-primary-400" />
-                          <span>{formatDate(event.fecha_evento)}</span>
+                          <Clock size={16} className="text-primary-300" />
+                          <span>{event.hora_evento.substring(0, 5)}</span>
                         </div>
+                      )}
 
-                        {event.hora_evento && (
-                          <div className="flex items-center gap-2">
-                            <Clock size={16} className="text-primary-400" />
-                            <span>{event.hora_evento}</span>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-primary-300" />
+                        <span>{event.ubicacion}</span>
+                      </div>
 
-                        <div className="flex items-center gap-2">
-                          <MapPin size={16} className="text-primary-400" />
-                          <span>{event.ubicacion}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Users size={16} className="text-primary-400" />
-                          <span>
-                            {event.confirmed_bookings || 0}/{event.aforo_maximo}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-primary-300" />
+                        <span>
+                          {event.confirmed_bookings || 0}/{event.aforo_maximo}
+                        </span>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2 ml-4">
-                    {/* Publicar */}
-                    <button
-                      onClick={() => handlePublish(event.id)}
-                      className="p-2 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors"
-                      title="Publicar evento"
-                    >
-                      <Eye size={20} />
-                    </button>
+                {/* Acciones */}
+                <div className="flex gap-2 ml-4">
+                  {/* Publicar */}
+                  <button
+                    onClick={() => handlePublish(event.id)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      event.visible_desde
+                        ? "text-primary-700 hover:bg-primary-700/20"
+                        : "text-primary-300 hover:bg-primary-500/20"
+                    }`}
+                    title={event.visible_desde ? "Despublicar" : "Publicar"}
+                  >
+                    {event.visible_desde ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
+                  </button>
 
-                    {/* Destacar/Quitar destacado */}
-                    <button
-                      onClick={() => handleToggleFeatured(event.id)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isFeatured
-                          ? "text-primary-300 hover:bg-primary-500/20"
-                          : "text-gray-400 hover:bg-gray-500/20"
-                      }`}
-                      title={isFeatured ? "Quitar destacado" : "Destacar"}
-                    >
-                      <Star
-                        size={20}
-                        fill={isFeatured ? "currentColor" : "none"}
-                      />
-                    </button>
+                  {/* Destacar/Quitar destacado */}
+                  <button
+                    onClick={() => handleToggleFeatured(event.id)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isFeatured
+                        ? "text-primary-700 hover:bg-primary-700/20"
+                        : "text-gray-400 hover:bg-gray-500/20"
+                    }`}
+                    title={isFeatured ? "Quitar destacado" : "Destacar"}
+                  >
+                    <Star
+                      size={16}
+                      fill={isFeatured ? "currentColor" : "none"}
+                    />
+                  </button>
 
-                    {/* Editar */}
-                    <button
-                      onClick={() =>
-                        navigate(`/admin/eventos/editar/${event.id}`)
-                      }
-                      className="p-2 text-primary-300 hover:bg-primary-500/20 rounded-lg transition-colors"
-                      title="Editar"
-                    >
-                      <Edit size={20} />
-                    </button>
+                  {/* Editar */}
+                  <button
+                    onClick={() => navigate(`/admin/eventos/editar/${event.id}`)}
+                    className="p-2 text-primary-300 hover:bg-primary-500/20 rounded-lg transition-colors"
+                    title="Editar"
+                  >
+                    <Edit size={16} />
+                  </button>
 
-                    {/* Eliminar */}
-                    <button
-                      onClick={() => handleDelete(event.id)}
-                      disabled={deletingId === event.id}
-                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
+                  {/* Eliminar */}
+                  <button
+                    onClick={() => handleDelete(event.id)}
+                    disabled={deletingId === event.id}
+                    className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Eliminar"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             );

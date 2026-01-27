@@ -1,42 +1,45 @@
-/**
- * ARCHIVO ACTUALIZADO: AdminBookings.jsx
- * 
- * CAMBIOS IMPLEMENTADOS:
- * 1. Importado FilterBar y SearchInput de UI
- * 2. INVERTIDO orden: FilterBar arriba, SearchInput abajo
- * 3. Eliminados filtros inline custom
- * 4. Ahora usa FilterBar genérico con customFilters
- * 5. Mantiene toda la funcionalidad actual
- * 
- * DISEÑO ACTUALIZADO:
- * Antes: [Búsqueda] → [Filtros en línea]
- * Ahora: [FilterBar horizontal] → [SearchInput]
- */
-
 import { useState, useEffect } from 'react';
-import { Ticket, Calendar, User } from 'lucide-react';
+import { Ticket, Calendar, User, ChevronDown, ArrowLeft } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import FilterBar from '../../components/UI/FilterBar';
 import SearchInput from '../../components/UI/SearchInput';
 
 const AdminBookings = () => {
+  // Estados para eventos
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [showEventSelector, setShowEventSelector] = useState(false);
+  
+  // Filtros para eventos
+  const [eventSearchTerm, setEventSearchTerm] = useState('');
+  const [eventStatusFilter, setEventStatusFilter] = useState('all'); // all, upcoming, past
+  
+  // Estados para reservas
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // all, confirmada, cancelada, asistida
   const [selectedBooking, setSelectedBooking] = useState(null);
 
+  // Cargar eventos al montar
   useEffect(() => {
-    fetchBookings();
+    fetchEvents();
   }, []);
 
-  const fetchBookings = async () => {
-    setLoading(true);
-    setError('');
+  // Cargar reservas cuando se selecciona un evento
+  useEffect(() => {
+    if (selectedEvent) {
+      fetchBookings(selectedEvent.id);
+    }
+  }, [selectedEvent]);
+
+  const fetchEvents = async () => {
+    setLoadingEvents(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/bookings', {
+      const response = await fetch('http://localhost:5000/api/admin/events', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -45,7 +48,39 @@ const AdminBookings = () => {
       const result = await response.json();
       
       if (result.success) {
-        setBookings(result.data.items || result.data || []);
+        // Usar fecha_evento del backend
+        const sortedEvents = (result.data || []).sort((a, b) => {
+          const dateA = new Date(a.fecha_evento);
+          const dateB = new Date(b.fecha_evento);
+          return dateB - dateA; // Más recientes primero
+        });
+        setEvents(sortedEvents);
+      } else {
+        setError(result.message || 'Error al cargar eventos');
+      }
+    } catch (err) {
+      console.error('Error en fetchEvents:', err);
+      setError('Error de conexión al cargar eventos');
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const fetchBookings = async (eventId) => {
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/bookings/event/${eventId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setBookings(result.data || []);
       } else {
         setError(result.message || 'Error al cargar reservas');
         setBookings([]);
@@ -77,7 +112,7 @@ const AdminBookings = () => {
       
       if (result.success) {
         alert('Reserva cancelada exitosamente');
-        fetchBookings();
+        fetchBookings(selectedEvent.id);
       } else {
         alert(result.message || 'Error al cancelar reserva');
       }
@@ -95,10 +130,9 @@ const AdminBookings = () => {
       const searchLower = search.toLowerCase();
       return (
         booking.codigo_reserva?.toLowerCase().includes(searchLower) ||
-        booking.nombre?.toLowerCase().includes(searchLower) ||
-        booking.apellidos?.toLowerCase().includes(searchLower) ||
-        booking.email?.toLowerCase().includes(searchLower) ||
-        booking.evento_titulo?.toLowerCase().includes(searchLower)
+        booking.socio_nombre?.toLowerCase().includes(searchLower) ||
+        booking.socio_apellidos?.toLowerCase().includes(searchLower) ||
+        booking.socio_email?.toLowerCase().includes(searchLower)
       );
     }
     
@@ -106,7 +140,12 @@ const AdminBookings = () => {
   }) : [];
 
   const getEstadoBadge = (estado) => {
-    return 'bg-primary-500/20 text-primary-300 border border-primary-500/30';
+    const styles = {
+      confirmada: 'bg-green-500/20 text-green-300 border border-green-500/30',
+      cancelada: 'bg-red-500/20 text-red-300 border border-red-500/30',
+      asistida: 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+    };
+    return styles[estado] || 'bg-gray-500/20 text-gray-300 border border-gray-500/30';
   };
 
   const formatDate = (dateString) => {
@@ -121,16 +160,199 @@ const AdminBookings = () => {
     });
   };
 
-  if (loading) return <Loader fullScreen />;
+  const formatEventDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
+  const formatEventDateShort = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  // Filtrar eventos por estado y búsqueda
+  const filteredEvents = events.filter(event => {
+    const now = new Date();
+    const eventDate = new Date(event.fecha_evento);
+    
+    // Filtro por estado (upcoming/past)
+    if (eventStatusFilter === 'upcoming' && eventDate < now) return false;
+    if (eventStatusFilter === 'past' && eventDate >= now) return false;
+    
+    // Filtro por búsqueda
+    if (eventSearchTerm) {
+      const searchLower = eventSearchTerm.toLowerCase();
+      return (
+        event.titulo?.toLowerCase().includes(searchLower) ||
+        event.descripcion?.toLowerCase().includes(searchLower) ||
+        event.ubicacion?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return true;
+  });
+
+  // Vista: Cargando eventos
+  if (loadingEvents) return <Loader fullScreen />;
+
+  // Vista: Selector de evento (si no hay evento seleccionado)
+  if (!selectedEvent) {
+    return (
+      <div className="p-8 bg-black min-h-screen">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-gradient mb-2 text-4xl">Gestión de Reservas</h1>
+          <p className="text-gray-400 text-lg">
+            Selecciona un evento para ver sus reservas
+          </p>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Filtros y Búsqueda para eventos */}
+        <div className="mb-6">
+          <div className="flex items-center gap-4 mb-6 flex-wrap bg-transparent">
+            <FilterBar
+              filters={{
+                status: eventStatusFilter,
+                featured: undefined,
+              }}
+              onFilterChange={(f) => {
+                setEventStatusFilter(f.status || 'all');
+              }}
+            />
+
+            <div className="flex-1 max-w-md ml-auto">
+              <SearchInput
+                value={eventSearchTerm}
+                onChange={(val) => setEventSearchTerm(val)}
+                onClear={() => setEventSearchTerm('')}
+                placeholder="Buscar eventos por nombre..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de eventos */}
+        {filteredEvents.length === 0 ? (
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
+            <Calendar className="mx-auto mb-4 text-gray-600" size={48} />
+            <p className="text-gray-400 text-lg">
+              {eventSearchTerm ? 'No se encontraron eventos con esos criterios' : 'No hay eventos disponibles'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredEvents.map((event) => {
+              const isPast = new Date(event.fecha_evento) < new Date();
+              return (
+                <button
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all text-left group"
+                >
+                  {/* Imagen del evento */}
+                  {event.imagen_url && (
+                    <div className="mb-4 rounded-lg overflow-hidden">
+                      <img 
+                        src={event.imagen_url} 
+                        alt={event.titulo}
+                        className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+
+                  {/* Info del evento */}
+                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-primary-300 transition-colors">
+                    {event.titulo}
+                  </h3>
+                  
+                  <div className="flex items-center gap-2 text-gray-400 text-sm mb-2">
+                    <Calendar size={16} className="text-primary-300" />
+                    <span>{formatEventDate(event.fecha_evento)}</span>
+                  </div>
+
+                  {event.ubicacion && (
+                    <p className="text-gray-500 text-sm mb-3">{event.ubicacion}</p>
+                  )}
+
+                  {/* Estado */}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#262626]">
+                    <span className={`text-xs font-medium ${isPast ? 'text-gray-500' : 'text-primary-300'}`}>
+                      {isPast ? 'Evento finalizado' : 'Evento próximo'}
+                    </span>
+                    <ChevronDown className="text-primary-300 transform -rotate-90" size={20} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Vista: Reservas del evento seleccionado
   return (
     <div className="p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Header con botón de volver */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Gestión de Reservas</h1>
-        <p className="text-gray-400 text-lg">
-          {Array.isArray(bookings) ? `${bookings.length} reserva${bookings.length !== 1 ? 's' : ''} total${bookings.length !== 1 ? 'es' : ''}` : 'Administra todas las reservas'}
-        </p>
+        <button
+          onClick={() => {
+            setSelectedEvent(null);
+            setBookings([]);
+            setSearch('');
+            setFilter('all');
+          }}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4 group"
+        >
+          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+          <span>Volver a eventos</span>
+        </button>
+
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h1 className="text-gradient mb-2 text-4xl">{selectedEvent.titulo}</h1>
+            <div className="flex items-center gap-4 text-gray-400">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-primary-300" />
+                <span>{formatEventDate(selectedEvent.fecha_evento)}</span>
+              </div>
+              {selectedEvent.ubicacion && (
+                <span className="text-gray-500">• {selectedEvent.ubicacion}</span>
+              )}
+            </div>
+            <p className="text-gray-400 text-lg mt-2">
+              {Array.isArray(bookings) ? `${bookings.length} reserva${bookings.length !== 1 ? 's' : ''} total${bookings.length !== 1 ? 'es' : ''}` : 'Cargando reservas...'}
+            </p>
+          </div>
+
+          {/* Botón cambiar evento */}
+          <button
+            onClick={() => setShowEventSelector(true)}
+            className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Calendar size={18} />
+            Cambiar evento
+          </button>
+        </div>
       </div>
 
       {/* Error */}
@@ -140,134 +362,211 @@ const AdminBookings = () => {
         </div>
       )}
 
-      {/* Filtros y Búsqueda con orden correcto */}
-      <div className="mb-6 space-y-4">
-        {/* FilterBar arriba */}
-        <FilterBar
-          customFilters={[
-            { 
-              value: 'all', 
-              label: 'Todas', 
-              count: bookings.length 
-            },
-            { 
-              value: 'confirmada', 
-              label: 'Confirmadas', 
-              count: bookings.filter(b => b.estado === 'confirmada').length 
-            },
-            { 
-              value: 'asistida', 
-              label: 'Asistidas', 
-              count: bookings.filter(b => b.estado === 'asistida').length 
-            },
-            { 
-              value: 'cancelada', 
-              label: 'Canceladas', 
-              count: bookings.filter(b => b.estado === 'cancelada').length 
-            }
-          ]}
-          activeFilter={filter}
-          onFilterChange={(value) => setFilter(value)}
-          showCounts={true}
-        />
+      {/* Filtros y Búsqueda */}
+      <div className="mb-6">
+        <div className="flex items-center gap-4 mb-6 flex-wrap bg-transparent">
+          <FilterBar
+            customFilters={[
+              { 
+                value: 'all', 
+                label: 'Todas', 
+                count: bookings.length 
+              },
+              { 
+                value: 'confirmada', 
+                label: 'Confirmadas', 
+                count: bookings.filter(b => b.estado === 'confirmada').length 
+              },
+              { 
+                value: 'asistida', 
+                label: 'Asistidas', 
+                count: bookings.filter(b => b.estado === 'asistida').length 
+              },
+              { 
+                value: 'cancelada', 
+                label: 'Canceladas', 
+                count: bookings.filter(b => b.estado === 'cancelada').length 
+              }
+            ]}
+            activeFilter={filter}
+            onFilterChange={(value) => setFilter(value)}
+            showCounts={true}
+          />
 
-        {/* SearchInput abajo */}
-        <SearchInput
-          value={search}
-          onChange={(val) => setSearch(val)}
-          onClear={() => setSearch('')}
-          placeholder="Buscar por código, nombre, email o evento..."
-        />
+          <div className="flex-1 max-w-md ml-auto">
+            <SearchInput
+              value={search}
+              onChange={(val) => setSearch(val)}
+              onClear={() => setSearch('')}
+              placeholder="Buscar por código, nombre o email..."
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Lista de reservas */}
-      {filteredBookings.length === 0 ? (
-        <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
-          <Ticket className="mx-auto mb-4 text-gray-600" size={48} />
-          <p className="text-gray-400 text-lg">
-            {search ? 'No se encontraron reservas con esos criterios' : 'No hay reservas en esta categoría'}
-          </p>
-        </div>
+      {/* Loading state */}
+      {loading ? (
+        <Loader fullScreen />
       ) : (
-        <div className="space-y-4">
-          {filteredBookings.map((booking) => (
-            <div
-              key={booking.id}
-              className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
-            >
-              <div className="flex items-start justify-between">
-                {/* Info de la reserva */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Ticket className="text-primary-300" size={24} />
-                    <div>
-                      <h3 className="text-xl font-bold text-white">
-                        {booking.codigo_reserva || `Reserva #${booking.id}`}
-                      </h3>
-                      <p className="text-gray-400 text-sm">{booking.evento_titulo || 'Evento desconocido'}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Usuario</p>
-                      <p className="text-white text-sm">
-                        {booking.nombre && booking.apellidos 
-                          ? `${booking.nombre} ${booking.apellidos}`
-                          : booking.email || 'N/A'}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Estado</p>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoBadge(booking.estado)}`}>
-                        {booking.estado}
-                      </span>
-                    </div>
-                    
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Entradas</p>
-                      <p className="text-white text-sm">{booking.numero_entradas || 1}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Fecha Reserva</p>
-                      <p className="text-white text-sm">{formatDate(booking.created_at)}</p>
-                    </div>
-                  </div>
-
-                  {booking.fecha_evento && (
-                    <div className="flex items-center gap-2 text-gray-300 text-sm">
-                      <Calendar size={16} className="text-primary-300" />
-                      <span>Evento: {formatDate(booking.fecha_evento)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Acciones */}
-                <div className="flex flex-col gap-2 ml-4">
-                  {booking.estado === 'confirmada' && (
-                    <button
-                      onClick={() => handleCancelBooking(booking.id)}
-                      className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setSelectedBooking(booking)}
-                    className="px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors"
-                  >
-                    Ver Detalles
-                  </button>
-                </div>
-              </div>
+        <>
+          {/* Lista de reservas */}
+          {filteredBookings.length === 0 ? (
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
+              <Ticket className="mx-auto mb-4 text-gray-600" size={48} />
+              <p className="text-gray-400 text-lg">
+                {search ? 'No se encontraron reservas con esos criterios' : 'No hay reservas en esta categoría'}
+              </p>
             </div>
-          ))}
+          ) : (
+            <div className="space-y-4">
+              {filteredBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    {/* Info de la reserva */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Ticket className="text-primary-300" size={24} />
+                        <div>
+                          <h3 className="text-xl font-bold text-white">
+                            {booking.codigo_reserva || `Reserva #${booking.id}`}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <p className="text-gray-500 text-xs mb-1">Usuario</p>
+                          <p className="text-white text-sm">
+                            {booking.socio_nombre && booking.socio_apellidos 
+                              ? `${booking.socio_nombre} ${booking.socio_apellidos}`
+                              : booking.socio_email || 'N/A'}
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-gray-500 text-xs mb-1">Estado</p>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoBadge(booking.estado)}`}>
+                            {booking.estado}
+                          </span>
+                        </div>
+                        
+                        <div>
+                          <p className="text-gray-500 text-xs mb-1">Entradas</p>
+                          <p className="text-white text-sm">{booking.numero_entradas || 1}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-gray-500 text-xs mb-1">Fecha Reserva</p>
+                          <p className="text-white text-sm">{formatDate(booking.created_at)}</p>
+                        </div>
+                      </div>
+
+                      {booking.fecha_asistencia && (
+                        <div className="flex items-center gap-2 text-gray-300 text-sm">
+                          <Calendar size={16} className="text-primary-300" />
+                          <span>Asistencia: {formatDate(booking.fecha_asistencia)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Acciones */}
+                    <div className="flex flex-col gap-2 ml-4">
+                      {booking.estado === 'confirmada' && (
+                        <button
+                          onClick={() => handleCancelBooking(booking.id)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setSelectedBooking(booking)}
+                        className="px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors"
+                      >
+                        Ver Detalles
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Modal selector de eventos */}
+      {showEventSelector && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowEventSelector(false)}>
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white">Seleccionar Evento</h2>
+              <button
+                onClick={() => setShowEventSelector(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid gap-4">
+              {events.map((event) => {
+                const isPast = new Date(event.fecha_evento) < new Date();
+                const isSelected = selectedEvent?.id === event.id;
+                
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setShowEventSelector(false);
+                    }}
+                    className={`bg-[#0a0a0a] border rounded-xl p-4 hover:border-primary-500/50 transition-all text-left flex items-start gap-4 ${
+                      isSelected ? 'border-primary-500' : 'border-[#262626]'
+                    }`}
+                  >
+                    {/* Miniatura */}
+                    {event.imagen_url && (
+                      <img 
+                        src={event.imagen_url} 
+                        alt={event.titulo}
+                        className="w-24 h-24 object-cover rounded-lg"
+                      />
+                    )}
+
+                    {/* Info */}
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-white mb-1">
+                        {event.titulo}
+                      </h3>
+                      <div className="flex items-center gap-2 text-gray-400 text-sm">
+                        <Calendar size={14} className="text-primary-300" />
+                        <span>{formatEventDateShort(event.fecha_evento)}</span>
+                        {isPast && <span className="text-gray-600">• Finalizado</span>}
+                      </div>
+                      {event.ubicacion && (
+                        <p className="text-gray-500 text-sm mt-1">{event.ubicacion}</p>
+                      )}
+                    </div>
+
+                    {isSelected && (
+                      <div className="text-primary-300">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Modal de detalles */}
+      {/* Modal de detalles de reserva */}
       {selectedBooking && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBooking(null)}>
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
@@ -275,7 +574,7 @@ const AdminBookings = () => {
               <h2 className="text-2xl font-bold text-white">Detalles de Reserva</h2>
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white text-2xl"
               >
                 ×
               </button>
@@ -297,14 +596,14 @@ const AdminBookings = () => {
 
               <div>
                 <p className="text-gray-500 text-sm mb-1">Evento</p>
-                <p className="text-white text-lg font-semibold">{selectedBooking.evento_titulo}</p>
+                <p className="text-white text-lg font-semibold">{selectedEvent.titulo}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-500 text-sm mb-1">Usuario</p>
-                  <p className="text-white">{selectedBooking.nombre} {selectedBooking.apellidos}</p>
-                  <p className="text-gray-400 text-sm">{selectedBooking.email}</p>
+                  <p className="text-white">{selectedBooking.socio_nombre} {selectedBooking.socio_apellidos}</p>
+                  <p className="text-gray-400 text-sm">{selectedBooking.socio_email}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 text-sm mb-1">Número de Socio</p>

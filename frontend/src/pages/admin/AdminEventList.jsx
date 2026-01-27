@@ -81,7 +81,6 @@ const AdminEventList = () => {
 
       if (response.success) {
         setEvents(response.data);
-        // ensure pagination keeps page we requested (API may return pagination)
         setPagination((prev) => ({
           ...prev,
           ...(response.pagination || {}),
@@ -100,7 +99,7 @@ const AdminEventList = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // immediate search trigger
+    // debounced fetch
     fetchEvents({ page: 1 });
   };
 
@@ -110,7 +109,7 @@ const AdminEventList = () => {
   };
 
   const handleDelete = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) {
+    if (!window.confirm(`Estás seguro de eliminar "${title}"?`)) {
       return;
     }
 
@@ -118,14 +117,14 @@ const AdminEventList = () => {
       const response = await deleteEvent(id);
 
       if (response.success) {
-        setSuccess("Event deleted successfully");
+        setSuccess("Evento eliminado correctamente");
         fetchEvents();
       } else {
-        setError(response.message || "Error deleting event");
+        setError(response.message || "Error borrando el evento");
       }
     } catch (err) {
       console.error("Error deleting event:", err);
-      setError("Error deleting event. Please try again.");
+      setError("Error borrando el evento. Por favor, inténtalo de nuevo.");
     }
   };
 
@@ -137,11 +136,11 @@ const AdminEventList = () => {
         setSuccess(response.message);
         fetchEvents();
       } else {
-        setError(response.message || "Error changing publish status");
+        setError(response.message || "Error cambiando estado de publicación");
       }
     } catch (err) {
       console.error("Error toggling publish:", err);
-      setError("Error changing status. Please try again.");
+      setError("Error cambiando el estado. Por favor, inténtalo de nuevo.");
     }
   };
 
@@ -153,11 +152,11 @@ const AdminEventList = () => {
         setSuccess(response.message);
         fetchEvents();
       } else {
-        setError(response.message || "Error changing featured status");
+        setError(response.message || "Error cambiando estado de destacado");
       }
     } catch (err) {
       console.error("Error toggling featured:", err);
-      setError("Error changing status. Please try again.");
+      setError("Error cambiando el estado. Por favor, inténtalo de nuevo.");
     }
   };
 
@@ -203,6 +202,8 @@ const AdminEventList = () => {
     if (statusFilter === "all") return "No hay eventos disponibles";
     return "No se encontraron eventos";
   };
+
+  if (loading && events.length === 0) return <Loader fullScreen />;
 
   return (
     <div className="space-y-6">
@@ -346,7 +347,10 @@ const AdminEventList = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Acciones */}
+                <div className="flex gap-2 ml-4">
+
+                  {/* Publicar */}
                   <button
                     onClick={() => handleTogglePublish(event.id, event.estado)}
                     className={`p-2 rounded-lg transition-colors ${
@@ -362,7 +366,8 @@ const AdminEventList = () => {
                       <Eye size={16} />
                     )}
                   </button>
-
+                  
+                  {/* Destacar/Quitar destacado */}
                   <button
                     onClick={() => handleToggleFeatured(event.id)}
                     className={`p-2 rounded-lg transition-colors ${
@@ -378,6 +383,7 @@ const AdminEventList = () => {
                     />
                   </button>
 
+                  {/* Editar */}
                   <Link
                     to={`/admin/events/edit/${event.id}`}
                     className="p-2 text-primary-300 hover:bg-primary-500/20 rounded-lg transition-colors"
@@ -385,7 +391,8 @@ const AdminEventList = () => {
                   >
                     <Edit size={16} />
                   </Link>
-
+                  
+                  {/* Eliminar */}
                   <button
                     onClick={() => handleDelete(event.id, event.titulo)}
                     className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
@@ -398,7 +405,7 @@ const AdminEventList = () => {
             ))}
           </div>
 
-          {/* Pagination */}
+          {/* Paginacion */}
           {pagination.totalPages > 1 && (
             <div className="flex justify-center items-center gap-2">
               <button
