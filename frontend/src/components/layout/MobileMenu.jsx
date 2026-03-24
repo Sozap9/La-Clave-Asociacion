@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { NAV_ROUTES } from '../../utils/constants';
 import Button from '../common/Button';
+import { useLanguage } from '../../context/LanguageContext';
 
 const MobileMenu = ({ isOpen, onClose }) => {
   const { user, isAuthenticated, isAdmin, isSocio, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -19,61 +21,56 @@ const MobileMenu = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  // Menú para usuarios NO autenticados
   const publicItems = [
-    { label: 'Inicio', href: NAV_ROUTES.HOME },
-    { label: 'Estatutos', href: NAV_ROUTES.STATUTES }
+    { label: t('menu.home'), href: NAV_ROUTES.HOME },
+    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
   ];
 
-  // Menú para usuarios BÁSICOS
   const basicItems = [
-    { label: 'Inicio', href: NAV_ROUTES.HOME },
-    { label: 'Estatutos', href: NAV_ROUTES.STATUTES }
+    { label: t('menu.home'), href: NAV_ROUTES.HOME },
+    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
   ];
 
-  // Menú para SOCIOS
   const socioItems = [
-    { label: 'Inicio', href: NAV_ROUTES.HOME },
-    { label: 'Eventos', href: NAV_ROUTES.EVENTS },
-    { label: 'Galería', href: NAV_ROUTES.GALLERY },
-    { label: 'Mis Entradas', href: NAV_ROUTES.MY_BOOKINGS },
-    { label: 'Estatutos', href: NAV_ROUTES.STATUTES }
+    { label: t('menu.home'), href: NAV_ROUTES.HOME },
+    { label: t('menu.events'), href: NAV_ROUTES.EVENTS },
+    { label: t('menu.gallery'), href: NAV_ROUTES.GALLERY },
+    { label: t('menu.myTickets'), href: NAV_ROUTES.MY_BOOKINGS },
+    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
   ];
 
-  // Menú para ADMINS
   const adminItems = [
-    { label: 'Inicio', href: NAV_ROUTES.HOME },
-    { label: 'Eventos', href: NAV_ROUTES.EVENTS },
-    { label: 'Galería', href: NAV_ROUTES.GALLERY },
-    { label: 'Estatutos', href: NAV_ROUTES.STATUTES }
+    { label: t('menu.home'), href: NAV_ROUTES.HOME },
+    { label: t('menu.events'), href: NAV_ROUTES.EVENTS },
+    { label: t('menu.gallery'), href: NAV_ROUTES.GALLERY },
+    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
   ];
 
   const getNavItems = () => {
     if (!isAuthenticated) return publicItems;
     if (isAdmin) return adminItems;
     if (isSocio) return socioItems;
-    return basicItems; // Usuario básico
+    return basicItems;
   };
 
-  // Obtener badge según rol
   const getRoleBadge = () => {
     if (isAdmin) {
       return {
-        label: 'Admin',
+        label: t('menu.roles.admin'),
         icon: Shield,
-        className: 'bg-red-500/20 text-red-400 border-red-500/30'
+        className: 'bg-red-500/20 text-red-400 border-red-500/30',
       };
     } else if (isSocio) {
       return {
-        label: 'Socio',
+        label: t('menu.roles.socio'),
         icon: Crown,
-        className: 'bg-primary-500/20 text-primary-400 border-primary-500/30'
+        className: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
       };
     } else {
       return {
-        label: 'Usuario',
+        label: t('menu.roles.user'),
         icon: User,
-        className: 'bg-[#262626]/20 text-gray-400 border-[#262626]/30'
+        className: 'bg-[#262626]/20 text-gray-400 border-[#262626]/30',
       };
     }
   };
@@ -94,23 +91,23 @@ const MobileMenu = ({ isOpen, onClose }) => {
 
       {/* Menú lateral */}
       <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-[#0a0a0a] shadow-2xl z-50 transform transition-transform duration-300">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#262626]">
           <h2 className="menu-title text-white">
-            {isAuthenticated ? `Hola, ${user?.nombre}` : 'Menú'}
+            {isAuthenticated ? `${t('menu.hello')}, ${user?.nombre}` : t('menu.title')}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-[#1a1a1a] rounded-lg"
-            aria-label="Cerrar menú"
+            aria-label={t('menu.close')}
           >
             <X size={24} />
           </button>
         </div>
 
         <div className="flex flex-col h-[calc(100%-80px)]">
-          
+
           {/* Navegación */}
           <nav className="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
             {navItems.map((item) => {
@@ -137,9 +134,8 @@ const MobileMenu = ({ isOpen, onClose }) => {
                   onClick={() => handleNavigation(NAV_ROUTES.PROFILE)}
                   className="w-full flex items-center gap-3 mb-4 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#262626] transition-colors cursor-pointer"
                 >
-                  {/* Avatar del usuario o inicial */}
                   {user?.avatar_url ? (
-                    <img 
+                    <img
                       src={user.avatar_url}
                       alt={`${user.nombre} ${user.apellidos}`}
                       className="w-12 h-12 rounded-full object-cover shadow-glow"
@@ -147,7 +143,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                   ) : (
                     <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center shadow-glow">
                       <span className="text-white font-bold text-lg">
-                        {user?.avatar_url?.charAt(0).toUpperCase()}
+                        {user?.nombre?.charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
@@ -161,54 +157,50 @@ const MobileMenu = ({ isOpen, onClose }) => {
                     </span>
                   </div>
                 </button>
-                
-                {/* Botón perfil Admin/Socio */}
+
                 {(isAdmin || isSocio) && (
                   <Button
                     variant="primary"
                     onClick={() => handleNavigation(isAdmin ? NAV_ROUTES.ADMIN : NAV_ROUTES.DASHBOARD)}
                     className="w-full"
                   >
-                    {isAdmin ? 'Panel Admin' : 'Mi Panel'}
+                    {isAdmin ? t('menu.adminPanel') : t('menu.myPanel')}
                   </Button>
                 )}
 
-                {/* Botón Mejorar Cuenta (solo usuarios básicos) */}
                 {!isAdmin && !isSocio && (
                   <Button
                     variant="primary"
                     onClick={() => handleNavigation(NAV_ROUTES.UPGRADE)}
                     className="w-full"
                   >
-                    Hazte Socio
+                    {t('menu.becomeMember')}
                   </Button>
                 )}
 
-                {/* Botón Cerrar Sesión */}
                 <Button
                   variant="primary"
                   onClick={handleLogout}
                   className="w-full"
                 >
-                  Cerrar Sesión
+                  {t('menu.logout')}
                 </Button>
               </>
             ) : (
               <>
-                {/* Botones para usuarios NO autenticados */}
                 <Button
                   variant="outline"
                   onClick={() => handleNavigation(NAV_ROUTES.LOGIN)}
                   className="w-full"
                 >
-                  Iniciar Sesión
+                  {t('menu.login')}
                 </Button>
                 <Button
                   variant="primary"
                   onClick={() => handleNavigation(NAV_ROUTES.REGISTER)}
                   className="w-full"
                 >
-                  Crear Cuenta
+                  {t('menu.register')}
                 </Button>
               </>
             )}

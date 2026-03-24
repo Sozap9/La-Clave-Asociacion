@@ -1,179 +1,202 @@
-import { useState, useEffect } from 'react';
-import { getAllSocios, updateUserRole, approveUser, rejectUser } from '../../api/adminApi';
-import { Users, CheckCircle, XCircle, Shield, Eye, Ban, X } from 'lucide-react';
-import Button from '../../components/common/Button';
-import Loader from '../../components/common/Loader';
-import FilterBar from '../../components/UI/FilterBar';
-import SearchInput from '../../components/UI/SearchInput';
+import { useState, useEffect } from "react";
+import {
+  getAllSocios,
+  getSocioDetails,
+  deactivateSocio,
+  deleteSocioPermanent,
+  updateUserRole,
+  reactivateSocio,
+} from "../../api/adminApi";
+import {
+  Users,
+  Eye,
+  X,
+  Phone,
+  UserMinus,
+  Trash2,
+  RotateCcw,
+} from "lucide-react";
+import Loader from "../../components/common/Loader";
+import FilterBar from "../../components/UI/FilterBar";
+import SearchInput from "../../components/UI/SearchInput";
+import AdminCard from "../../components/admin/AdminCard";
 
-/**
- * AdminSocios - Lista SOLO los socios (usuarios con role='socio')
- */
-
-// Filtros de estado disponibles
-const estadoFilters = [
-  { value: 'all', label: 'Todos' },
-  { value: 'activo', label: 'Activos' },
+// Filtros disponibles para socios
+const socioFilters = [
+  { value: "all", label: "Todos" },
+  { value: "socio", label: "Socios Activos" },
+  { value: "inactivo", label: "Socios Inactivos" },
+  { value: "admin", label: "Administradores" },
 ];
 
 const AdminSocios = () => {
   const [socios, setSocios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('all');
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
   const [selectedSocio, setSelectedSocio] = useState(null);
+  const [roleSelections, setRoleSelections] = useState({});
+  const [activeFilter, setActiveFilter] = useState("socio");
 
   useEffect(() => {
     fetchSocios();
     // eslint-disable-next-line
-  }, [estadoFilter, search]);
+  }, [search, activeFilter]);
 
   const fetchSocios = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const params = {};
-      
-      if (estadoFilter && estadoFilter !== 'all') {
-        params.estado = estadoFilter;
+
+      if (activeFilter === "socio") {
+        params.estado = "activo";
       }
-      
       if (search) {
         params.search = search;
       }
 
       const result = await getAllSocios(params);
-      
       if (result.success) {
-        const sociosData = result.data?.socios || result.data || [];
-        // Filtrar SOLO los que tienen role='socio'
-        const onlySocios = sociosData.filter(s => s.role === 'socio');
-        setSocios(Array.isArray(onlySocios) ? onlySocios : []);
+        let sociosData = result.data?.socios || result.data || [];
+
+        if (activeFilter === "socio") {
+          sociosData = sociosData.filter((s) => s.role === "socio");
+        } else if (activeFilter === "inactivo") {
+          sociosData = sociosData.filter(
+            (s) => s.role === "socio" && !s.activo,
+          );
+        } else if (activeFilter === "admin") {
+          sociosData = sociosData.filter((s) => s.role === "admin");
+        }
+
+        setSocios(Array.isArray(sociosData) ? sociosData : []);
+        const initialRoles = {};
+        (Array.isArray(sociosData) ? sociosData : []).forEach((s) => {
+          initialRoles[s.id] = s.role || "socio";
+        });
+        setRoleSelections(initialRoles);
       } else {
-        setError(result.message || 'Error al cargar socios');
+        setError(result.message || "Error al cargar socios");
         setSocios([]);
       }
     } catch (err) {
-      console.error('Error en fetchSocios:', err);
-      setError('Error de conexión');
+      console.error("Error en fetchSocios:", err);
+      setError("Error de conexión");
       setSocios([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleActive = async (userId, currentStatus) => {
-    const action = currentStatus ? 'desactivar' : 'activar';
-    if (!confirm(`¿Estás seguro de ${action} este socio?`)) return;
-
+  const handleOpenDetails = async (socioId) => {
+    setLoading(true);
+    setError("");
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}/toggle-active`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ activo: !currentStatus })
-      });
-
-      const result = await response.json();
-      
+      const result = await getSocioDetails(socioId);
       if (result.success) {
-        fetchSocios();
-        alert(`Socio ${action} exitosamente`);
+        setSelectedSocio(result.data);
       } else {
-        alert(result.message || `Error al ${action} socio`);
+        setError(result.message || "Error al obtener detalles del socio");
       }
     } catch (err) {
-      alert('Error de conexión');
+      console.error("Error en getSocioDetails:", err);
+      setError("Error de conexión");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleApprove = async (userId) => {
-    if (!confirm('¿Aprobar este usuario como socio?')) return;
+  const handleDeactivateSocio = async (socioId) => {
+    const confirm = window.confirm(
+      "¿Estás seguro de que quieres dar de baja a este socio? Esto lo dejará inactivo.",
+    );
+    if (!confirm) return;
 
+    setLoading(true);
+    setError("");
     try {
-      const result = await approveUser(userId);
-      if (result.success) {
-        fetchSocios();
-        alert('Usuario aprobado exitosamente');
+      const result = await deactivateSocio(socioId, "Baja administrativa");
+      if (!result.success) {
+        setError(result.message || "Error al dar de baja al socio");
       } else {
-        alert(result.message || 'Error al aprobar usuario');
+        await fetchSocios();
+        setSelectedSocio(null);
       }
     } catch (err) {
-      alert('Error de conexión');
+      console.error("Error al dar de baja al socio:", err);
+      setError("Error de conexión");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleReject = async (userId) => {
-    if (!confirm('¿Rechazar la solicitud de este usuario?')) return;
+  const handleDeleteSocio = async (socioId) => {
+    const confirm = window.confirm(
+      "¿Eliminar este usuario? Esta acción es irreversible y eliminará todos sus datos.",
+    );
+    if (!confirm) return;
 
+    setLoading(true);
+    setError("");
     try {
-      const result = await rejectUser(userId);
-      if (result.success) {
-        fetchSocios();
-        alert('Solicitud rechazada exitosamente');
+      const result = await deleteSocioPermanent(socioId);
+      if (!result.success) {
+        setError(result.message || "Error al eliminar al socio");
       } else {
-        alert(result.message || 'Error al rechazar usuario');
+        await fetchSocios();
+        setSelectedSocio(null);
       }
     } catch (err) {
-      alert('Error de conexión');
+      console.error("Error al eliminar al socio:", err);
+      setError("Error de conexión");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleChangeRole = async (userId, newRole) => {
-    if (!confirm(`¿Cambiar el rol del socio a ${newRole}?`)) return;
+  const handleChangeRole = async (userId, newRole, currentRole = "socio") => {
+    if (!newRole || newRole === currentRole) return;
 
+    setLoading(true);
+    setError("");
     try {
       const result = await updateUserRole(userId, newRole);
-      if (result.success) {
-        // Si es user básico no aparece en la lista
-        if (newRole !== 'socio') {
-          setSocios(prevSocios => prevSocios.filter(s => s.user_id !== userId));
-        } else {
-          setSocios(prevSocios =>
-            prevSocios.map(socio =>
-              socio.user_id === userId ? { ...socio, role: newRole } : socio
-            )
-          );
-        }
-        alert('Rol actualizado exitosamente');
+      if (!result.success) {
+        setError(result.message || "Error al cambiar el rol");
       } else {
-        alert(result.message || 'Error al cambiar rol');
+        await fetchSocios();
       }
     } catch (err) {
-      alert('Error de conexión');
+      console.error("Error al cambiar el rol:", err);
+      setError("Error de conexión");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getRoleBadge = (role) => {
-    const styles = {
-      admin: 'bg-red-500/20 text-red-400',
-      socio: 'bg-primary-500/20 text-primary-400',
-      basico: 'bg-gray-700 text-gray-400'
-    };
-    return styles[role] || styles.socio;
-  };
+  const handleReactivateSocio = async (socioId) => {
+    const confirm = window.confirm(
+      "¿Reactivar este socio? Volverá a estar activo en el sistema.",
+    );
+    if (!confirm) return;
 
-  const getEstadoBadge = (estado) => {
-    const styles = {
-      activo: 'bg-green-500/20 text-green-400',
-      pendiente: 'bg-yellow-500/20 text-yellow-400',
-      moroso: 'bg-orange-500/20 text-orange-400',
-      cancelado: 'bg-red-500/20 text-red-400'
-    };
-    return styles[estado] || styles.activo;
-  };
-
-  const getRoleLabel = (role) => {
-    const labels = {
-      admin: 'Administrador',
-      socio: 'Socio',
-      basico: 'Usuario Básico'
-    };
-    return labels[role] || role;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await reactivateSocio(socioId);
+      if (!result.success) {
+        setError(result.message || "Error al reactivar al socio");
+      } else {
+        await fetchSocios();
+        setSelectedSocio(null);
+      }
+    } catch (err) {
+      console.error("Error al reactivar al socio:", err);
+      setError("Error de conexión");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <Loader fullScreen />;
@@ -183,11 +206,10 @@ const AdminSocios = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-gradient mb-2 text-4xl">Gestión de Socios</h1>
-        <p className='text-gray-200 text-lg'>
-          Administra tu lista de socios
-        </p>
+        <p className="text-gray-200 text-lg">Administra tu lista de socios</p>
         <p className="text-gray-400 text-lg">
-          {socios.length} socio{socios.length !== 1 ? 's' : ''} registrado{socios.length !== 1 ? 's' : ''}
+          {socios.length} socio{socios.length !== 1 ? "s" : ""} registrado
+          {socios.length !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -198,21 +220,21 @@ const AdminSocios = () => {
         </div>
       )}
 
-      {/* Filtros y búsqueda  */}
+      {/* Filtros y búsqueda */}
       <div className="mb-6 flex flex-wrap gap-4 items-center">
-        {/* Filtros*/}
+        {/* Filtros a la izquierda */}
         <FilterBar
-          customFilters={estadoFilters}
-          activeFilter={estadoFilter}
-          onFilterChange={setEstadoFilter}
+          customFilters={socioFilters}
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
         />
-        
-        {/* Búsqueda */}
+
+        {/* Búsqueda a la derecha */}
         <div className="flex-1 max-w-md ml-auto">
           <SearchInput
             value={search}
             onChange={setSearch}
-            onClear={() => setSearch('')}
+            onClear={() => setSearch("")}
             placeholder="Buscar por nombre, email..."
             debounceMs={350}
           />
@@ -223,151 +245,113 @@ const AdminSocios = () => {
       {socios.length === 0 ? (
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Users className="mx-auto mb-4 text-gray-600" size={48} />
-          <p className="text-gray-400 text-lg">No hay socios en esta categoría</p>
+          <p className="text-gray-400 text-lg">
+            No hay socios activos para mostrar
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
           {socios.map((socio) => (
-            <div
+            <AdminCard
               key={socio.id}
-              className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  {/* Avatar y nombre */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">
-                        {socio.nombre?.charAt(0).toUpperCase() || socio.username?.charAt(0).toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold text-white">
-                          {socio.nombre && socio.apellidos ? `${socio.nombre} ${socio.apellidos}` : socio.username}
-                        </h3>
-                        {socio.activo === false && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
-                            Inactivo
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-400 text-sm">{socio.email}</p>
-                    </div>
-                  </div>
-
-                  {/* Grid de información */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Número Socio</p>
-                      <p className="text-white text-sm font-mono">{socio.numero_socio}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Estado</p>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getEstadoBadge(socio.estado)}`}>
-                        {socio.estado}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Rol</p>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(socio.role)}`}>
-                        {getRoleLabel(socio.role)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Cuota Mensual</p>
-                      <p className="text-white text-sm">{socio.cuota_mensual}€</p>
-                    </div>
-                  </div>
-
-                  {/* Selector de rol y botones aprobar/rechazar */}
-                  <div className="flex flex-wrap gap-2 items-center">
-                    {/* Botones de aprobar/rechazar para pendientes */}
-                    {socio.estado === 'pendiente' && (
-                      <>
-                        <Button
-                          variant="primary"
-                          onClick={() => handleApprove(socio.user_id)}
-                          className="text-sm flex items-center gap-1"
-                        >
-                          <CheckCircle size={16} />
-                          Aprobar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleReject(socio.user_id)}
-                          className="text-sm flex items-center gap-1 border-red-500 text-red-400 hover:bg-red-500/20"
-                        >
-                          <XCircle size={16} />
-                          Rechazar
-                        </Button>
-                      </>
-                    )}
-
-                    {/* Selector de rol */}
-                    <div className="flex items-center gap-2">
-                      <Shield size={16} className="text-gray-400" />
+              avatar={
+                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">
+                    {socio.nombre?.charAt(0).toUpperCase() ||
+                      socio.username?.charAt(0).toUpperCase() ||
+                      "?"}
+                  </span>
+                </div>
+              }
+              title={
+                socio.nombre && socio.apellidos
+                  ? `${socio.nombre} ${socio.apellidos}`
+                  : socio.username
+              }
+              subtitle={
+                socio.telefono
+                  ? `${socio.email} • ${socio.telefono}`
+                  : socio.email
+              }
+              badges={
+                socio.numero_socio
+                  ? [
+                      {
+                        text: `N° ${socio.numero_socio}`,
+                        color: "primary",
+                      },
+                    ]
+                  : []
+              }
+              actions={[
+                {
+                  icon: <Eye size={20} />,
+                  onClick: () => handleOpenDetails(socio.id),
+                  color: "primary",
+                  title: "Ver detalles",
+                },
+                {
+                  icon: <UserMinus size={20} />,
+                  onClick: () => handleDeactivateSocio(socio.id),
+                  color: "primary",
+                  title: "Dar de baja",
+                },
+                {
+                  icon: <Trash2 size={20} />,
+                  onClick: () => handleDeleteSocio(socio.id),
+                  color: "primary",
+                  title: "Eliminar usuario",
+                },
+                {
+                  type: "role",
+                  element: (
+                    <div className="flex items-center gap-2 mt-2">
                       <select
-                        onChange={(e) => handleChangeRole(socio.user_id, e.target.value)}
-                        value={socio.role}
-                        className="bg-[#262626] text-white border border-gray-700 rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-primary-500 transition-colors"
+                        className="bg-[#101010] border border-gray-700 text-white px-2 py-1 rounded-lg focus:outline-none focus:border-violet-500"
+                        value={
+                          roleSelections[socio.id] || socio.role || "socio"
+                        }
+                        onChange={(e) => {
+                          const newRole = e.target.value;
+                          setRoleSelections((prev) => ({
+                            ...prev,
+                            [socio.id]: newRole,
+                          }));
+                          handleChangeRole(
+                            socio.user_id || socio.id,
+                            newRole,
+                            socio.role,
+                          );
+                        }}
+                        disabled={loading}
                       >
-                        <option value="basico">Básico</option>
+                        <option value="admin">Administrador</option>
                         <option value="socio">Socio</option>
-                        <option value="admin">Admin</option>
                       </select>
                     </div>
-                  </div>
-                </div>
-
-                {/* Botones  */}
-                <div className="flex flex-col gap-2 ml-4">
-                  <button
-                    onClick={() => setSelectedSocio(socio)}
-                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
-                  >
-                    <Eye size={16} />
-                    Ver
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(socio.user_id, socio.activo !== false)}
-                    className={`px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
-                      socio.activo === false
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-primary-600 hover:bg-primary-700 text-white'
-                    }`}
-                  >
-                    {socio.activo === false ? (
-                      <>
-                        <CheckCircle size={16} />
-                        Activar
-                      </>
-                    ) : (
-                      <>
-                        <Ban size={16} />
-                        Desactivar
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+                  ),
+                },
+              ]}
+              className="p-4"
+            ></AdminCard>
           ))}
         </div>
       )}
 
       {/* Modal de detalles */}
       {selectedSocio && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => setSelectedSocio(null)}
         >
-          <div 
+          <div
             className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">Detalles del Socio</h2>
+              <h2 className="text-2xl font-bold text-white">
+                Detalles del Socio
+              </h2>
               <button
                 onClick={() => setSelectedSocio(null)}
                 className="text-gray-400 hover:text-white transition-colors"
@@ -377,48 +361,102 @@ const AdminSocios = () => {
             </div>
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-500 text-sm">Nombre completo</p>
+                  <p className="text-white text-lg">
+                    {selectedSocio.user?.nombre && selectedSocio.user?.apellidos
+                      ? `${selectedSocio.user.nombre} ${selectedSocio.user.apellidos}`
+                      : selectedSocio.user?.username || ""}
+                  </p>
+                </div>
+
               <div>
-                <p className="text-gray-500 text-sm">Nombre completo</p>
-                <p className="text-white text-lg">
-                  {selectedSocio.nombre && selectedSocio.apellidos
-                    ? `${selectedSocio.nombre} ${selectedSocio.apellidos}`
-                    : selectedSocio.username}
+                <p className="text-gray-500 text-sm">DNI</p>
+                <p className="text-white">
+                  {selectedSocio.user?.telefono || "—"}
                 </p>
               </div>
+            </div>
 
-              <div>
-                <p className="text-gray-500 text-sm">Número de Socio</p>
-                <p className="text-white font-mono">{selectedSocio.numero_socio}</p>
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-500 text-sm">Email</p>
+                  <p className="text-white">{selectedSocio.user?.email}</p>
+                </div>
 
-              <div>
-                <p className="text-gray-500 text-sm">Email</p>
-                <p className="text-white">{selectedSocio.email}</p>
-              </div>
-
-              {selectedSocio.telefono && (
                 <div>
                   <p className="text-gray-500 text-sm">Teléfono</p>
-                  <p className="text-white">{selectedSocio.telefono}</p>
+                  <p className="text-white">
+                    {selectedSocio.user?.telefono || "—"}
+                  </p>
                 </div>
-              )}
-
-              <div>
-                <p className="text-gray-500 text-sm">Estado</p>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEstadoBadge(selectedSocio.estado)}`}>
-                  {selectedSocio.estado}
-                </span>
               </div>
 
-              <div>
-                <p className="text-gray-500 text-sm">Cuota Mensual</p>
-                <p className="text-white">{selectedSocio.cuota_mensual}€</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-500 text-sm">Número de socio</p>
+                  <p className="text-white">
+                    {selectedSocio.socio?.numero_socio || "—"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-gray-500 text-sm">Estado de cuenta</p>
+                  <p className="text-white">
+                    {selectedSocio.user?.activo ? "Activo" : "Inactivo"}
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <p className="text-gray-500 text-sm">Fecha de Alta</p>
-                <p className="text-white">{new Date(selectedSocio.fecha_alta).toLocaleDateString('es-ES')}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-500 text-sm">Fecha de alta</p>
+                  <p className="text-white">
+                    {selectedSocio.socio?.fecha_alta
+                      ? new Date(
+                          selectedSocio.socio.fecha_alta,
+                        ).toLocaleDateString("es-ES")
+                      : "—"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-gray-500 text-sm">Fecha baja</p>
+                  <p className="text-white">
+                    {selectedSocio.socio?.fecha_baja
+                      ? new Date(
+                          selectedSocio.socio.fecha_baja,
+                        ).toLocaleDateString("es-ES")
+                      : "—"}
+                  </p>
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-500 text-sm">Fecha de nacimiento</p>
+                  <p className="text-white">
+                    {selectedSocio.user?.fecha_nacimiento
+                      ? new Date(
+                          selectedSocio.user.fecha_nacimiento,
+                        ).toLocaleDateString("es-ES")
+                      : "—"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-gray-500 text-sm">Fecha de registro</p>
+                  <p className="text-white">
+                    {selectedSocio.user?.created_at
+                      ? new Date(
+                          selectedSocio.user.created_at,
+                        ).toLocaleDateString("es-ES")
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

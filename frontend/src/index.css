@@ -1,11 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Zen+Dots&family=Roboto:wght@300;400;500;700;900&display=swap");
 
-@import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Kodchasan:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&family=Orbitron:wght@400..900&family=Oxanium:wght@200..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Kodchasan:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&family=Orbitron:wght@400..900&family=Oxanium:wght@200..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 
 @layer base {
   * {
@@ -17,8 +16,7 @@
     font-family: "Oxanium", sans-serif;
   }
 
-
-/* Tipografías para títulos */
+  /* Tipografías para títulos */
 
   h1,
   h2 {
@@ -47,28 +45,25 @@
     @apply text-3xl md:text-4xl;
   }
 
+  /* Tipografías para párrafos y textos generales */
 
-/* Tipografías para párrafos y textos generales */
-
-button,
-span,
-
-li { 
+  button,
+  span,
+  li {
     font-family: "Ubuntu", sans-serif;
     @apply text-base md:text-lg;
-}
+  }
 
-p,
-a,
-label,
-input,
-select,
-option ,
-textarea{ 
+  p,
+  a,
+  label,
+  input,
+  select,
+  option,
+  textarea {
     font-family: "Kodchasan", sans-serif;
     @apply text-base md:text-lg;
-}
-
+  }
 
   /* Scrollbar personalizado */
   ::-webkit-scrollbar {
@@ -80,7 +75,7 @@ textarea{
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary-600 ;
+    @apply bg-primary-600;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -89,8 +84,7 @@ textarea{
 }
 
 @layer components {
-
-/* Menú Hamburguesa */
+  /* Menú Hamburguesa */
   .menu-title {
     font-family: "Zen Dots", sans-serif;
     @apply text-xl font-normal tracking-wider;
@@ -110,7 +104,6 @@ textarea{
     font-family: "Ubuntu", sans-serif;
     @apply text-xs font-normal uppercase tracking-wider;
   }
-
 
   .btn {
     @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 
@@ -174,6 +167,46 @@ textarea{
         bg-clip-text text-transparent;
   }
 
+  /* Datepicker selects (mes/año) */
+  .datepicker-select {
+    background: #0f0f0f;
+    color: #ffffff;
+    border-color: #2a2a2a;
+  }
+  .datepicker-select option {
+    background: #0f0f0f;
+    color: #ffffff;
+  }
+  .datepicker-select::-ms-expand {
+    display: none;
+  }
+
+  /* Estilos del calendario */
+  .react-datepicker {
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+  }
+  .react-datepicker__header {
+    background: transparent;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .react-datepicker__day-name {
+    color: #a78bfa;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .react-datepicker__day {
+    font-size: 0.85rem;
+  }
+  .react-datepicker__day--selected {
+    background-color: #8b5cf6;
+    color: #0a0a0a;
+  }
+  .react-datepicker__day--keyboard-selected {
+    background-color: #7c3aed;
+    color: #ffffff;
+  }
+
   .backdrop-blur-custom {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -228,7 +261,8 @@ textarea{
   }
 
   .bg-mesh {
-    background-image: radial-gradient(
+    background-image:
+      radial-gradient(
         at 40% 20%,
         rgba(178, 132, 216, 0.15) 0px,
         transparent 50%

@@ -10,6 +10,8 @@ import {
 import Loader from "../../components/common/Loader";
 import { getDashboardStats } from "../../api/adminApi";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AdminStatsDetailed = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ const AdminStatsDetailed = () => {
     } catch (err) {
       console.error("Error en fetchDetailedStats:", err);
       setError(
-        "Error de conexión con el servidor. Verifica que el backend esté corriendo en http://localhost:5000"
+        "Error de conexión con el servidor. Verifica que el backend esté corriendo en Error de conexión con el servidor"
       );
     } finally {
       setLoading(false);

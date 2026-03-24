@@ -9,6 +9,7 @@ import {
 import AdminStats from "../../components/admin/AdminStats";
 import QuickActionCard from "../../components/admin/QuickActionCard";
 import Loader from "../../components/common/Loader";
+import AdminCard from "../../components/admin/AdminCard";
 import {
   AlertCircle,
   Plus,
@@ -21,7 +22,6 @@ import {
   EyeOff,
   Star,
   Edit,
-  TrendingUp,
   MapPin,
 } from "lucide-react";
 
@@ -117,31 +117,20 @@ const AdminDashboard = () => {
     const isPublished = event.visible_desde !== null;
     const estado = event.estado;
 
-    let text;
-
     if (estado === "draft") {
-      text = "Borrador";
+      return { text: "Borrador", color: "gray" };
     } else if (estado === "scheduled" && isPublished) {
-      text = "Publicado";
+      return { text: "Publicado", color: "green" };
     } else if (estado === "scheduled" && !isPublished) {
-      text = "Programado";
+      return { text: "Programado", color: "blue" };
     } else if (estado === "active") {
-      text = "En curso";
+      return { text: "En curso", color: "primary" };
     } else if (estado === "completed") {
-      text = "Finalizado";
+      return { text: "Finalizado", color: "gray" };
     } else if (estado === "cancelled") {
-      text = "Cancelado";
-    } else {
-      text = estado || "Desconocido";
+      return { text: "Cancelado", color: "red" };
     }
-
-    return (
-      <span
-        className="px-2 py-1 rounded-full text-xs font-medium bg-primary-500/20 text-primary-300 border border-primary-500/30"
-      >
-        {text}
-      </span>
-    );
+    return { text: estado || "Desconocido", color: "gray" };
   };
 
   const formatDate = (dateString) => {
@@ -211,119 +200,77 @@ const AdminDashboard = () => {
             {recentEvents.map((event) => {
               const isPublished = event.visible_desde !== null;
               const isFeatured = event.destacado === 1;
+              const statusBadge = getStatusBadge(event);
 
               return (
-                <div
+                <AdminCard
                   key={event.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate(`/admin/eventos?open=${event.id}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter")
-                      navigate(`/admin/eventos?open=${event.id}`);
-                  }}
-                  className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 hover:border-primary-500/50 transition-all cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      {/* Image */}
-                      {event.imagen_cartel_url && (
-                        <img
-                          src={`${import.meta.env.VITE_BASE_URL}${
-                            event.imagen_cartel_url
-                          }`}
-                          alt={event.titulo}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      )}
-
-                      {/* Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-white">
-                            {event.titulo}
-                          </h3>
-                          {isFeatured && (
-                            <Star
-                              className="text-primary-300"
-                              size={16}
-                              fill="currentColor"
-                            />
-                          )}
-                          {getStatusBadge(event)}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span className="flex items-center gap-2">
-                            <Calendar size={15} className="text-primary-300" />
-                            <span>{formatDate(event.fecha_evento)}</span>
-                          </span>
-
-                          <span className="flex items-center gap-2">
-                            <MapPin size={15} className="text-primary-300" />
-                            <span>{event.ubicacion}</span>
-                          </span>
-
-                          <span className="flex items-center gap-2">
-                            <Users size={15} className="text-primary-300" />
-                            <span>
-                              {event.confirmed_bookings || 0}/
-                              {event.aforo_maximo}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      {/* Toggle Publish */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTogglePublish(event.id);
-                        }}
-                        className={`p-2 rounded-lg transition-colors ${
-                          isPublished
-                            ? "text-primary-700 hover:bg-primary-700/20"
-                            : "text-primary-300 hover:bg-primary-500/20"
-                        }`}
-                        title={isPublished ? "Despublicar" : "Publicar"}
-                      >
-                        {isPublished ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-
-                      {/* Toggle Featured */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleFeatured(event.id);
-                        }}
-                        className={`p-2 rounded-lg transition-colors ${
-                          isFeatured
-                            ? "text-primary-700 hover:bg-primary-700/20"
-                            : "text-gray-400 hover:bg-gray-500/20"
-                        }`}
-                        title={isFeatured ? "Quitar destacado" : "Destacar"}
-                      >
+                  image={
+                    event.imagen_cartel_url
+                      ? `${import.meta.env.VITE_BASE_URL}${event.imagen_cartel_url}`
+                      : null
+                  }
+                  imageAlt={event.titulo}
+                  imageSize="sm"
+                  title={event.titulo}
+                  badges={[
+                    statusBadge,
+                    ...(isFeatured
+                      ? [
+                          {
+                            text: "Destacado",
+                            color: "primary",
+                            icon: <Star size={14} fill="currentColor" />,
+                          },
+                        ]
+                      : []),
+                  ]}
+                  fields={[
+                    {
+                      icon: <Calendar size={14} className="text-primary-300" />,
+                      label: "Fecha",
+                      value: formatDate(event.fecha_evento),
+                    },
+                    {
+                      icon: <MapPin size={14} className="text-primary-300" />,
+                      label: "Ubicación",
+                      value: event.ubicacion,
+                    },
+                    {
+                      icon: <Users size={14} className="text-primary-300" />,
+                      label: "Asistencia",
+                      value: `${event.confirmed_bookings || 0}/${event.aforo_maximo}`,
+                    },
+                  ]}
+                  columns={3}
+                  actions={[
+                    {
+                      icon: isPublished ? <EyeOff size={18} /> : <Eye size={18} />,
+                      onClick: () => handleTogglePublish(event.id),
+                      color: "primary",
+                      title: isPublished ? "Despublicar" : "Publicar",
+                    },
+                    {
+                      icon: (
                         <Star
                           size={18}
                           fill={isFeatured ? "currentColor" : "none"}
                         />
-                      </button>
-
-                      {/* Edit */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/admin/eventos/editar/${event.id}`);
-                        }}
-                        className="p-2 text-primary-300 hover:bg-primary-500/20 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <Edit size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                      ),
+                      onClick: () => handleToggleFeatured(event.id),
+                      color: isFeatured ? "primary" : "gray",
+                      title: isFeatured ? "Quitar destacado" : "Destacar",
+                    },
+                    {
+                      icon: <Edit size={18} />,
+                      onClick: () => navigate(`/admin/eventos/editar/${event.id}`),
+                      color: "primary",
+                      title: "Editar",
+                    },
+                  ]}
+                  onClick={() => navigate(`/admin/eventos?open=${event.id}`)}
+                  className="cursor-pointer"
+                />
               );
             })}
           </div>

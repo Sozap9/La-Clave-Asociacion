@@ -12,7 +12,6 @@ import {
   Users,
   Edit,
   Trash2,
-  Plus,
   Eye,
   EyeOff,
   Star,
@@ -21,6 +20,7 @@ import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
+import AdminCard from "../../components/admin/AdminCard.jsx";
 
 const AdminEvents = () => {
   const navigate = useNavigate();
@@ -32,26 +32,23 @@ const AdminEvents = () => {
   const [success, setSuccess] = useState("");
   const [deletingId, setDeletingId] = useState(null);
 
-  // Filters (unified like public `Events.jsx`)
   const [filters, setFilters] = useState({
     status: "all",
     search: "",
     featured: undefined,
   });
+
   const eventRefs = useRef({});
-  // fetch when status or featured change (immediate)
+
   useEffect(() => {
     fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.status, filters.featured]);
 
-  // Debounce search: call fetchEvents when `filters.search` changes after 350ms
   useEffect(() => {
     const t = setTimeout(() => {
       fetchEvents();
     }, 350);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.search]);
 
   useEffect(() => {
@@ -60,8 +57,6 @@ const AdminEvents = () => {
     if (open) setExpandedEventId(Number(open));
   }, [location.search]);
 
-  // No automatic scrolling to avoid page jumps while interacting with filters/search
-
   const fetchEvents = async () => {
     setLoading(true);
     setError("");
@@ -69,12 +64,10 @@ const AdminEvents = () => {
 
     try {
       const params = {};
-      // Admin-only statuses: send `estado` for draft/cancelled
       if (filters.status === "draft" || filters.status === "cancelled") {
         params.estado = filters.status;
       }
 
-      // If featured UI active, request destacado from backend
       if (filters.featured) {
         params.destacado = "true";
       }
@@ -84,10 +77,8 @@ const AdminEvents = () => {
       const result = await getAllEventsAdmin(params);
 
       if (result.success) {
-        // Backend devuelve array directo en result.data
         let eventsArr = Array.isArray(result.data) ? result.data : [];
 
-        // Client-side date filtering to mirror public Events page
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
 
@@ -95,7 +86,6 @@ const AdminEvents = () => {
           eventsArr = eventsArr.filter((e) => {
             if (!e.fecha_evento) return false;
             const d = new Date(e.fecha_evento);
-            // only future or today
             return (
               d >= startOfToday &&
               e.estado !== "draft" &&
@@ -110,7 +100,6 @@ const AdminEvents = () => {
           });
         }
 
-        // If featured UI active but backend didn't filter, ensure we only show destacado
         if (filters.featured && params.destacado !== "true") {
           eventsArr = eventsArr.filter(
             (e) => e.destacado === 1 || e.destacado === true
@@ -118,8 +107,6 @@ const AdminEvents = () => {
         }
 
         setEvents(eventsArr);
-
-        // No automatic scroll after fetch to avoid page jumps while interacting
       } else {
         setError(result.message || "Error al cargar eventos");
         setEvents([]);
@@ -133,15 +120,10 @@ const AdminEvents = () => {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchEvents();
-  };
-
   const handleViewAll = async () => {
     setFilters({ status: "all", search: "", featured: undefined });
     setExpandedEventId(null);
-    navigate("/eventos", { replace: true });
+    navigate("/admin/eventos", { replace: true });
 
     setLoading(true);
     setError("");
@@ -182,13 +164,12 @@ const AdminEvents = () => {
     }
   };
 
-  const handleTogglePublish = async (id, currentStatus) => {
+  const handleTogglePublish = async (id) => {
     try {
       const result = await togglePublishEvent(id);
-
       if (result.success) {
         setSuccess(result.message);
-        fetchEvents(); // Reload to get updated data
+        fetchEvents();
       } else {
         setError(result.message || "Error al cambiar estado");
       }
@@ -200,7 +181,6 @@ const AdminEvents = () => {
   const handleToggleFeatured = async (id) => {
     try {
       const result = await toggleFeatureEvent(id);
-
       if (result.success) {
         setSuccess(result.message);
         fetchEvents();
@@ -234,52 +214,30 @@ const AdminEvents = () => {
     const isPublished = event.visible_desde !== null;
     const estado = event.estado;
 
-    let color, text;
-
     if (estado === "draft") {
-      color = "bg-gray-500";
-      text = "Borrador";
+      return { text: "Borrador", color: "gray" };
     } else if (estado === "scheduled" && isPublished) {
-      color = "bg-green-500";
-      text = "Publicado";
+      return { text: "Publicado", color: "green" };
     } else if (estado === "scheduled" && !isPublished) {
-      color = "bg-blue-500";
-      text = "Programado";
+      return { text: "Programado", color: "blue" };
     } else if (estado === "active") {
-      color = "bg-primary-500";
-      text = "En curso";
+      return { text: "En curso", color: "primary" };
     } else if (estado === "completed") {
-      color = "bg-gray-400";
-      text = "Finalizado";
+      return { text: "Finalizado", color: "gray" };
     } else if (estado === "cancelled") {
-      color = "bg-red-500";
-      text = "Cancelado";
-    } else {
-      color = "bg-gray-500";
-      text = estado || "Desconocido";
+      return { text: "Cancelado", color: "red" };
     }
-
-    return (
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-medium ${color}/20 text-${color.replace(
-          "bg-",
-          ""
-        )}`}
-      >
-        {text}
-      </span>
-    );
+    return { text: estado || "Desconocido", color: "gray" };
   };
 
-  // Mostrar loader fullScreen sólo en la carga inicial (cuando aún no hay eventos)
   if (loading && events.length === 0) return <Loader fullScreen />;
 
   return (
     <div className="p-8 bg-black min-h-screen">
-      {/* Header  */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-gradient mb-2 text-4xl"> Gestion de eventos </h1>
+          <h1 className="text-gradient mb-2 text-4xl">Gestión de eventos</h1>
           <p className="text-gray-400 text-lg">
             Administra todos tus eventos.
           </p>
@@ -289,15 +247,10 @@ const AdminEvents = () => {
           <Button
             variant="primary"
             onClick={() => navigate("/admin/eventos/nuevo")}
-            className="flex items-center gap-2"
           >
             Crear Evento
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleViewAll}
-            className="flex items-center gap-2"
-          >
+          <Button variant="primary" onClick={handleViewAll}>
             Ver todos
           </Button>
         </div>
@@ -336,7 +289,6 @@ const AdminEvents = () => {
             onFilterChange={(f) => setFilters(f)}
           />
 
-          {/* sólo Admin */}
           <div className="flex flex-wrap gap-4">
             <button
               onClick={() => {
@@ -405,142 +357,91 @@ const AdminEvents = () => {
             const isPublished = event.visible_desde !== null;
             const isFeatured = event.destacado === 1;
             const isExpanded = expandedEventId === event.id;
+            const statusBadge = getStatusBadge(event);
 
             return (
-              <div
+              <AdminCard
                 key={event.id}
-                ref={(el) => {
-                  eventRefs.current[event.id] = el;
-                }}
-                className={`bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all ${
-                  isExpanded
-                    ? "border-primary-500/50 ring-1 ring-primary-500/20"
-                    : ""
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  {/* Info del evento */}
-                  <div className="flex gap-6 flex-1">
-
-                    {/* Imagen */}
-                    {event.imagen_cartel_url && (
-                      <img
-                        src={`${import.meta.env.VITE_BASE_URL}${
-                          event.imagen_cartel_url
-                        }`}
-                        alt={event.titulo}
-                        className="w-32 h-32 object-cover rounded-lg"
-                      />
-                    )}
-
-                    {/* Detalles */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-2xl font-bold text-white">
-                          {event.titulo}
-                        </h3>
-                        {isFeatured && (
-                          <Star
-                            className="text-primary-300"
-                            size={20}
-                            fill="currentColor"
-                          />
-                        )}
-                      </div>
-
-                      <p
-                        className={`text-gray-400 mb-4 ${
-                          isExpanded ? "" : "line-clamp-2"
-                        }`}
-                      >
-                        {event.descripcion}
-                      </p>
-
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-                        <div className="flex items-center gap-2 text-gray-300">
-                          <Calendar size={16} className="text-primary-300" />
-                          <span className="text-sm">
-                            {formatDate(event.fecha_evento)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-gray-300">
-                          <MapPin size={16} className="text-primary-300" />
-                          <span className="text-sm">
-                            {event.ubicacion || "No especificada"}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-gray-300">
-                          <Users size={16} className="text-primary-300" />
-                          <span className="text-sm">
-                            {event.confirmed_bookings || 0}/
-                            {event.aforo_maximo || 0}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Estado */}
-                      {getStatusBadge(event)}
-                    </div>
-                  </div>
-
-                  {/* Acciones */}
-                  <div className="flex gap-2 ml-4">
-                    {/* Toggle Publish */}
-                    <button
-                      onClick={() =>
-                        handleTogglePublish(event.id, event.estado)
-                      }
-                      className={`p-2 rounded-lg transition-colors ${
-                        isPublished
-                          ? "text-primary-300 hover:bg-primary-300/20"
-                          : "text-primary-300 hover:bg-primary-300/20"
-                      }`}
-                      title={isPublished ? "Despublicar" : "Publicar"}
-                    >
-                      {isPublished ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-
-                    {/* Toggle Featured */}
-                    <button
-                      onClick={() => handleToggleFeatured(event.id)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isFeatured
-                          ? "text-primary-300 hover:bg-primary-300/20"
-                          : "text-primary-300 hover:bg-gray-300/20"
-                      }`}
-                      title={isFeatured ? "Quitar destacado" : "Destacar"}
-                    >
+                image={
+                  event.imagen_cartel_url
+                    ? `${import.meta.env.VITE_BASE_URL}${event.imagen_cartel_url}`
+                    : null
+                }
+                imageAlt={event.titulo}
+                imageSize="md"
+                title={event.titulo}
+                subtitle={
+                  <span className={isExpanded ? "" : "line-clamp-2"}>
+                    {event.descripcion}
+                  </span>
+                }
+                badges={[
+                  statusBadge,
+                  ...(isFeatured
+                    ? [
+                        {
+                          text: "Destacado",
+                          color: "primary",
+                          icon: <Star size={14} fill="currentColor" />,
+                        },
+                      ]
+                    : []),
+                ]}
+                actions={[
+                  {
+                    icon: isPublished ? <EyeOff size={20} /> : <Eye size={20} />,
+                    onClick: () => handleTogglePublish(event.id),
+                    color: "primary",
+                    title: isPublished ? "Despublicar" : "Publicar",
+                  },
+                  {
+                    icon: (
                       <Star
                         size={20}
                         fill={isFeatured ? "currentColor" : "none"}
                       />
-                    </button>
-
-                    {/* Edit */}
-                    <button
-                      onClick={() =>
-                        navigate(`/admin/eventos/editar/${event.id}`)
-                      }
-                      className="p-2 text-primary-300 hover:bg-primary-500/20 rounded-lg transition-colors"
-                      title="Editar"
-                    >
-                      <Edit size={20} />
-                    </button>
-
-                    {/* Delete */}
-                    <button
-                      onClick={() => handleDelete(event.id)}
-                      disabled={deletingId === event.id}
-                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                    ),
+                    onClick: () => handleToggleFeatured(event.id),
+                    color: isFeatured ? "primary" : "gray",
+                    title: isFeatured ? "Quitar destacado" : "Destacar",
+                  },
+                  {
+                    icon: <Edit size={20} />,
+                    onClick: () =>
+                      navigate(`/admin/eventos/editar/${event.id}`),
+                    color: "primary",
+                    title: "Editar",
+                  },
+                  {
+                    icon: <Trash2 size={20} />,
+                    onClick: () => handleDelete(event.id),
+                    color: "red",
+                    title: "Eliminar",
+                    disabled: deletingId === event.id,
+                  },
+                ]}
+                fields={[
+                  {
+                    icon: <Calendar size={14} className="text-primary-300" />,
+                    label: "Fecha",
+                    value: formatDate(event.fecha_evento),
+                  },
+                  {
+                    icon: <MapPin size={14} className="text-primary-300" />,
+                    label: "Ubicación",
+                    value: event.ubicacion || "No especificada",
+                  },
+                  {
+                    icon: <Users size={14} className="text-primary-300" />,
+                    label: "Asistencia",
+                    value: `${event.confirmed_bookings || 0}/${
+                      event.aforo_maximo || 0
+                    }`,
+                  },
+                ]}
+                columns={3}
+                highlight={isExpanded}
+              />
             );
           })}
         </div>

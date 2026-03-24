@@ -1,11 +1,14 @@
 import { query } from "../config/database.js";
 import User from "../models/User.js";
 import Socio from "../models/Socio.js";
+import SolicitudSocio from "../models/SolicitudSocio.js"; // ✨ NUEVO
 import Event from "../models/Event.js";
 import Booking from "../models/Booking.js";
 import Payment from "../models/Payment.js";
 import Gallery from "../models/Gallery.js";
-import PDFDocument from 'pdfkit';
+import PDFDocument from "pdfkit";
+import EmailService from "../services/emailService.js"; // ✨ NUEVO
+import logger from "../config/logger.js"; // ✨ NUEVO
 
 /**
  * ========================================
@@ -104,7 +107,7 @@ export const getDashboardStats = async (req, res) => {
         COUNT(*) as total_socios,
         COUNT(CASE WHEN estado = 'activo' THEN 1 END) as socios_activos,
         COUNT(CASE WHEN estado = 'moroso' THEN 1 END) as socios_morosos,
-        COUNT(CASE WHEN estado = 'baja' THEN 1 END) as socios_baja
+        COUNT(CASE WHEN estado = 'inactivo' THEN 1 END) as socios_baja
       FROM socios
     `;
     const sociosStats = await query(sociosSql);
@@ -303,7 +306,7 @@ export const getDashboardStats = async (req, res) => {
           proximos: eventosStats[0].proximos,
           pasados: eventosStats[0].pasados,
           ocupacion_promedio: parseFloat(
-            eventosStats[0].ocupacion_promedio || 0
+            eventosStats[0].ocupacion_promedio || 0,
           ).toFixed(2),
           top_eventos: topEventos,
           proximos_eventos: proximosEventos,
@@ -331,7 +334,7 @@ export const getDashboardStats = async (req, res) => {
           total_folders: galeriaStats[0].total_folders,
           total_imagenes: galeriaStats[0].total_imagenes,
           espacio_usado_mb: (galeriaStats[0].espacio_usado_kb / 1024).toFixed(
-            2
+            2,
           ),
           folders_visibles: galeriaStats[0].folders_visibles,
           folders_destacados: galeriaStats[0].folders_destacados,
@@ -719,7 +722,7 @@ export const listUsers = async (req, res) => {
     // Búsqueda general
     if (search && search.trim()) {
       conditions.push(
-        "(username LIKE ? OR email LIKE ? OR nombre LIKE ? OR apellidos LIKE ?)"
+        "(username LIKE ? OR email LIKE ? OR nombre LIKE ? OR apellidos LIKE ?)",
       );
       const searchPattern = `%${search.trim()}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern);
@@ -914,7 +917,7 @@ export const listSocios = async (req, res) => {
     const result = await Socio.list(
       options.page,
       options.limit,
-      options.estado
+      options.estado,
     );
 
     if (search) {
@@ -1147,20 +1150,37 @@ export const deleteSocio = async (req, res) => {
     }
 
     await Socio.darDeBaja(id, motivo || "Baja administrativa");
-    await query("UPDATE users SET role = ? WHERE id = ?", [
-      "basico",
-      socio.user_id,
-    ]);
 
-    await query(
-      `
-      UPDATE bookings 
-      SET estado = 'cancelada', motivo_cancelacion = 'Membresía cancelada por administrador'
-      WHERE socio_id = ? AND estado = 'confirmada'
-      AND event_id IN (SELECT id FROM events WHERE fecha_evento > CURDATE())
-    `,
-      [id]
-    );
+    // El usuario ya se inactiva dentro de Socio.darDeBaja(); este paso es redundante
+    // pero lo dejamos con muro de protección por si la lógica cambia.
+    if (socio.user_id) {
+      try {
+        await User.deactivate(socio.user_id);
+      } catch (userError) {
+        console.warn(
+          "No se pudo desactivar user asociado, continua:",
+          userError,
+        );
+      }
+    }
+
+    // No detener la desactivación si no hay reservas o hay problema de consulta
+    try {
+      await query(
+        `
+        UPDATE bookings 
+        SET estado = 'cancelada', motivo_cancelacion = 'Membresía cancelada por administrador'
+        WHERE socio_id = ? AND estado = 'confirmada'
+          AND event_id IN (SELECT id FROM events WHERE fecha_evento > CURDATE())
+      `,
+        [id],
+      );
+    } catch (bookingError) {
+      console.warn(
+        "Error al cancelar reservas asociadas al socio:",
+        bookingError,
+      );
+    }
 
     return res.status(200).json({
       success: true,
@@ -1171,30 +1191,165 @@ export const deleteSocio = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al dar de baja al socio",
+      ...(process.env.NODE_ENV === "development"
+        ? { error: error.message }
+        : {}),
     });
   }
 };
 
 /**
- * Listar socios morosos
+ * Eliminar permanentemente un socio y su usuario (soft delete si no es posible)
+ * DELETE /api/admin/socios/:id/permanent
+ */
+export const deleteSocioPermanent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const socio = await Socio.findById(id);
+    if (!socio) {
+      return res.status(404).json({
+        success: false,
+        message: "Socio no encontrado",
+      });
+    }
+
+    // Eliminar el registro de socio (cascade en pagos/reservas)
+    await query("DELETE FROM socios WHERE id = ?", [id]);
+
+    // Intentar eliminar el usuario completo (puede fallar por FK)
+    try {
+      await User.delete(socio.user_id);
+    } catch (deleteError) {
+      console.warn(
+        "No se pudo eliminar el usuario, se aplicará soft delete:",
+        deleteError,
+      );
+      await User.softDelete(socio.user_id);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Socio eliminado permanentemente",
+    });
+  } catch (error) {
+    console.error("Error en deleteSocioPermanent:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al eliminar el socio",
+    });
+  }
+};
+
+/**
+ * Reactivar a un socio dado de baja
+ * PATCH /api/admin/socios/:id/reactivate
+ */
+export const reactivateSocio = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const socio = await Socio.findById(id);
+    if (!socio) {
+      return res.status(404).json({
+        success: false,
+        message: "Socio no encontrado",
+      });
+    }
+
+    if (socio.estado !== "inactivo") {
+      return res.status(400).json({
+        success: false,
+        message: "El socio ya está activo",
+      });
+    }
+
+    await Socio.reactivar(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Socio reactivado exitosamente",
+    });
+  } catch (error) {
+    console.error("Error en reactivateSocio:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al reactivar el socio",
+    });
+  }
+};
+
+/**
+ * Listar socios morosos con filtros
  * GET /api/admin/socios/morosos
+ *
+ * Query params:
+ * - search: búsqueda por nombre, apellidos, email, número socio
+ * - severidad: 'leve' | 'moderado' | 'grave' | 'all'
  */
 export const listMorosos = async (req, res) => {
   try {
+    const { search, severidad } = req.query;
+
+    // Construir condiciones WHERE
+    const conditions = [
+      "(s.estado = 'moroso' OR DATEDIFF(CURDATE(), s.ultimo_pago) > 30)",
+    ];
+    const params = [];
+
+    // Filtro por búsqueda (nombre, email, número socio)
+    if (search && search.trim()) {
+      conditions.push(
+        "(u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ? OR s.numero_socio LIKE ?)",
+      );
+      const searchPattern = `%${search.trim()}%`;
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    }
+
+    // Construir WHERE clause
+    const whereClause = "WHERE " + conditions.join(" AND ");
+
+    // Query principal con TODOS los campos necesarios
     const sql = `
       SELECT 
-        s.id, s.numero_socio, s.estado, s.pagos_fallidos,
-        s.ultimo_pago, s.proximo_pago,
-        DATEDIFF(CURDATE(), s.proximo_pago) as dias_retraso,
-        u.id as user_id, u.email, u.nombre, u.apellidos, u.telefono
+        s.id, 
+        s.numero_socio, 
+        s.estado, 
+        s.pagos_fallidos,
+        s.ultimo_pago, 
+        s.proximo_pago,
+        s.cuota_mensual,
+        COALESCE(DATEDIFF(CURDATE(), s.ultimo_pago), 0) as dias_morosidad,
+        COALESCE(s.cuota_mensual * CEIL(DATEDIFF(CURDATE(), s.ultimo_pago) / 30), 0) as deuda_pendiente,
+        u.id as user_id, 
+        u.email, 
+        u.nombre, 
+        u.apellidos, 
+        u.telefono,
+        u.username
       FROM socios s
       JOIN users u ON s.user_id = u.id
-      WHERE s.estado = 'moroso' 
-         OR (s.proximo_pago < CURDATE() AND s.estado = 'activo')
-      ORDER BY dias_retraso DESC
+      ${whereClause}
+      ORDER BY dias_morosidad DESC
     `;
 
-    const morosos = await query(sql);
+    let morosos = await query(sql, params);
+
+    // Filtro por severidad
+    if (severidad && severidad !== "all") {
+      morosos = morosos.filter((socio) => {
+        const dias = socio.dias_morosidad || 0;
+
+        if (severidad === "leve") {
+          return dias < 15;
+        } else if (severidad === "moderado") {
+          return dias >= 15 && dias < 30;
+        } else if (severidad === "grave") {
+          return dias >= 30;
+        }
+        return true;
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -1205,6 +1360,7 @@ export const listMorosos = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al obtener socios morosos",
+      error: error.message,
     });
   }
 };
@@ -1415,7 +1571,7 @@ export const listAllBookings = async (req, res) => {
 
     if (search && search.trim()) {
       conditions.push(
-        "(b.codigo_reserva LIKE ? OR u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ? OR e.titulo LIKE ?)"
+        "(b.codigo_reserva LIKE ? OR u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ? OR e.titulo LIKE ?)",
       );
       const searchPattern = `%${search.trim()}%`;
       params.push(
@@ -1423,7 +1579,7 @@ export const listAllBookings = async (req, res) => {
         searchPattern,
         searchPattern,
         searchPattern,
-        searchPattern
+        searchPattern,
       );
     }
 
@@ -1636,10 +1792,10 @@ export const getMonthlyRevenue = async (req, res) => {
       SELECT 
         MONTH(fecha_pago) as mes,
         MONTHNAME(fecha_pago) as mes_nombre,
-        SUM(amount) as total,
+        SUM(COALESCE(amount, monto, 0)) as total,
         COUNT(*) as cantidad_pagos
       FROM payments
-      WHERE YEAR(fecha_pago) = ? AND estado = 'exitoso'
+      WHERE YEAR(fecha_pago) = ? AND estado IN ('exitoso','completado')
       GROUP BY MONTH(fecha_pago), MONTHNAME(fecha_pago)
       ORDER BY MONTH(fecha_pago)
     `;
@@ -1708,7 +1864,7 @@ export const listPayments = async (req, res) => {
     // Búsqueda general (payment intent ID, invoice ID, nombre, email)
     if (search && search.trim()) {
       conditions.push(
-        "(p.stripe_payment_intent_id LIKE ? OR p.stripe_invoice_id LIKE ? OR u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ?)"
+        "(p.stripe_payment_intent_id LIKE ? OR p.stripe_invoice_id LIKE ? OR u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ?)",
       );
       const searchPattern = `%${search.trim()}%`;
       params.push(
@@ -1716,7 +1872,7 @@ export const listPayments = async (req, res) => {
         searchPattern,
         searchPattern,
         searchPattern,
-        searchPattern
+        searchPattern,
       );
     }
 
@@ -1726,10 +1882,10 @@ export const listPayments = async (req, res) => {
       params.push(estado);
     }
 
-    // Filtro por tipo_pago (cuota_mensual, renovacion, entrada_evento, etc.)
+    // Filtro por tipo_pago/tipo (cuota_mensual, renovacion, evento, etc.)
     if (tipo_pago) {
-      conditions.push("p.tipo_pago = ?");
-      params.push(tipo_pago);
+      conditions.push("(p.tipo_pago = ? OR p.tipo = ?)");
+      params.push(tipo_pago, tipo_pago);
     }
 
     const whereClause =
@@ -1739,14 +1895,14 @@ export const listPayments = async (req, res) => {
     const sql = `
       SELECT 
         p.id, 
-        p.amount,
+        COALESCE(p.amount, p.monto, 0) as amount,
         p.estado, 
-        p.tipo_pago,
+        COALESCE(p.tipo_pago, p.tipo) as tipo_pago,
         p.fecha_pago,
         p.stripe_payment_intent_id,
         p.stripe_invoice_id,
         p.payment_method,
-        p.currency,
+        COALESCE(p.currency, p.moneda, 'EUR') as currency,
         p.descripcion,
         p.created_at,
         u.nombre, 
@@ -1892,37 +2048,45 @@ export const exportSocios = async (req, res) => {
     if (!socios || socios.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No hay socios registrados para exportar',
+        message: "No hay socios registrados para exportar",
       });
     }
 
     // Crear documento PDF
     const doc = new PDFDocument({
-      size: 'A4',
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      size: "A4",
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
 
     // Configurar headers para descarga
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=socios_${new Date().toISOString().split('T')[0]}.pdf`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=socios_${new Date().toISOString().split("T")[0]}.pdf`,
+    );
 
     // Pipe el PDF directamente a la respuesta
     doc.pipe(res);
 
     // === ENCABEZADO ===
-    doc.fontSize(20)
-       .font('Helvetica-Bold')
-       .text('Lista de Socios - La Clave Asociación', { align: 'center' });
-    
+    doc
+      .fontSize(20)
+      .font("Helvetica-Bold")
+      .text("Lista de Socios - La Clave Asociación", { align: "center" });
+
     doc.moveDown(0.5);
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
-    
+    doc
+      .fontSize(10)
+      .font("Helvetica")
+      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
+        align: "center",
+      });
+
     doc.moveDown(1);
-    doc.fontSize(12)
-       .font('Helvetica-Bold')
-       .text(`Total de socios: ${socios.length}`, { align: 'center' });
+    doc
+      .fontSize(12)
+      .font("Helvetica-Bold")
+      .text(`Total de socios: ${socios.length}`, { align: "center" });
 
     doc.moveDown(2);
 
@@ -1935,41 +2099,67 @@ export const exportSocios = async (req, res) => {
       email: 140,
       telefono: 80,
       cuota: 60,
-      estado: 60
+      estado: 60,
     };
 
     // Dibuja encabezados de columnas
-    doc.fontSize(9)
-       .font('Helvetica-Bold');
-    
+    doc.fontSize(9).font("Helvetica-Bold");
+
     let currentX = tableLeft;
-    doc.rect(currentX, tableTop - 5, colWidths.numero + colWidths.nombre + colWidths.email + colWidths.telefono + colWidths.cuota + colWidths.estado + 10, 20)
-       .fillAndStroke('#6366f1', '#6366f1');
-    
-    doc.fillColor('#ffffff')
-       .text('Nº', currentX + 5, tableTop, { width: colWidths.numero, align: 'center' });
+    doc
+      .rect(
+        currentX,
+        tableTop - 5,
+        colWidths.numero +
+          colWidths.nombre +
+          colWidths.email +
+          colWidths.telefono +
+          colWidths.cuota +
+          colWidths.estado +
+          10,
+        20,
+      )
+      .fillAndStroke("#6366f1", "#6366f1");
+
+    doc.fillColor("#ffffff").text("Nº", currentX + 5, tableTop, {
+      width: colWidths.numero,
+      align: "center",
+    });
     currentX += colWidths.numero;
-    
-    doc.text('Nombre', currentX + 5, tableTop, { width: colWidths.nombre, align: 'left' });
+
+    doc.text("Nombre", currentX + 5, tableTop, {
+      width: colWidths.nombre,
+      align: "left",
+    });
     currentX += colWidths.nombre;
-    
-    doc.text('Email', currentX + 5, tableTop, { width: colWidths.email, align: 'left' });
+
+    doc.text("Email", currentX + 5, tableTop, {
+      width: colWidths.email,
+      align: "left",
+    });
     currentX += colWidths.email;
-    
-    doc.text('Teléfono', currentX + 5, tableTop, { width: colWidths.telefono, align: 'left' });
+
+    doc.text("Teléfono", currentX + 5, tableTop, {
+      width: colWidths.telefono,
+      align: "left",
+    });
     currentX += colWidths.telefono;
-    
-    doc.text('Cuota', currentX + 5, tableTop, { width: colWidths.cuota, align: 'center' });
+
+    doc.text("Cuota", currentX + 5, tableTop, {
+      width: colWidths.cuota,
+      align: "center",
+    });
     currentX += colWidths.cuota;
-    
-    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+
+    doc.text("Estado", currentX + 5, tableTop, {
+      width: colWidths.estado,
+      align: "center",
+    });
 
     doc.moveDown(1.5);
 
     // Dibuja filas de datos
-    doc.font('Helvetica')
-       .fontSize(8)
-       .fillColor('#000000');
+    doc.font("Helvetica").fontSize(8).fillColor("#000000");
 
     socios.forEach((socio, index) => {
       const rowY = doc.y;
@@ -1982,67 +2172,114 @@ export const exportSocios = async (req, res) => {
 
       // Alterna colores de fila
       if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, colWidths.numero + colWidths.nombre + colWidths.email + colWidths.telefono + colWidths.cuota + colWidths.estado + 10, 18)
-           .fill('#f3f4f6');
-        doc.fillColor('#000000');
+        doc
+          .rect(
+            tableLeft,
+            rowY - 3,
+            colWidths.numero +
+              colWidths.nombre +
+              colWidths.email +
+              colWidths.telefono +
+              colWidths.cuota +
+              colWidths.estado +
+              10,
+            18,
+          )
+          .fill("#f3f4f6");
+        doc.fillColor("#000000");
       }
 
       currentX = tableLeft;
 
       // Número socio
-      doc.text(socio.numero_socio || '-', currentX + 5, rowY, { width: colWidths.numero, align: 'center' });
+      doc.text(socio.numero_socio || "-", currentX + 5, rowY, {
+        width: colWidths.numero,
+        align: "center",
+      });
       currentX += colWidths.numero;
 
       // Nombre (truncar si es muy largo)
-      const nombre = socio.nombre || '-';
-      doc.text(nombre.length > 18 ? nombre.substring(0, 15) + '...' : nombre, currentX + 5, rowY, { width: colWidths.nombre, align: 'left' });
+      const nombre = socio.nombre || "-";
+      doc.text(
+        nombre.length > 18 ? nombre.substring(0, 15) + "..." : nombre,
+        currentX + 5,
+        rowY,
+        { width: colWidths.nombre, align: "left" },
+      );
       currentX += colWidths.nombre;
 
       // Email (truncar si es muy largo)
-      const email = socio.email || '-';
-      doc.text(email.length > 22 ? email.substring(0, 19) + '...' : email, currentX + 5, rowY, { width: colWidths.email, align: 'left' });
+      const email = socio.email || "-";
+      doc.text(
+        email.length > 22 ? email.substring(0, 19) + "..." : email,
+        currentX + 5,
+        rowY,
+        { width: colWidths.email, align: "left" },
+      );
       currentX += colWidths.email;
 
       // Teléfono
-      doc.text(socio.telefono || '-', currentX + 5, rowY, { width: colWidths.telefono, align: 'left' });
+      doc.text(socio.telefono || "-", currentX + 5, rowY, {
+        width: colWidths.telefono,
+        align: "left",
+      });
       currentX += colWidths.telefono;
 
       // Cuota
-      const cuota = socio.cuota_mensual ? Number(socio.cuota_mensual).toFixed(2) + '€' : '0.00€';
-      doc.text(cuota, currentX + 5, rowY, { width: colWidths.cuota, align: 'center' });
+      const cuota = socio.cuota_mensual
+        ? Number(socio.cuota_mensual).toFixed(2) + "€"
+        : "0.00€";
+      doc.text(cuota, currentX + 5, rowY, {
+        width: colWidths.cuota,
+        align: "center",
+      });
       currentX += colWidths.cuota;
 
       // Estado
-      const estadoColor = socio.estado === 'activo' ? '#10b981' : socio.estado === 'moroso' ? '#ef4444' : '#6b7280';
-      doc.fillColor(estadoColor)
-         .text(socio.estado || '-', currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
-         .fillColor('#000000');
+      const estadoColor =
+        socio.estado === "activo"
+          ? "#10b981"
+          : socio.estado === "moroso"
+            ? "#ef4444"
+            : "#6b7280";
+      doc
+        .fillColor(estadoColor)
+        .text(socio.estado || "-", currentX + 5, rowY, {
+          width: colWidths.estado,
+          align: "center",
+        })
+        .fillColor("#000000");
 
       doc.moveDown(0.8);
     });
 
     // === PIE DE PÁGINA ===
     const bottomY = 800;
-    doc.fontSize(8)
-       .font('Helvetica')
-       .fillColor('#6b7280')
-       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center' });
+    doc
+      .fontSize(8)
+      .font("Helvetica")
+      .fillColor("#6b7280")
+      .text(
+        "© La Clave Asociación - Documento generado automáticamente",
+        50,
+        bottomY,
+        { align: "center" },
+      );
 
     // Finalizar el documento
     doc.end();
-
   } catch (error) {
-    console.error('Error al exportar socios a PDF:', error);
-    
+    console.error("Error al exportar socios a PDF:", error);
+
     // Si ya se enviaron headers, no podemos enviar JSON
     if (res.headersSent) {
       return res.end();
     }
-    
+
     return res.status(500).json({
       success: false,
-      message: 'Error al generar el PDF de socios',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      message: "Error al generar el PDF de socios",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -2075,59 +2312,67 @@ export const exportReservas = async (req, res) => {
     const params = [];
 
     if (fecha_desde) {
-      sql += ' AND e.fecha_evento >= ?';
+      sql += " AND e.fecha_evento >= ?";
       params.push(fecha_desde);
     }
 
     if (fecha_hasta) {
-      sql += ' AND e.fecha_evento <= ?';
+      sql += " AND e.fecha_evento <= ?";
       params.push(fecha_hasta);
     }
 
     if (event_id) {
-      sql += ' AND b.event_id = ?';
+      sql += " AND b.event_id = ?";
       params.push(event_id);
     }
 
-    sql += ' ORDER BY e.fecha_evento DESC, b.fecha_reserva DESC';
+    sql += " ORDER BY e.fecha_evento DESC, b.fecha_reserva DESC";
 
     const reservas = await query(sql, params);
 
     if (!reservas || reservas.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No hay reservas para exportar con los filtros aplicados',
+        message: "No hay reservas para exportar con los filtros aplicados",
       });
     }
 
     // Crear documento PDF
     const doc = new PDFDocument({
-      size: 'A4',
-      layout: 'landscape', // Horizontal para más columnas
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      size: "A4",
+      layout: "landscape", // Horizontal para más columnas
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
 
     // Configurar headers para descarga
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=reservas_${new Date().toISOString().split('T')[0]}.pdf`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=reservas_${new Date().toISOString().split("T")[0]}.pdf`,
+    );
 
     // Pipe el PDF directamente a la respuesta
     doc.pipe(res);
 
     // === ENCABEZADO ===
-    doc.fontSize(20)
-       .font('Helvetica-Bold')
-       .text('Lista de Reservas - La Clave Asociación', { align: 'center' });
-    
+    doc
+      .fontSize(20)
+      .font("Helvetica-Bold")
+      .text("Lista de Reservas - La Clave Asociación", { align: "center" });
+
     doc.moveDown(0.5);
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
-    
+    doc
+      .fontSize(10)
+      .font("Helvetica")
+      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
+        align: "center",
+      });
+
     doc.moveDown(1);
-    doc.fontSize(12)
-       .font('Helvetica-Bold')
-       .text(`Total de reservas: ${reservas.length}`, { align: 'center' });
+    doc
+      .fontSize(12)
+      .font("Helvetica-Bold")
+      .text(`Total de reservas: ${reservas.length}`, { align: "center" });
 
     doc.moveDown(2);
 
@@ -2142,130 +2387,192 @@ export const exportReservas = async (req, res) => {
       hora: 50,
       acompanantes: 60,
       estado: 70,
-      fecha_reserva: 80
+      fecha_reserva: 80,
     };
 
     // Dibuja encabezados de columnas
-    doc.fontSize(9)
-       .font('Helvetica-Bold');
-    
+    doc.fontSize(9).font("Helvetica-Bold");
+
     let currentX = tableLeft;
     const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-    
-    doc.rect(currentX, tableTop - 5, totalWidth, 20)
-       .fillAndStroke('#6366f1', '#6366f1');
-    
-    doc.fillColor('#ffffff')
-       .text('Código', currentX + 5, tableTop, { width: colWidths.codigo, align: 'center' });
+
+    doc
+      .rect(currentX, tableTop - 5, totalWidth, 20)
+      .fillAndStroke("#6366f1", "#6366f1");
+
+    doc.fillColor("#ffffff").text("Código", currentX + 5, tableTop, {
+      width: colWidths.codigo,
+      align: "center",
+    });
     currentX += colWidths.codigo;
-    
-    doc.text('Evento', currentX + 5, tableTop, { width: colWidths.evento, align: 'left' });
+
+    doc.text("Evento", currentX + 5, tableTop, {
+      width: colWidths.evento,
+      align: "left",
+    });
     currentX += colWidths.evento;
-    
-    doc.text('Socio', currentX + 5, tableTop, { width: colWidths.socio, align: 'left' });
+
+    doc.text("Socio", currentX + 5, tableTop, {
+      width: colWidths.socio,
+      align: "left",
+    });
     currentX += colWidths.socio;
-    
-    doc.text('Fecha', currentX + 5, tableTop, { width: colWidths.fecha_evento, align: 'center' });
+
+    doc.text("Fecha", currentX + 5, tableTop, {
+      width: colWidths.fecha_evento,
+      align: "center",
+    });
     currentX += colWidths.fecha_evento;
-    
-    doc.text('Hora', currentX + 5, tableTop, { width: colWidths.hora, align: 'center' });
+
+    doc.text("Hora", currentX + 5, tableTop, {
+      width: colWidths.hora,
+      align: "center",
+    });
     currentX += colWidths.hora;
-    
-    doc.text('Acomp.', currentX + 5, tableTop, { width: colWidths.acompanantes, align: 'center' });
+
+    doc.text("Acomp.", currentX + 5, tableTop, {
+      width: colWidths.acompanantes,
+      align: "center",
+    });
     currentX += colWidths.acompanantes;
-    
-    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+
+    doc.text("Estado", currentX + 5, tableTop, {
+      width: colWidths.estado,
+      align: "center",
+    });
     currentX += colWidths.estado;
-    
-    doc.text('F. Reserva', currentX + 5, tableTop, { width: colWidths.fecha_reserva, align: 'center' });
+
+    doc.text("F. Reserva", currentX + 5, tableTop, {
+      width: colWidths.fecha_reserva,
+      align: "center",
+    });
 
     doc.moveDown(1.5);
 
     // Dibuja filas de datos
-    doc.font('Helvetica')
-       .fontSize(8)
-       .fillColor('#000000');
+    doc.font("Helvetica").fontSize(8).fillColor("#000000");
 
     reservas.forEach((reserva, index) => {
       const rowY = doc.y;
 
       // Verifica si necesita nueva página
-      if (rowY > 500) { // Landscape tiene menos altura
+      if (rowY > 500) {
+        // Landscape tiene menos altura
         doc.addPage();
         doc.y = 50;
       }
 
       // Alterna colores de fila
       if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, totalWidth, 18)
-           .fill('#f3f4f6');
-        doc.fillColor('#000000');
+        doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill("#f3f4f6");
+        doc.fillColor("#000000");
       }
 
       currentX = tableLeft;
 
       // Código reserva
-      doc.text(reserva.codigo_reserva || '-', currentX + 5, rowY, { width: colWidths.codigo, align: 'center' });
+      doc.text(reserva.codigo_reserva || "-", currentX + 5, rowY, {
+        width: colWidths.codigo,
+        align: "center",
+      });
       currentX += colWidths.codigo;
 
       // Evento (truncar si es muy largo)
-      const evento = reserva.evento || '-';
-      doc.text(evento.length > 24 ? evento.substring(0, 21) + '...' : evento, currentX + 5, rowY, { width: colWidths.evento, align: 'left' });
+      const evento = reserva.evento || "-";
+      doc.text(
+        evento.length > 24 ? evento.substring(0, 21) + "..." : evento,
+        currentX + 5,
+        rowY,
+        { width: colWidths.evento, align: "left" },
+      );
       currentX += colWidths.evento;
 
       // Socio (truncar si es muy largo)
-      const socio = reserva.socio || '-';
-      doc.text(socio.length > 18 ? socio.substring(0, 15) + '...' : socio, currentX + 5, rowY, { width: colWidths.socio, align: 'left' });
+      const socio = reserva.socio || "-";
+      doc.text(
+        socio.length > 18 ? socio.substring(0, 15) + "..." : socio,
+        currentX + 5,
+        rowY,
+        { width: colWidths.socio, align: "left" },
+      );
       currentX += colWidths.socio;
 
       // Fecha evento
-      doc.text(reserva.fecha_evento || '-', currentX + 5, rowY, { width: colWidths.fecha_evento, align: 'center' });
+      doc.text(reserva.fecha_evento || "-", currentX + 5, rowY, {
+        width: colWidths.fecha_evento,
+        align: "center",
+      });
       currentX += colWidths.fecha_evento;
 
       // Hora evento
-      doc.text(reserva.hora_evento || '-', currentX + 5, rowY, { width: colWidths.hora, align: 'center' });
+      doc.text(reserva.hora_evento || "-", currentX + 5, rowY, {
+        width: colWidths.hora,
+        align: "center",
+      });
       currentX += colWidths.hora;
 
       // Acompañantes
-      doc.text(reserva.num_acompanantes?.toString() || '0', currentX + 5, rowY, { width: colWidths.acompanantes, align: 'center' });
+      doc.text(
+        reserva.num_acompanantes?.toString() || "0",
+        currentX + 5,
+        rowY,
+        { width: colWidths.acompanantes, align: "center" },
+      );
       currentX += colWidths.acompanantes;
 
       // Estado
-      const estadoColor = reserva.estado === 'confirmada' ? '#10b981' : 
-                         reserva.estado === 'cancelada' ? '#ef4444' : 
-                         reserva.estado === 'asistida' ? '#3b82f6' : '#6b7280';
-      doc.fillColor(estadoColor)
-         .text(reserva.estado || '-', currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
-         .fillColor('#000000');
+      const estadoColor =
+        reserva.estado === "confirmada"
+          ? "#10b981"
+          : reserva.estado === "cancelada"
+            ? "#ef4444"
+            : reserva.estado === "asistida"
+              ? "#3b82f6"
+              : "#6b7280";
+      doc
+        .fillColor(estadoColor)
+        .text(reserva.estado || "-", currentX + 5, rowY, {
+          width: colWidths.estado,
+          align: "center",
+        })
+        .fillColor("#000000");
       currentX += colWidths.estado;
 
       // Fecha reserva
-      doc.text(reserva.fecha_reserva || '-', currentX + 5, rowY, { width: colWidths.fecha_reserva, align: 'center' });
+      doc.text(reserva.fecha_reserva || "-", currentX + 5, rowY, {
+        width: colWidths.fecha_reserva,
+        align: "center",
+      });
 
       doc.moveDown(0.8);
     });
 
     // === PIE DE PÁGINA ===
     const bottomY = 540; // Landscape height
-    doc.fontSize(8)
-       .font('Helvetica')
-       .fillColor('#6b7280')
-       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center', width: totalWidth });
+    doc
+      .fontSize(8)
+      .font("Helvetica")
+      .fillColor("#6b7280")
+      .text(
+        "© La Clave Asociación - Documento generado automáticamente",
+        50,
+        bottomY,
+        { align: "center", width: totalWidth },
+      );
 
     // Finalizar el documento
     doc.end();
-
   } catch (error) {
-    console.error('Error al exportar reservas a PDF:', error);
-    
+    console.error("Error al exportar reservas a PDF:", error);
+
     if (res.headersSent) {
       return res.end();
     }
-    
+
     return res.status(500).json({
       success: false,
-      message: 'Error al generar el PDF de reservas',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      message: "Error al generar el PDF de reservas",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -2301,44 +2608,55 @@ export const exportUsuarios = async (req, res) => {
     if (!usuarios || usuarios.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No hay usuarios registrados para exportar',
+        message: "No hay usuarios registrados para exportar",
       });
     }
 
     // Crear documento PDF
     const doc = new PDFDocument({
-      size: 'A4',
-      layout: 'landscape',
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      size: "A4",
+      layout: "landscape",
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
 
     // Configurar headers para descarga
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=usuarios_${new Date().toISOString().split('T')[0]}.pdf`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=usuarios_${new Date().toISOString().split("T")[0]}.pdf`,
+    );
 
     // Pipe el PDF directamente a la respuesta
     doc.pipe(res);
 
     // === ENCABEZADO ===
-    doc.fontSize(20)
-       .font('Helvetica-Bold')
-       .text('Lista de Usuarios - La Clave Asociación', { align: 'center' });
-    
+    doc
+      .fontSize(20)
+      .font("Helvetica-Bold")
+      .text("Lista de Usuarios - La Clave Asociación", { align: "center" });
+
     doc.moveDown(0.5);
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
-    
+    doc
+      .fontSize(10)
+      .font("Helvetica")
+      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
+        align: "center",
+      });
+
     doc.moveDown(1);
-    
+
     // Estadísticas rápidas
-    const activos = usuarios.filter(u => u.estado === 'Activo').length;
-    const socios = usuarios.filter(u => u.role === 'socio').length;
-    const admins = usuarios.filter(u => u.role === 'admin').length;
-    
-    doc.fontSize(10)
-       .font('Helvetica-Bold')
-       .text(`Total: ${usuarios.length} usuarios | Activos: ${activos} | Socios: ${socios} | Admins: ${admins}`, { align: 'center' });
+    const activos = usuarios.filter((u) => u.estado === "Activo").length;
+    const socios = usuarios.filter((u) => u.role === "socio").length;
+    const admins = usuarios.filter((u) => u.role === "admin").length;
+
+    doc
+      .fontSize(10)
+      .font("Helvetica-Bold")
+      .text(
+        `Total: ${usuarios.length} usuarios | Activos: ${activos} | Socios: ${socios} | Admins: ${admins}`,
+        { align: "center" },
+      );
 
     doc.moveDown(2);
 
@@ -2352,46 +2670,64 @@ export const exportUsuarios = async (req, res) => {
       rol: 60,
       estado: 60,
       verificado: 60,
-      fecha: 80
+      fecha: 80,
     };
 
     // Dibuja encabezados de columnas
-    doc.fontSize(9)
-       .font('Helvetica-Bold');
-    
+    doc.fontSize(9).font("Helvetica-Bold");
+
     let currentX = tableLeft;
     const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-    
-    doc.rect(currentX, tableTop - 5, totalWidth, 20)
-       .fillAndStroke('#6366f1', '#6366f1');
-    
-    doc.fillColor('#ffffff')
-       .text('Nombre', currentX + 5, tableTop, { width: colWidths.nombre, align: 'left' });
+
+    doc
+      .rect(currentX, tableTop - 5, totalWidth, 20)
+      .fillAndStroke("#6366f1", "#6366f1");
+
+    doc.fillColor("#ffffff").text("Nombre", currentX + 5, tableTop, {
+      width: colWidths.nombre,
+      align: "left",
+    });
     currentX += colWidths.nombre;
-    
-    doc.text('Email', currentX + 5, tableTop, { width: colWidths.email, align: 'left' });
+
+    doc.text("Email", currentX + 5, tableTop, {
+      width: colWidths.email,
+      align: "left",
+    });
     currentX += colWidths.email;
-    
-    doc.text('Teléfono', currentX + 5, tableTop, { width: colWidths.telefono, align: 'center' });
+
+    doc.text("Teléfono", currentX + 5, tableTop, {
+      width: colWidths.telefono,
+      align: "center",
+    });
     currentX += colWidths.telefono;
-    
-    doc.text('Rol', currentX + 5, tableTop, { width: colWidths.rol, align: 'center' });
+
+    doc.text("Rol", currentX + 5, tableTop, {
+      width: colWidths.rol,
+      align: "center",
+    });
     currentX += colWidths.rol;
-    
-    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+
+    doc.text("Estado", currentX + 5, tableTop, {
+      width: colWidths.estado,
+      align: "center",
+    });
     currentX += colWidths.estado;
-    
-    doc.text('Verif.', currentX + 5, tableTop, { width: colWidths.verificado, align: 'center' });
+
+    doc.text("Verif.", currentX + 5, tableTop, {
+      width: colWidths.verificado,
+      align: "center",
+    });
     currentX += colWidths.verificado;
-    
-    doc.text('Registro', currentX + 5, tableTop, { width: colWidths.fecha, align: 'center' });
+
+    doc.text("Registro", currentX + 5, tableTop, {
+      width: colWidths.fecha,
+      align: "center",
+    });
 
     doc.moveDown(1.5);
 
     // Dibuja filas de datos
-    doc.font('Helvetica')
-       .fontSize(8)
-       .fillColor('#000000');
+    doc.font("Helvetica").fontSize(8).fillColor("#000000");
 
     usuarios.forEach((usuario, index) => {
       const rowY = doc.y;
@@ -2404,76 +2740,113 @@ export const exportUsuarios = async (req, res) => {
 
       // Alterna colores de fila
       if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, totalWidth, 18)
-           .fill('#f3f4f6');
-        doc.fillColor('#000000');
+        doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill("#f3f4f6");
+        doc.fillColor("#000000");
       }
 
       currentX = tableLeft;
 
       // Nombre (truncar si es muy largo)
-      const nombre = usuario.nombre || '-';
-      doc.text(nombre.length > 20 ? nombre.substring(0, 17) + '...' : nombre, currentX + 5, rowY, { width: colWidths.nombre, align: 'left' });
+      const nombre = usuario.nombre || "-";
+      doc.text(
+        nombre.length > 20 ? nombre.substring(0, 17) + "..." : nombre,
+        currentX + 5,
+        rowY,
+        { width: colWidths.nombre, align: "left" },
+      );
       currentX += colWidths.nombre;
 
       // Email (truncar si es muy largo)
-      const email = usuario.email || '-';
-      doc.text(email.length > 26 ? email.substring(0, 23) + '...' : email, currentX + 5, rowY, { width: colWidths.email, align: 'left' });
+      const email = usuario.email || "-";
+      doc.text(
+        email.length > 26 ? email.substring(0, 23) + "..." : email,
+        currentX + 5,
+        rowY,
+        { width: colWidths.email, align: "left" },
+      );
       currentX += colWidths.email;
 
       // Teléfono
-      doc.text(usuario.telefono || '-', currentX + 5, rowY, { width: colWidths.telefono, align: 'center' });
+      doc.text(usuario.telefono || "-", currentX + 5, rowY, {
+        width: colWidths.telefono,
+        align: "center",
+      });
       currentX += colWidths.telefono;
 
       // Rol
-      const rolColor = usuario.role === 'admin' ? '#ef4444' : 
-                       usuario.role === 'socio' ? '#6366f1' : '#6b7280';
-      doc.fillColor(rolColor)
-         .text(usuario.role || '-', currentX + 5, rowY, { width: colWidths.rol, align: 'center' })
-         .fillColor('#000000');
+      const rolColor =
+        usuario.role === "admin"
+          ? "#ef4444"
+          : usuario.role === "socio"
+            ? "#6366f1"
+            : "#6b7280";
+      doc
+        .fillColor(rolColor)
+        .text(usuario.role || "-", currentX + 5, rowY, {
+          width: colWidths.rol,
+          align: "center",
+        })
+        .fillColor("#000000");
       currentX += colWidths.rol;
 
       // Estado
-      const estadoColor = usuario.estado === 'Activo' ? '#10b981' : '#ef4444';
-      doc.fillColor(estadoColor)
-         .text(usuario.estado, currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
-         .fillColor('#000000');
+      const estadoColor = usuario.estado === "Activo" ? "#10b981" : "#ef4444";
+      doc
+        .fillColor(estadoColor)
+        .text(usuario.estado, currentX + 5, rowY, {
+          width: colWidths.estado,
+          align: "center",
+        })
+        .fillColor("#000000");
       currentX += colWidths.estado;
 
       // Email verificado
-      const verifColor = usuario.email_verificado === 'Sí' ? '#10b981' : '#f59e0b';
-      doc.fillColor(verifColor)
-         .text(usuario.email_verificado, currentX + 5, rowY, { width: colWidths.verificado, align: 'center' })
-         .fillColor('#000000');
+      const verifColor =
+        usuario.email_verificado === "Sí" ? "#10b981" : "#f59e0b";
+      doc
+        .fillColor(verifColor)
+        .text(usuario.email_verificado, currentX + 5, rowY, {
+          width: colWidths.verificado,
+          align: "center",
+        })
+        .fillColor("#000000");
       currentX += colWidths.verificado;
 
       // Fecha registro
-      doc.text(usuario.fecha_registro || '-', currentX + 5, rowY, { width: colWidths.fecha, align: 'center' });
+      doc.text(usuario.fecha_registro || "-", currentX + 5, rowY, {
+        width: colWidths.fecha,
+        align: "center",
+      });
 
       doc.moveDown(0.8);
     });
 
     // === PIE DE PÁGINA ===
     const bottomY = 540;
-    doc.fontSize(8)
-       .font('Helvetica')
-       .fillColor('#6b7280')
-       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center', width: totalWidth });
+    doc
+      .fontSize(8)
+      .font("Helvetica")
+      .fillColor("#6b7280")
+      .text(
+        "© La Clave Asociación - Documento generado automáticamente",
+        50,
+        bottomY,
+        { align: "center", width: totalWidth },
+      );
 
     // Finalizar el documento
     doc.end();
-
   } catch (error) {
-    console.error('Error al exportar usuarios a PDF:', error);
-    
+    console.error("Error al exportar usuarios a PDF:", error);
+
     if (res.headersSent) {
       return res.end();
     }
-    
+
     return res.status(500).json({
       success: false,
-      message: 'Error al generar el PDF de usuarios',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      message: "Error al generar el PDF de usuarios",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -2508,44 +2881,55 @@ export const exportEventos = async (req, res) => {
     if (!eventos || eventos.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No hay eventos registrados para exportar',
+        message: "No hay eventos registrados para exportar",
       });
     }
 
     // Crear documento PDF
     const doc = new PDFDocument({
-      size: 'A4',
-      layout: 'landscape',
-      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      size: "A4",
+      layout: "landscape",
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
 
     // Configurar headers para descarga
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=eventos_${new Date().toISOString().split('T')[0]}.pdf`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=eventos_${new Date().toISOString().split("T")[0]}.pdf`,
+    );
 
     // Pipe el PDF directamente a la respuesta
     doc.pipe(res);
 
     // === ENCABEZADO ===
-    doc.fontSize(20)
-       .font('Helvetica-Bold')
-       .text('Lista de Eventos - La Clave Asociación', { align: 'center' });
-    
+    doc
+      .fontSize(20)
+      .font("Helvetica-Bold")
+      .text("Lista de Eventos - La Clave Asociación", { align: "center" });
+
     doc.moveDown(0.5);
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES')}`, { align: 'center' });
-    
+    doc
+      .fontSize(10)
+      .font("Helvetica")
+      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
+        align: "center",
+      });
+
     doc.moveDown(1);
-    
+
     // Estadísticas rápidas
-    const publicados = eventos.filter(e => e.estado === 'publicado').length;
-    const borradores = eventos.filter(e => e.estado === 'borrador').length;
-    const cancelados = eventos.filter(e => e.estado === 'cancelado').length;
-    
-    doc.fontSize(10)
-       .font('Helvetica-Bold')
-       .text(`Total: ${eventos.length} eventos | Publicados: ${publicados} | Borradores: ${borradores} | Cancelados: ${cancelados}`, { align: 'center' });
+    const publicados = eventos.filter((e) => e.estado === "publicado").length;
+    const borradores = eventos.filter((e) => e.estado === "borrador").length;
+    const cancelados = eventos.filter((e) => e.estado === "cancelado").length;
+
+    doc
+      .fontSize(10)
+      .font("Helvetica-Bold")
+      .text(
+        `Total: ${eventos.length} eventos | Publicados: ${publicados} | Borradores: ${borradores} | Cancelados: ${cancelados}`,
+        { align: "center" },
+      );
 
     doc.moveDown(2);
 
@@ -2560,49 +2944,70 @@ export const exportEventos = async (req, res) => {
       aforo: 50,
       vendidas: 60,
       estado: 70,
-      alta: 80
+      alta: 80,
     };
 
     // Dibuja encabezados de columnas
-    doc.fontSize(9)
-       .font('Helvetica-Bold');
-    
+    doc.fontSize(9).font("Helvetica-Bold");
+
     let currentX = tableLeft;
     const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-    
-    doc.rect(currentX, tableTop - 5, totalWidth, 20)
-       .fillAndStroke('#6366f1', '#6366f1');
-    
-    doc.fillColor('#ffffff')
-       .text('Título', currentX + 5, tableTop, { width: colWidths.titulo, align: 'left' });
+
+    doc
+      .rect(currentX, tableTop - 5, totalWidth, 20)
+      .fillAndStroke("#6366f1", "#6366f1");
+
+    doc.fillColor("#ffffff").text("Título", currentX + 5, tableTop, {
+      width: colWidths.titulo,
+      align: "left",
+    });
     currentX += colWidths.titulo;
-    
-    doc.text('Fecha', currentX + 5, tableTop, { width: colWidths.fecha, align: 'center' });
+
+    doc.text("Fecha", currentX + 5, tableTop, {
+      width: colWidths.fecha,
+      align: "center",
+    });
     currentX += colWidths.fecha;
-    
-    doc.text('Hora', currentX + 5, tableTop, { width: colWidths.hora, align: 'center' });
+
+    doc.text("Hora", currentX + 5, tableTop, {
+      width: colWidths.hora,
+      align: "center",
+    });
     currentX += colWidths.hora;
-    
-    doc.text('Ubicación', currentX + 5, tableTop, { width: colWidths.ubicacion, align: 'left' });
+
+    doc.text("Ubicación", currentX + 5, tableTop, {
+      width: colWidths.ubicacion,
+      align: "left",
+    });
     currentX += colWidths.ubicacion;
-    
-    doc.text('Aforo', currentX + 5, tableTop, { width: colWidths.aforo, align: 'center' });
+
+    doc.text("Aforo", currentX + 5, tableTop, {
+      width: colWidths.aforo,
+      align: "center",
+    });
     currentX += colWidths.aforo;
-    
-    doc.text('Vendidas', currentX + 5, tableTop, { width: colWidths.vendidas, align: 'center' });
+
+    doc.text("Vendidas", currentX + 5, tableTop, {
+      width: colWidths.vendidas,
+      align: "center",
+    });
     currentX += colWidths.vendidas;
-    
-    doc.text('Estado', currentX + 5, tableTop, { width: colWidths.estado, align: 'center' });
+
+    doc.text("Estado", currentX + 5, tableTop, {
+      width: colWidths.estado,
+      align: "center",
+    });
     currentX += colWidths.estado;
-    
-    doc.text('F. Alta', currentX + 5, tableTop, { width: colWidths.alta, align: 'center' });
+
+    doc.text("F. Alta", currentX + 5, tableTop, {
+      width: colWidths.alta,
+      align: "center",
+    });
 
     doc.moveDown(1.5);
 
     // Dibuja filas de datos
-    doc.font('Helvetica')
-       .fontSize(8)
-       .fillColor('#000000');
+    doc.font("Helvetica").fontSize(8).fillColor("#000000");
 
     eventos.forEach((evento, index) => {
       const rowY = doc.y;
@@ -2615,78 +3020,116 @@ export const exportEventos = async (req, res) => {
 
       // Alterna colores de fila
       if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, totalWidth, 18)
-           .fill('#f3f4f6');
-        doc.fillColor('#000000');
+        doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill("#f3f4f6");
+        doc.fillColor("#000000");
       }
 
       currentX = tableLeft;
 
       // Título (truncar si es muy largo)
-      const titulo = evento.titulo || '-';
-      doc.text(titulo.length > 24 ? titulo.substring(0, 21) + '...' : titulo, currentX + 5, rowY, { width: colWidths.titulo, align: 'left' });
+      const titulo = evento.titulo || "-";
+      doc.text(
+        titulo.length > 24 ? titulo.substring(0, 21) + "..." : titulo,
+        currentX + 5,
+        rowY,
+        { width: colWidths.titulo, align: "left" },
+      );
       currentX += colWidths.titulo;
 
       // Fecha evento
-      doc.text(evento.fecha_evento || '-', currentX + 5, rowY, { width: colWidths.fecha, align: 'center' });
+      doc.text(evento.fecha_evento || "-", currentX + 5, rowY, {
+        width: colWidths.fecha,
+        align: "center",
+      });
       currentX += colWidths.fecha;
 
       // Hora evento
-      doc.text(evento.hora_evento || '-', currentX + 5, rowY, { width: colWidths.hora, align: 'center' });
+      doc.text(evento.hora_evento || "-", currentX + 5, rowY, {
+        width: colWidths.hora,
+        align: "center",
+      });
       currentX += colWidths.hora;
 
       // Ubicación (truncar si es muy largo)
-      const ubicacion = evento.ubicacion || '-';
-      doc.text(ubicacion.length > 18 ? ubicacion.substring(0, 15) + '...' : ubicacion, currentX + 5, rowY, { width: colWidths.ubicacion, align: 'left' });
+      const ubicacion = evento.ubicacion || "-";
+      doc.text(
+        ubicacion.length > 18 ? ubicacion.substring(0, 15) + "..." : ubicacion,
+        currentX + 5,
+        rowY,
+        { width: colWidths.ubicacion, align: "left" },
+      );
       currentX += colWidths.ubicacion;
 
       // Aforo máximo
-      doc.text(evento.aforo_maximo?.toString() || '-', currentX + 5, rowY, { width: colWidths.aforo, align: 'center' });
+      doc.text(evento.aforo_maximo?.toString() || "-", currentX + 5, rowY, {
+        width: colWidths.aforo,
+        align: "center",
+      });
       currentX += colWidths.aforo;
 
       // Entradas vendidas
-      doc.text(evento.entradas_vendidas?.toString() || '0', currentX + 5, rowY, { width: colWidths.vendidas, align: 'center' });
+      doc.text(
+        evento.entradas_vendidas?.toString() || "0",
+        currentX + 5,
+        rowY,
+        { width: colWidths.vendidas, align: "center" },
+      );
       currentX += colWidths.vendidas;
 
       // Estado
-      const estadoColor = evento.estado === 'publicado' ? '#10b981' : 
-                         evento.estado === 'cancelado' ? '#ef4444' : '#f59e0b';
-      doc.fillColor(estadoColor)
-         .text(evento.estado || '-', currentX + 5, rowY, { width: colWidths.estado, align: 'center' })
-         .fillColor('#000000');
+      const estadoColor =
+        evento.estado === "publicado"
+          ? "#10b981"
+          : evento.estado === "cancelado"
+            ? "#ef4444"
+            : "#f59e0b";
+      doc
+        .fillColor(estadoColor)
+        .text(evento.estado || "-", currentX + 5, rowY, {
+          width: colWidths.estado,
+          align: "center",
+        })
+        .fillColor("#000000");
       currentX += colWidths.estado;
 
       // Fecha alta
-      doc.text(evento.fecha_alta || '-', currentX + 5, rowY, { width: colWidths.alta, align: 'center' });
+      doc.text(evento.fecha_alta || "-", currentX + 5, rowY, {
+        width: colWidths.alta,
+        align: "center",
+      });
 
       doc.moveDown(0.8);
     });
 
     // === PIE DE PÁGINA ===
     const bottomY = 540;
-    doc.fontSize(8)
-       .font('Helvetica')
-       .fillColor('#6b7280')
-       .text('© La Clave Asociación - Documento generado automáticamente', 50, bottomY, { align: 'center', width: totalWidth });
+    doc
+      .fontSize(8)
+      .font("Helvetica")
+      .fillColor("#6b7280")
+      .text(
+        "© La Clave Asociación - Documento generado automáticamente",
+        50,
+        bottomY,
+        { align: "center", width: totalWidth },
+      );
 
     // Finalizar el documento
     doc.end();
-
   } catch (error) {
-    console.error('Error al exportar eventos a PDF:', error);
-    
+    console.error("Error al exportar eventos a PDF:", error);
+
     if (res.headersSent) {
       return res.end();
     }
-    
+
     return res.status(500).json({
       success: false,
-      message: 'Error al generar el PDF de eventos',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      message: "Error al generar el PDF de eventos",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
-
 
 /**
  * ========================================
@@ -2704,22 +3147,22 @@ export const updateUserRole = async (req, res) => {
     const { role } = req.body;
 
     // Validar rol
-    const validRoles = ['basico', 'socio', 'admin'];
+    const validRoles = ["basico", "socio", "admin"];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        message: `Rol inválido. Debe ser uno de: ${validRoles.join(', ')}`
+        message: `Rol inválido. Debe ser uno de: ${validRoles.join(", ")}`,
       });
     }
 
     // Verificar que el usuario existe
-    const checkSql = 'SELECT id, username, email, role FROM users WHERE id = ?';
+    const checkSql = "SELECT id, username, email, role FROM users WHERE id = ?";
     const users = await query(checkSql, [id]);
-    
+
     if (users.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Usuario no encontrado'
+        message: "Usuario no encontrado",
       });
     }
 
@@ -2729,7 +3172,7 @@ export const updateUserRole = async (req, res) => {
     if (user.id === req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'No puedes cambiar tu propio rol'
+        message: "No puedes cambiar tu propio rol",
       });
     }
 
@@ -2737,13 +3180,13 @@ export const updateUserRole = async (req, res) => {
     if (user.role === role) {
       return res.status(200).json({
         success: true,
-        message: 'El usuario ya tiene ese rol',
-        data: { id: user.id, role: user.role }
+        message: "El usuario ya tiene ese rol",
+        data: { id: user.id, role: user.role },
       });
     }
 
     // Actualizar rol
-    const updateSql = 'UPDATE users SET role = ? WHERE id = ?';
+    const updateSql = "UPDATE users SET role = ? WHERE id = ?";
     await query(updateSql, [role, id]);
 
     return res.status(200).json({
@@ -2754,15 +3197,15 @@ export const updateUserRole = async (req, res) => {
         username: user.username,
         email: user.email,
         previousRole: user.role,
-        newRole: role
-      }
+        newRole: role,
+      },
     });
   } catch (error) {
-    console.error('Error en updateUserRole:', error);
+    console.error("Error en updateUserRole:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al actualizar el rol del usuario',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Error al actualizar el rol del usuario",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -2776,58 +3219,58 @@ export const approveUser = async (req, res) => {
     const { id } = req.params;
 
     // Verificar que el usuario existe
-    const checkSql = 'SELECT id, username, email, role FROM users WHERE id = ?';
+    const checkSql = "SELECT id, username, email, role FROM users WHERE id = ?";
     const users = await query(checkSql, [id]);
-    
+
     if (users.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Usuario no encontrado'
+        message: "Usuario no encontrado",
       });
     }
 
     const user = users[0];
 
     // Verificar si ya tiene registro de socio
-    const socioCheckSql = 'SELECT id, estado FROM socios WHERE user_id = ?';
+    const socioCheckSql = "SELECT id, estado FROM socios WHERE user_id = ?";
     const socios = await query(socioCheckSql, [id]);
 
     if (socios.length > 0) {
       // Ya existe registro de socio
       const socio = socios[0];
-      
-      if (socio.estado === 'pendiente') {
+
+      if (socio.estado === "pendiente") {
         // Actualizar estado a activo
-        const updateSocioSql = 'UPDATE socios SET estado = ? WHERE user_id = ?';
-        await query(updateSocioSql, ['activo', id]);
+        const updateSocioSql = "UPDATE socios SET estado = ? WHERE user_id = ?";
+        await query(updateSocioSql, ["activo", id]);
       }
 
       // Actualizar rol a socio
-      const updateUserSql = 'UPDATE users SET role = ? WHERE id = ?';
-      await query(updateUserSql, ['socio', id]);
+      const updateUserSql = "UPDATE users SET role = ? WHERE id = ?";
+      await query(updateUserSql, ["socio", id]);
 
       return res.status(200).json({
         success: true,
-        message: 'Usuario aprobado como socio correctamente',
-        data: { id: parseInt(id), role: 'socio' }
+        message: "Usuario aprobado como socio correctamente",
+        data: { id: parseInt(id), role: "socio" },
       });
     }
 
     // Si no existe registro de socio, solo cambiar el rol
-    const updateUserSql = 'UPDATE users SET role = ? WHERE id = ?';
-    await query(updateUserSql, ['socio', id]);
+    const updateUserSql = "UPDATE users SET role = ? WHERE id = ?";
+    await query(updateUserSql, ["socio", id]);
 
     return res.status(200).json({
       success: true,
-      message: 'Usuario aprobado como socio correctamente',
-      data: { id: parseInt(id), role: 'socio' }
+      message: "Usuario aprobado como socio correctamente",
+      data: { id: parseInt(id), role: "socio" },
     });
   } catch (error) {
-    console.error('Error en approveUser:', error);
+    console.error("Error en approveUser:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al aprobar usuario',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Error al aprobar usuario",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -2842,41 +3285,301 @@ export const rejectUser = async (req, res) => {
     const { reason } = req.body;
 
     // Verificar que el usuario existe
-    const checkSql = 'SELECT id, username, email FROM users WHERE id = ?';
+    const checkSql = "SELECT id, username, email FROM users WHERE id = ?";
     const users = await query(checkSql, [id]);
-    
+
     if (users.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Usuario no encontrado'
+        message: "Usuario no encontrado",
       });
     }
 
     // Verificar si tiene registro de socio pendiente
-    const socioCheckSql = 'SELECT id, estado FROM socios WHERE user_id = ?';
+    const socioCheckSql = "SELECT id, estado FROM socios WHERE user_id = ?";
     const socios = await query(socioCheckSql, [id]);
 
-    if (socios.length > 0 && socios[0].estado === 'pendiente') {
+    if (socios.length > 0 && socios[0].estado === "pendiente") {
       // Actualizar estado a rechazado
-      const updateSocioSql = 'UPDATE socios SET estado = ? WHERE user_id = ?';
-      await query(updateSocioSql, ['cancelado', id]);
+      const updateSocioSql = "UPDATE socios SET estado = ? WHERE user_id = ?";
+      await query(updateSocioSql, ["cancelado", id]);
     }
 
     // Actualizar rol a básico
-    const updateUserSql = 'UPDATE users SET role = ? WHERE id = ?';
-    await query(updateUserSql, ['basico', id]);
+    const updateUserSql = "UPDATE users SET role = ? WHERE id = ?";
+    await query(updateUserSql, ["basico", id]);
 
     return res.status(200).json({
       success: true,
-      message: 'Solicitud rechazada correctamente',
-      data: { id: parseInt(id), role: 'basico' }
+      message: "Solicitud rechazada correctamente",
+      data: { id: parseInt(id), role: "basico" },
     });
   } catch (error) {
-    console.error('Error en rejectUser:', error);
+    console.error("Error en rejectUser:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al rechazar usuario',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Error al rechazar usuario",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * ========================================
+ * GESTIÓN DE SOLICITUDES DE SOCIO        ✨ NUEVO
+ * ========================================
+ */
+
+/**
+ * Listar solicitudes con filtros y paginación
+ * GET /api/admin/solicitudes?estado=pendiente&search=&page=1&limit=20
+ */
+export const listSolicitudes = async (req, res) => {
+  try {
+    const { estado = "all", search = "", page = 1, limit = 20 } = req.query;
+
+    const result = await SolicitudSocio.findAll({
+      estado,
+      search,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    logger.error("Error en listSolicitudes:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al obtener solicitudes",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Detalle de una solicitud
+ * GET /api/admin/solicitudes/:id
+ */
+export const getSolicitudDetails = async (req, res) => {
+  try {
+    const solicitud = await SolicitudSocio.findById(parseInt(req.params.id));
+    if (!solicitud) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Solicitud no encontrada" });
+    }
+    return res.status(200).json({ success: true, data: solicitud });
+  } catch (error) {
+    logger.error("Error en getSolicitudDetails:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al obtener la solicitud",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Aprobar solicitud → crea usuario socio + entrada en socios
+ * PUT /api/admin/solicitudes/:id/aprobar
+ */
+export const aprobarSolicitud = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user.id;
+
+    const solicitud = await SolicitudSocio.findById(parseInt(id));
+    if (!solicitud) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Solicitud no encontrada" });
+    }
+    if (solicitud.estado !== "pendiente") {
+      return res.status(400).json({
+        success: false,
+        message: `La solicitud ya fue ${solicitud.estado}`,
+      });
+    }
+
+    // Comprobar duplicados en users
+    const emailExiste = await User.emailExists(solicitud.email);
+    if (emailExiste) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Ya existe un usuario con ese email. Revisa la solicitud manualmente.",
+      });
+    }
+
+    // Crear usuario directamente con el password_hash ya generado
+    const createUserSql = `
+      INSERT INTO users (
+        username, email, password_hash, nombre, apellidos,
+        telefono, fecha_nacimiento, dni, dni_front_url, dni_back_url,
+        role, activo, ip_registro, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'socio', TRUE, ?, NOW())
+    `;
+    const userResult = await query(createUserSql, [
+      solicitud.username,
+      solicitud.email,
+      solicitud.password_hash,
+      solicitud.nombre,
+      solicitud.apellidos,
+      solicitud.telefono,
+      solicitud.fecha_nacimiento,
+      solicitud.dni,
+      solicitud.dni_front_url,
+      solicitud.dni_back_url,
+      solicitud.ip_solicitud,
+    ]);
+    const newUserId = userResult.insertId;
+
+    // Crear entrada en socios (membresía gratuita)
+    await query(
+      `INSERT INTO socios (user_id, numero_socio, stripe_customer_id, estado, cuota_mensual, fecha_alta)
+       VALUES (?, NULL, NULL, 'activo', 0.00, CURDATE())`,
+      [newUserId],
+    );
+
+    // Marcar solicitud como aprobada
+    await SolicitudSocio.aprobar(parseInt(id), adminId);
+
+    // Email de bienvenida al nuevo socio
+    const newUser = await User.findById(newUserId);
+    try {
+      await EmailService.sendSolicitudAprobada(newUser);
+    } catch (emailError) {
+      logger.error("Error al enviar email solicitud-aprobada:", emailError);
+    }
+
+    logger.info("Solicitud aprobada y socio creado", {
+      solicitudId: id,
+      newUserId,
+      adminId,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Solicitud aprobada. ${solicitud.nombre} ya es socio.`,
+      data: { userId: newUserId, email: newUser.email },
+    });
+  } catch (error) {
+    logger.error("Error en aprobarSolicitud:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al aprobar la solicitud",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Rechazar solicitud
+ * PUT /api/admin/solicitudes/:id/rechazar
+ * Body: { motivo_rechazo }
+ */
+export const rechazarSolicitud = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motivo_rechazo } = req.body;
+    const adminId = req.user.id;
+
+    if (!motivo_rechazo?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "El motivo de rechazo es obligatorio",
+      });
+    }
+
+    const solicitud = await SolicitudSocio.findById(parseInt(id));
+    if (!solicitud) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Solicitud no encontrada" });
+    }
+    if (solicitud.estado !== "pendiente") {
+      return res.status(400).json({
+        success: false,
+        message: `La solicitud ya fue ${solicitud.estado}`,
+      });
+    }
+
+    const updated = await SolicitudSocio.rechazar(
+      parseInt(id),
+      adminId,
+      motivo_rechazo.trim(),
+    );
+
+    try {
+      await EmailService.sendSolicitudRechazada(
+        solicitud,
+        motivo_rechazo.trim(),
+      );
+    } catch (emailError) {
+      logger.error("Error al enviar email solicitud-rechazada:", emailError);
+    }
+
+    logger.info("Solicitud rechazada", { solicitudId: id, adminId });
+
+    return res.status(200).json({
+      success: true,
+      message: "Solicitud rechazada correctamente",
+      data: updated,
+    });
+  } catch (error) {
+    logger.error("Error en rechazarSolicitud:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al rechazar la solicitud",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Eliminar solicitud definitivamente
+ * DELETE /api/admin/solicitudes/:id
+ */
+export const deleteSolicitud = async (req, res) => {
+  try {
+    const solicitud = await SolicitudSocio.findById(parseInt(req.params.id));
+    if (!solicitud) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Solicitud no encontrada" });
+    }
+    await SolicitudSocio.delete(parseInt(req.params.id));
+    logger.info("Solicitud eliminada", {
+      solicitudId: req.params.id,
+      adminId: req.user.id,
+    });
+    return res
+      .status(200)
+      .json({ success: true, message: "Solicitud eliminada correctamente" });
+  } catch (error) {
+    logger.error("Error en deleteSolicitud:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al eliminar la solicitud",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Contar solicitudes pendientes (badge sidebar)
+ * GET /api/admin/solicitudes/pendientes/count
+ */
+export const getPendientesCount = async (req, res) => {
+  try {
+    const total = await SolicitudSocio.countPendientes();
+    return res.status(200).json({ success: true, data: { total } });
+  } catch (error) {
+    logger.error("Error en getPendientesCount:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al obtener el contador",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -2901,6 +3604,8 @@ export default {
   createSocio,
   updateSocio,
   deleteSocio,
+  deleteSocioPermanent,
+  reactivateSocio,
   listMorosos,
   getEventsStats,
   listAllEvents,
@@ -2918,4 +3623,11 @@ export default {
   exportReservas,
   exportUsuarios,
   exportEventos,
+  // ✨ NUEVO
+  listSolicitudes,
+  getSolicitudDetails,
+  aprobarSolicitud,
+  rechazarSolicitud,
+  deleteSolicitud,
+  getPendientesCount,
 };

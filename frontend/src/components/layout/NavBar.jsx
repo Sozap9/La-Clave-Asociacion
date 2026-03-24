@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import MobileMenu from './MobileMenu';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/laclavelogo.png';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <>
@@ -15,27 +17,27 @@ const Navbar = () => {
             {/* Logo */}
             <button
               onClick={() => window.location.href = '/'}
-              aria-label="Ir al inicio"
+              aria-label={t('nav.goHome')}
             >
-              <img 
-                src={logo} 
-                alt="Logo" 
-                className="w-12 h-12 rounded-full object-cover"  
+              <img
+                src={logo}
+                alt="Logo"
+                className="w-12 h-12 rounded-full object-cover"
               />
             </button>
 
-            {/* Título  */}
+            {/* Título */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
               <span className="text-2xl font-display text-white">
-                La Clave
+                La Clave 981
               </span>
             </div>
 
-            {/* Menú hamburguesa  */}
+            {/* Menú hamburguesa */}
             <button
               onClick={() => setMenuOpen(true)}
               className="text-gray-300 hover:text-white transition-colors p-2 hover:bg-[#1a1a1a] rounded-lg"
-              aria-label="Abrir menú"
+              aria-label={t('nav.openMenu')}
             >
               <Menu size={30} />
             </button>

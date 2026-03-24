@@ -1,5 +1,5 @@
-import { query } from '../config/database.js';
-import bcrypt from 'bcryptjs';
+import { query } from "../config/database.js";
+import bcrypt from "bcryptjs";
 
 /**
  * Modelo User - Manejo de la tabla users
@@ -12,11 +12,11 @@ class User {
    */
   static async findByEmail(email) {
     try {
-      const sql = 'SELECT * FROM users WHERE email = ? LIMIT 1';
+      const sql = "SELECT * FROM users WHERE email = ? LIMIT 1";
       const results = await query(sql, [email]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findByEmail:', error);
+      console.error("Error en findByEmail:", error);
       throw error;
     }
   }
@@ -28,11 +28,11 @@ class User {
    */
   static async findById(id) {
     try {
-      const sql = 'SELECT * FROM users WHERE id = ? LIMIT 1';
+      const sql = "SELECT * FROM users WHERE id = ? LIMIT 1";
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findById:', error);
+      console.error("Error en findById:", error);
       throw error;
     }
   }
@@ -44,11 +44,11 @@ class User {
    */
   static async findByUsername(username) {
     try {
-      const sql = 'SELECT * FROM users WHERE username = ? LIMIT 1';
+      const sql = "SELECT * FROM users WHERE username = ? LIMIT 1";
       const results = await query(sql, [username]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findByUsername:', error);
+      console.error("Error en findByUsername:", error);
       throw error;
     }
   }
@@ -72,9 +72,9 @@ class User {
         dni_front_url = null,
         dni_back_url = null,
         firma_url = null,
-        role = 'basico',
-        idioma_preferido = 'es',
-        ip_registro = null
+        role = "basico",
+        idioma_preferido = "es",
+        ip_registro = null,
       } = userData;
 
       // Hash de la contraseña
@@ -102,7 +102,7 @@ class User {
         firma_url,
         role,
         idioma_preferido,
-        ip_registro
+        ip_registro,
       ];
 
       const result = await query(sql, values);
@@ -110,7 +110,7 @@ class User {
       // Retornar el usuario creado (sin contraseña)
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error('Error en create:', error);
+      console.error("Error en create:", error);
       throw error;
     }
   }
@@ -124,33 +124,35 @@ class User {
   static async update(id, updateData) {
     try {
       const allowedFields = [
-        'username',
-        'nombre',
-        'apellidos',
-        'telefono',
-        'fecha_nacimiento',
-        'dni',
-        'dni_front_url',
-        'dni_back_url',
-        'firma_url',
-        'avatar_url',
-        'idioma_preferido'
+        "username",
+        "nombre",
+        "apellidos",
+        "telefono",
+        "fecha_nacimiento",
+        "dni",
+        "dni_front_url",
+        "dni_back_url",
+        "firma_url",
+        "avatar_url",
+        "idioma_preferido",
       ];
 
       // Filtrar solo campos permitidos
       const updates = {};
-      Object.keys(updateData).forEach(key => {
+      Object.keys(updateData).forEach((key) => {
         if (allowedFields.includes(key)) {
           updates[key] = updateData[key];
         }
       });
 
       if (Object.keys(updates).length === 0) {
-        throw new Error('No hay campos válidos para actualizar');
+        throw new Error("No hay campos válidos para actualizar");
       }
 
       // Construir query dinámicamente
-      const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+      const fields = Object.keys(updates)
+        .map((key) => `${key} = ?`)
+        .join(", ");
       const values = Object.values(updates);
       values.push(id);
 
@@ -159,7 +161,7 @@ class User {
 
       return true;
     } catch (error) {
-      console.error('Error en update:', error);
+      console.error("Error en update:", error);
       throw error;
     }
   }
@@ -173,11 +175,11 @@ class User {
   static async updatePassword(id, newPassword) {
     try {
       const password_hash = await bcrypt.hash(newPassword, 10);
-      const sql = 'UPDATE users SET password_hash = ? WHERE id = ?';
+      const sql = "UPDATE users SET password_hash = ? WHERE id = ?";
       await query(sql, [password_hash, id]);
       return true;
     } catch (error) {
-      console.error('Error en updatePassword:', error);
+      console.error("Error en updatePassword:", error);
       throw error;
     }
   }
@@ -192,7 +194,7 @@ class User {
     try {
       return await bcrypt.compare(plainPassword, hashedPassword);
     } catch (error) {
-      console.error('Error en verifyPassword:', error);
+      console.error("Error en verifyPassword:", error);
       throw error;
     }
   }
@@ -204,11 +206,11 @@ class User {
    */
   static async emailExists(email) {
     try {
-      const sql = 'SELECT id FROM users WHERE email = ? LIMIT 1';
+      const sql = "SELECT id FROM users WHERE email = ? LIMIT 1";
       const results = await query(sql, [email]);
       return results.length > 0;
     } catch (error) {
-      console.error('Error en emailExists:', error);
+      console.error("Error en emailExists:", error);
       throw error;
     }
   }
@@ -220,11 +222,11 @@ class User {
    */
   static async usernameExists(username) {
     try {
-      const sql = 'SELECT id FROM users WHERE username = ? LIMIT 1';
+      const sql = "SELECT id FROM users WHERE username = ? LIMIT 1";
       const results = await query(sql, [username]);
       return results.length > 0;
     } catch (error) {
-      console.error('Error en usernameExists:', error);
+      console.error("Error en usernameExists:", error);
       throw error;
     }
   }
@@ -236,11 +238,44 @@ class User {
    */
   static async deactivate(id) {
     try {
-      const sql = 'UPDATE users SET activo = false WHERE id = ?';
+      const sql = "UPDATE users SET activo = false WHERE id = ?";
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error('Error en deactivate:', error);
+      console.error("Error en deactivate:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Soft delete del usuario (marca como inactivo y añade deleted_at)
+   * @param {Number} id - ID del usuario
+   * @returns {Boolean} true si se marcó correctamente
+   */
+  static async softDelete(id) {
+    try {
+      const sql =
+        "UPDATE users SET activo = false, deleted_at = NOW() WHERE id = ?";
+      await query(sql, [id]);
+      return true;
+    } catch (error) {
+      console.error("Error en softDelete:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Eliminar usuario de la base de datos
+   * @param {Number} id - ID del usuario
+   * @returns {Boolean} true si se eliminó correctamente
+   */
+  static async delete(id) {
+    try {
+      const sql = "DELETE FROM users WHERE id = ?";
+      await query(sql, [id]);
+      return true;
+    } catch (error) {
+      console.error("Error en delete:", error);
       throw error;
     }
   }
@@ -252,11 +287,11 @@ class User {
    */
   static async activate(id) {
     try {
-      const sql = 'UPDATE users SET activo = true WHERE id = ?';
+      const sql = "UPDATE users SET activo = true WHERE id = ?";
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error('Error en activate:', error);
+      console.error("Error en activate:", error);
       throw error;
     }
   }
@@ -276,7 +311,7 @@ class User {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error('Error en verifyEmail:', error);
+      console.error("Error en verifyEmail:", error);
       throw error;
     }
   }
@@ -289,11 +324,11 @@ class User {
    */
   static async saveEmailVerificationToken(id, token) {
     try {
-      const sql = 'UPDATE users SET email_verification_token = ? WHERE id = ?';
+      const sql = "UPDATE users SET email_verification_token = ? WHERE id = ?";
       await query(sql, [token, id]);
       return true;
     } catch (error) {
-      console.error('Error en saveEmailVerificationToken:', error);
+      console.error("Error en saveEmailVerificationToken:", error);
       throw error;
     }
   }
@@ -316,7 +351,7 @@ class User {
       await query(sql, [hashedToken, expiresAt, userId]);
       return true;
     } catch (error) {
-      console.error('Error en savePasswordResetToken:', error);
+      console.error("Error en savePasswordResetToken:", error);
       throw error;
     }
   }
@@ -335,11 +370,11 @@ class User {
           AND reset_password_expires > NOW()
           AND activo = true
       `;
-      
+
       const results = await query(sql, [hashedToken]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findByValidResetToken:', error);
+      console.error("Error en findByValidResetToken:", error);
       throw error;
     }
   }
@@ -360,7 +395,7 @@ class User {
       await query(sql, [userId]);
       return true;
     } catch (error) {
-      console.error('Error en clearPasswordResetToken:', error);
+      console.error("Error en clearPasswordResetToken:", error);
       throw error;
     }
   }

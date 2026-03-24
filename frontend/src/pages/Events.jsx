@@ -5,8 +5,10 @@ import FilterBar from "../components/UI/FilterBar";
 import SearchInput from "../components/UI/SearchInput";
 import EventDetail from "../components/events/EventDetail";
 import Loader from "../components/common/Loader";
+import { useLanguage } from "../context/LanguageContext";
 
 const Events = () => {
+  const { t } = useLanguage();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,14 +29,11 @@ const Events = () => {
     setError("");
 
     try {
-      // Build query params based on filters
       const queryParams = {};
 
       if (filters.featured) {
-        // Si es featured, solo enviar ese parámetro
         queryParams.featured = "true";
       } else {
-        // Si no, enviar status y search
         if (filters.status) {
           queryParams.status = filters.status;
         }
@@ -49,11 +48,11 @@ const Events = () => {
       if (result.success) {
         setEvents(result.data || []);
       } else {
-        setError(result.message || "Error al cargar eventos");
+        setError(result.message || t('events.errorConnection'));
         setEvents([]);
       }
     } catch (err) {
-      setError("Error de conexión. Intenta de nuevo.");
+      setError(t('events.errorConnection'));
       setEvents([]);
     } finally {
       setLoading(false);
@@ -66,29 +65,21 @@ const Events = () => {
   };
 
   const getEmptyMessage = () => {
-    if (filters.featured) {
-      return "No hay eventos destacados disponibles";
-    }
-    if (filters.status === "upcoming") {
-      return "No hay eventos próximos disponibles";
-    }
-    if (filters.status === "past") {
-      return "No hay eventos pasados";
-    }
-    if (filters.status === "all") {
-      return "No hay eventos disponibles";
-    }
-    return "No se encontraron eventos";
+    if (filters.featured) return t('events.empty.featured');
+    if (filters.status === "upcoming") return t('events.empty.upcoming');
+    if (filters.status === "past") return t('events.empty.past');
+    if (filters.status === "all") return t('events.empty.all');
+    return t('events.empty.default');
   };
 
   return (
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
-        {/* Header*/}
+        {/* Header */}
         <div className="mb-10">
-          <h1 className="text-gradient mb-2 text-4xl">Eventos</h1>
+          <h1 className="text-gradient mb-2 text-4xl">{t('events.title')}</h1>
           <p className="text-gray-400 text-lg">
-            Descubre nuestros eventos y reserva tu plaza.
+            {t('events.subtitle')}
           </p>
         </div>
 
@@ -108,7 +99,7 @@ const Events = () => {
                   setFilters((s) => ({ ...s, search: val }))
                 }
                 onClear={() => setFilters({ ...filters, search: "" })}
-                placeholder="Buscar eventos..."
+                placeholder={t('events.searchPlaceholder')}
                 debounceMs={350}
               />
             </div>
@@ -142,12 +133,12 @@ const Events = () => {
         {!loading && events.length === 0 && !error && (
           <div className="text-center py-20">
             <h3 className="text-2xl font-bold text-white mb-2">
-              No se encontraron eventos
+              {t('events.notFound')}
             </h3>
             <p className="text-gray-400 text-lg">{getEmptyMessage()}</p>
             {filters.search && (
               <p className="text-gray-500 text-sm mt-2">
-                Intenta con otra búsqueda
+                {t('events.trySearch')}
               </p>
             )}
           </div>

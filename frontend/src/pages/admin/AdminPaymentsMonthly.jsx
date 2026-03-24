@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, Calendar, DollarSign, Download } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AdminPaymentsMonthly = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ const AdminPaymentsMonthly = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/payments/monthly', {
+      const response = await fetch('${API_URL}/admin/payments/monthly', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

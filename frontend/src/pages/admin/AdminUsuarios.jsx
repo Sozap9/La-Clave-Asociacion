@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getAllUsers, updateUserRole } from '../../api/adminApi';
-import { Users, X, Eye, Ban, CheckCircle, Shield } from 'lucide-react';
+import { Users, X, Eye, Ban, CheckCircle, Shield, Phone, Calendar } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import FilterBar from '../../components/UI/FilterBar';
 import SearchInput from '../../components/UI/SearchInput';
+import AdminCard from '../../components/admin/AdminCard';
 
-/**
- * AdminUsuarios - Lista TODOS los usuarios (básicos, socios y admins)
- */
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 // Filtros de rol disponibles
 const roleFilters = [
@@ -76,7 +76,7 @@ const AdminUsuarios = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}/toggle-active`, {
+      const response = await fetch(`${API_URL}/admin/users/${userId}/toggle-active`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -127,6 +127,15 @@ const AdminUsuarios = () => {
     });
   };
 
+  const getRoleBadgeColor = (role) => {
+    const colors = {
+      admin: 'red',
+      socio: 'primary',
+      basico: 'gray'
+    };
+    return colors[role] || 'gray';
+  };
+
   const getRoleBadge = (role) => {
     const styles = {
       admin: 'bg-red-500/20 text-red-400',
@@ -167,7 +176,7 @@ const AdminUsuarios = () => {
         </div>
       )}
 
-      {/* Filtros y búsqueda - Igual que en otras páginas */}
+      {/* Filtros y búsqueda */}
       <div className="mb-6 flex flex-wrap gap-4 items-center">
         {/* Filtros a la izquierda */}
         <FilterBar
@@ -197,116 +206,93 @@ const AdminUsuarios = () => {
       ) : (
         <div className="space-y-4">
           {users.map((user) => (
-            <div
+            <AdminCard
               key={user.id}
-              className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
-            >
-              <div className="flex items-start justify-between">
-                {/* Info del usuario */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-lg">
-                        {user.nombre?.charAt(0).toUpperCase() ||
-                          user.username?.charAt(0).toUpperCase() ||
-                          '?'}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold text-white">
-                          {user.nombre && user.apellidos
-                            ? `${user.nombre} ${user.apellidos}`
-                            : user.username}
-                        </h3>
-                        {!user.activo && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
-                            Inactivo
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-400 text-sm">{user.email}</p>
-                    </div>
-                  </div>
-
-                  {/* Grid de información */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    {user.telefono && (
-                      <div>
-                        <p className="text-gray-500 text-xs mb-1">Teléfono</p>
-                        <p className="text-white text-sm">{user.telefono}</p>
-                      </div>
-                    )}
-                    {user.fecha_nacimiento && (
-                      <div>
-                        <p className="text-gray-500 text-xs mb-1">Fecha Nac.</p>
-                        <p className="text-white text-sm">{formatDate(user.fecha_nacimiento)}</p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Registrado</p>
-                      <p className="text-white text-sm">{formatDate(user.created_at)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Rol</p>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(user.role)}`}>
-                        {getRoleLabel(user.role)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Selector de rol */}
-                  <div className="flex items-center gap-2">
-                    <Shield size={16} className="text-gray-400" />
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleChangeRole(user.id, e.target.value)}
-                      className="bg-[#262626] text-white border border-gray-700 rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-primary-500 transition-colors"
-                    >
-                      <option value="basico">Básico</option>
-                      <option value="socio">Socio</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
+              avatar={
+                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">
+                    {user.nombre?.charAt(0).toUpperCase() ||
+                      user.username?.charAt(0).toUpperCase() ||
+                      '?'}
+                  </span>
                 </div>
-
-                {/* Botones a la derecha */}
-                <div className="flex flex-col gap-2 ml-4">
-                  <button
-                    onClick={() => setSelectedUser(user)}
-                    className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
-                  >
-                    <Eye size={16} />
-                    Ver
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(user.id, user.activo !== false)}
-                    className={`px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
-                      user.activo === false
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-primary-600 hover:bg-primary-700 text-white'
-                    }`}
-                  >
-                    {user.activo === false ? (
-                      <>
-                        <CheckCircle size={16} />
-                        Activar
-                      </>
-                    ) : (
-                      <>
-                        <Ban size={16} />
-                        Desactivar
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
+              }
+              title={
+                user.nombre && user.apellidos
+                  ? `${user.nombre} ${user.apellidos}`
+                  : user.username
+              }
+              badges={[
+                !user.activo && {
+                  text: 'Inactivo',
+                  color: 'red'
+                },
+                {
+                  text: getRoleLabel(user.role),
+                  color: getRoleBadgeColor(user.role)
+                }
+              ].filter(Boolean)}
+              actions={[
+                {
+                  icon: <Eye size={20} />,
+                  onClick: () => setSelectedUser(user),
+                  color: 'primary',
+                  title: 'Ver detalles'
+                },
+                {
+                  icon: user.activo === false ? <CheckCircle size={20} /> : <Ban size={20} />,
+                  onClick: () => handleToggleActive(user.id, user.activo !== false),
+                  color: user.activo === false ? 'green' : 'primary',
+                  title: user.activo === false ? 'Activar' : 'Desactivar'
+                },
+                {
+                  type: 'role',
+                  element: (
+                    <div className="flex items-center gap-2">
+                      <Shield size={16} className="text-gray-400" />
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                        className="bg-[#262626] text-white border border-gray-700 rounded-lg px-3 py-1.5 text-sm cursor-pointer hover:border-primary-500 transition-colors"
+                      >
+                        <option value="basico">Básico</option>
+                        <option value="socio">Socio</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                  )
+                }
+              ]}
+              fields={[
+                {
+                  icon: <Users size={14} className="text-primary-300" />,
+                  label: 'Email',
+                  value: user.email
+                },
+                {
+                  icon: <Phone size={14} className="text-primary-300" />,
+                  label: 'Teléfono',
+                  value: user.telefono || 'N/A'
+                },
+                {
+                  label: 'Estado',
+                  value: user.activo === false ? 'Inactivo' : 'Activo',
+                  badge: true,
+                  badgeColor: user.activo === false ? 'red' : 'green'
+                },
+                {
+                  icon: <Calendar size={14} className="text-primary-300" />,
+                  label: 'Registro',
+                  value: formatDate(user.created_at)
+                },
+              ].filter(Boolean)}
+              columns={4}
+            />
           ))}
         </div>
       )}
 
-      {/* Modal de detalles - Tu diseño original */}
+      {/* Modal de detalles */}
       {selectedUser && (
         <div 
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"

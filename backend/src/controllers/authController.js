@@ -11,6 +11,7 @@ import {
 } from '../utils/validators.js';
 import logger from '../config/logger.js';
 import EmailService from '../services/emailService.js';
+import SolicitudSocio from '../models/SolicitudSocio.js';
 
 /**
  * Controlador de Autenticación
@@ -673,9 +674,130 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+/**
+ * Crear solicitud de socio (nuevo flujo de registro)
+ * POST /api/auth/solicitud-socio
+ *
+ * Recibe FormData con campos de texto + imágenes DNI (multer)
+ * No crea el usuario — crea una solicitud pendiente de aprobación admin
+ */
+export const crearSolicitud = async (req, res) => {
+  try {
+    const {
+      username,
+      nombre,
+      apellidos,
+      email,
+      password,
+      telefono,
+      fecha_nacimiento,
+      dni,
+      motivacion
+    } = req.body;
+
+    // ── Validar que llegaron los archivos de DNI ──────────────────
+    if (!req.files?.dni_front?.[0] || !req.files?.dni_back?.[0]) {
+      return res.status(400).json({
+        success: false,
+        message: 'Debes subir ambas caras del DNI'
+      });
+    }
+
+    // ── Comprobar que el email no está ya en users ────────────────
+    const emailEnUsers = await User.emailExists(email);
+    if (emailEnUsers) {
+      return res.status(409).json({
+        success: false,
+        message: 'El email ya está registrado'
+      });
+    }
+
+    // ── Comprobar que el username no está en users ────────────────
+    const usernameEnUsers = await User.usernameExists(username);
+    if (usernameEnUsers) {
+      return res.status(409).json({
+        success: false,
+        message: 'El username ya está en uso'
+      });
+    }
+
+    // ── Comprobar que no hay solicitud pendiente ya enviada ───────
+    const solicitudPendiente = await SolicitudSocio.existePendiente(
+      email.toLowerCase().trim(),
+      dni
+    );
+    if (solicitudPendiente) {
+      return res.status(409).json({
+        success: false,
+        message: 'Ya tienes una solicitud pendiente con ese email o DNI. Espera a que sea revisada.'
+      });
+    }
+
+    // ── Rutas relativas de los archivos subidos ───────────────────
+    const dniBasePath = 'uploads/solicitudes/';
+    const dni_front_url = dniBasePath + req.files.dni_front[0].filename;
+    const dni_back_url  = dniBasePath + req.files.dni_back[0].filename;
+
+    // ── Crear la solicitud ────────────────────────────────────────
+    const solicitud = await SolicitudSocio.create({
+      username:        sanitizeString(username),
+      nombre:          sanitizeString(nombre),
+      apellidos:       sanitizeString(apellidos),
+      email:           email.toLowerCase().trim(),
+      password,                                    // SolicitudSocio.create hashea aquí
+      telefono:        telefono.replace(/\s/g, ''),
+      fecha_nacimiento,
+      dni:             dni.toUpperCase(),
+      dni_front_url,
+      dni_back_url,
+      motivacion:      motivacion || null,
+      ip_solicitud:    req.ip || req.connection?.remoteAddress
+    });
+
+    // ── Emails ────────────────────────────────────────────────────
+    // Email de confirmación al solicitante
+    try {
+      await EmailService.sendSolicitudRecibida(solicitud);
+    } catch (emailError) {
+      logger.error('Error al enviar email solicitud-recibida:', emailError);
+    }
+
+    // Email de aviso a admins
+    try {
+      await EmailService.sendAvisoNuevaSolicitudAdmins(solicitud);
+    } catch (emailError) {
+      logger.error('Error al enviar email aviso-admins:', emailError);
+    }
+
+    logger.info('Nueva solicitud de socio creada', {
+      solicitudId: solicitud.id,
+      email: solicitud.email,
+      ip: req.ip
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Solicitud enviada correctamente. Recibirás un email cuando sea revisada por nuestro equipo.',
+      data: {
+        solicitudId: solicitud.id,
+        email:       solicitud.email
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error en crearSolicitud:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al enviar la solicitud',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 export default {
   registerBasic,
   registerSocio,
+  crearSolicitud,
   login,
   refreshToken,
   logout,

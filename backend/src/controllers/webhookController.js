@@ -69,18 +69,19 @@ async function handlePaymentSucceeded(invoice) {
 
     const socio = socios[0];
 
-    // Registrar pago exitoso
+    // Registrar pago exitoso en el socio
     await Socio.registrarPagoExitoso(socio.id);
 
-    // Guardar en tabla payments
+    // Guardar en tabla payments (compatibilidad con esquemas 'amount' y 'monto')
     await query(`
       INSERT INTO payments (
-        socio_id, tipo_pago, amount, currency, 
+        socio_id, tipo, tipo_pago, amount, monto, currency, moneda,
         stripe_payment_intent_id, stripe_invoice_id,
         estado, fecha_pago
-      ) VALUES (?, 'cuota_mensual', ?, 'EUR', ?, ?, 'exitoso', NOW())
+      ) VALUES (?, 'cuota_mensual', 'cuota_mensual', ?, ?, 'EUR', 'EUR', ?, ?, 'exitoso', NOW())
     `, [
       socio.id,
+      amountPaid,
       amountPaid,
       invoice.payment_intent,
       invoice.id
@@ -121,11 +122,12 @@ async function handlePaymentFailed(invoice) {
     // Guardar en tabla payments
     await query(`
       INSERT INTO payments (
-        socio_id, tipo_pago, amount, currency,
+        socio_id, tipo, amount, monto, currency, moneda,
         stripe_invoice_id, estado, error_mensaje, fecha_pago
-      ) VALUES (?, 'cuota_mensual', ?, 'EUR', ?, 'fallido', ?, NOW())
+      ) VALUES (?, 'cuota_mensual', ?, ?, 'EUR', 'EUR', ?, 'fallido', ?, NOW())
     `, [
       socio.id,
+      amountDue,
       amountDue,
       invoice.id,
       'Pago rechazado'
@@ -135,6 +137,7 @@ async function handlePaymentFailed(invoice) {
     const socioActualizado = await Socio.findById(socio.id);
     
     if (socioActualizado.pagos_fallidos >= 3) {
+      await Socio.marcarComoMoroso(socio.id);
       console.log(`⚠️ Socio ${socio.numero_socio} marcado como moroso`);
       // TODO: Enviar email notificando suspensión
     } else {

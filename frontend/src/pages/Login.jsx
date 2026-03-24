@@ -2,9 +2,11 @@ import { useState } from 'react';
 import Button from '../components/common/Button';
 import { useAuth } from '../hooks/useAuth';
 import { NAV_ROUTES } from '../utils/constants';
+import { useLanguage } from '../context/LanguageContext';
 
 const Login = () => {
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -35,7 +37,7 @@ const Login = () => {
       });
 
       const data = await response.json();
-      
+
       console.log('📦 RESPUESTA COMPLETA:', data);
       console.log('✅ Success:', data.success);
       console.log('👤 Usuario:', data.data?.user);
@@ -52,9 +54,9 @@ const Login = () => {
         console.log('✅ Token existe, llamando a login()...');
         console.log('✅ Pasando usuario:', data.data.user);
         console.log('✅ Pasando token:', data.data.accessToken);
-        
+
         login(data.data.user, data.data.accessToken);
-        
+
         console.log('💾 Verificando localStorage...');
         const savedToken = localStorage.getItem('token');
         const savedUser = localStorage.getItem('user');
@@ -94,8 +96,8 @@ const Login = () => {
 
       <div className="relative z-20 w-full max-w-md">
         <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20">
-          
-          <h2 className="text-3xl font-bold text-white text-center mb-8">Inicio de Sesión</h2>
+
+          <h2 className="text-3xl font-bold text-white text-center mb-8">{t('login.title')}</h2>
 
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
@@ -105,7 +107,7 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="label">Email</label>
+              <label className="label">{t('login.email')}</label>
               <input
                 type="email"
                 name="email"
@@ -117,7 +119,7 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="label">Contraseña</label>
+              <label className="label">{t('login.password')}</label>
               <input
                 type="password"
                 name="password"
@@ -130,7 +132,7 @@ const Login = () => {
 
             <div className="text-right">
               <a href="/recuperar-password" className="text-sm text-primary-400 hover:text-primary-300 transition-colors">
-                ¿Olvidaste tu contraseña?
+                {t('login.forgotPassword')}
               </a>
             </div>
 
@@ -140,15 +142,15 @@ const Login = () => {
               disabled={loading}
               className="w-full"
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading ? t('login.loading') : t('login.submit')}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-gray-400">
-              ¿No tienes cuenta?{' '}
+              {t('login.noAccount')}{' '}
               <a href={NAV_ROUTES.REGISTER} className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
-                Regístrate aquí
+                {t('login.registerLink')}
               </a>
             </p>
           </div>

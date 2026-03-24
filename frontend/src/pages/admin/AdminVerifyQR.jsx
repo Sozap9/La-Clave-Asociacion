@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { QrCode, CheckCircle, XCircle, Search } from 'lucide-react';
 import Button from '../../components/common/Button';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AdminVerifyQR = () => {
   const [codigo, setCodigo] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ const AdminVerifyQR = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/bookings/verify-qr', {
+      const response = await fetch('${API_URL}/admin/bookings/verify-qr', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

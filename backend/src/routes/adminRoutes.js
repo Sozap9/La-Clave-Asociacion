@@ -19,6 +19,8 @@ import {
   createSocio,
   updateSocio,
   deleteSocio,
+  deleteSocioPermanent,
+  reactivateSocio,
   listMorosos,
 
   // Eventos
@@ -48,6 +50,14 @@ import {
   exportReservas,
   exportUsuarios,
   exportEventos,
+
+  // Solicitudes ✨ NUEVO
+  listSolicitudes,
+  getSolicitudDetails,
+  aprobarSolicitud,
+  rechazarSolicitud,
+  deleteSolicitud,
+  getPendientesCount,
 } from "../controllers/adminController.js";
 
 // Controllers de otros módulos (para rutas de gestión)
@@ -117,7 +127,7 @@ router.get(
   paginationValidator,
   searchQueryValidator,
   handleValidationErrors,
-  listUsers
+  listUsers,
 );
 
 // Obtener detalles de un usuario específico
@@ -126,7 +136,7 @@ router.get(
   "/users/:id",
   idParamValidator,
   handleValidationErrors,
-  getUserDetails
+  getUserDetails,
 );
 
 // Desactivar usuario básico (OPERACIÓN CRÍTICA - 20 ops/hora)
@@ -136,7 +146,7 @@ router.delete(
   adminStrictLimiter,
   idParamValidator,
   handleValidationErrors,
-  deleteUser
+  deleteUser,
 );
 
 /**
@@ -149,7 +159,7 @@ router.patch(
   "/users/:id/role",
   idParamValidator,
   handleValidationErrors,
-  updateUserRole
+  updateUserRole,
 );
 
 // Aprobar usuario como socio
@@ -157,7 +167,7 @@ router.patch(
   "/users/:id/approve",
   idParamValidator,
   handleValidationErrors,
-  approveUser
+  approveUser,
 );
 
 // Rechazar solicitud de usuario
@@ -165,7 +175,7 @@ router.patch(
   "/users/:id/reject",
   idParamValidator,
   handleValidationErrors,
-  rejectUser
+  rejectUser,
 );
 
 /**
@@ -179,7 +189,7 @@ router.get(
   searchQueryValidator,
   statusFilterValidator,
   handleValidationErrors,
-  listSocios
+  listSocios,
 );
 
 // Obtener socios morosos
@@ -190,7 +200,7 @@ router.get(
   "/socios/:id",
   idParamValidator,
   handleValidationErrors,
-  getSocioDetails
+  getSocioDetails,
 );
 
 // Crear socio manualmente (sin Stripe)
@@ -198,7 +208,7 @@ router.post(
   "/socios",
   createSocioValidator,
   handleValidationErrors,
-  createSocio
+  createSocio,
 );
 
 // Actualizar datos de un socio
@@ -206,16 +216,42 @@ router.put(
   "/socios/:id",
   updateSocioValidator,
   handleValidationErrors,
-  updateSocio
+  updateSocio,
 );
 
-// Dar de baja a un socio (OPERACIÓN CRÍTICA - 20 ops/hora)
+// Dar de baja a un socio (soft, estado inactivo)
+router.patch(
+  "/socios/:id/deactivate",
+  adminStrictLimiter,
+  deleteSocioValidator,
+  handleValidationErrors,
+  deleteSocio,
+);
+
+// Alias para compatibilidad antigua: DELETE /socios/:id también hace soft delete
 router.delete(
   "/socios/:id",
   adminStrictLimiter,
   deleteSocioValidator,
   handleValidationErrors,
-  deleteSocio
+  deleteSocio,
+);
+
+// Eliminar permanentemente un socio (OPERACIÓN CRÍTICA - 20 ops/hora)
+router.delete(
+  "/socios/:id/permanent",
+  adminStrictLimiter,
+  idParamValidator,
+  handleValidationErrors,
+  deleteSocioPermanent,
+);
+
+// Reactivar un socio dado de baja
+router.patch(
+  "/socios/:id/reactivate",
+  idParamValidator,
+  handleValidationErrors,
+  reactivateSocio,
 );
 
 /**
@@ -232,7 +268,7 @@ router.get(
   statusFilterValidator,
   dateRangeValidator,
   handleValidationErrors,
-  listAllEvents
+  listAllEvents,
 );
 
 // Obtener estadísticas de eventos
@@ -243,7 +279,7 @@ router.get(
   "/events/:id",
   idParamValidator,
   handleValidationErrors,
-  getEventDetailsAdmin
+  getEventDetailsAdmin,
 );
 
 // Crear nuevo evento
@@ -275,7 +311,7 @@ router.get(
   statusFilterValidator,
   dateRangeValidator,
   handleValidationErrors,
-  listAllBookings
+  listAllBookings,
 );
 
 // Obtener estadísticas generales de reservas
@@ -290,7 +326,7 @@ router.get(
     .toInt(),
   statusFilterValidator,
   handleValidationErrors,
-  getEventBookings
+  getEventBookings,
 );
 
 // Obtener detalles completos de una reserva
@@ -298,7 +334,7 @@ router.get(
   "/bookings/:id",
   idParamValidator,
   handleValidationErrors,
-  getBookingDetails
+  getBookingDetails,
 );
 
 // Cancelar reserva (OPERACIÓN CRÍTICA - 20 ops/hora)
@@ -309,7 +345,7 @@ router.post(
   "/bookings/verify-qr",
   verifyQRValidator,
   handleValidationErrors,
-  verifyQRAndCheckIn
+  verifyQRAndCheckIn,
 );
 
 /**
@@ -360,7 +396,7 @@ router.get(
   statusFilterValidator,
   dateRangeValidator,
   handleValidationErrors,
-  listPayments
+  listPayments,
 );
 
 // Obtener ingresos mensuales por año
@@ -368,7 +404,7 @@ router.get(
   "/payments/monthly",
   yearQueryValidator,
   handleValidationErrors,
-  getMonthlyRevenue
+  getMonthlyRevenue,
 );
 
 // Obtener estadísticas de pagos
@@ -404,5 +440,42 @@ router.get("/export/usuarios", exportUsuarios);
 // Exportar lista completa de eventos en formato PDF
 // GET /api/admin/export/eventos
 router.get("/export/eventos", exportEventos);
+
+/**
+ * ========================================
+ * GESTIÓN DE SOLICITUDES DE SOCIO  ✨ NUEVO
+ * ========================================
+ */
+
+// Contar pendientes (badge sidebar)
+// ⚠️ Debe ir ANTES de /:id para no ser capturada por el parámetro
+// GET /api/admin/solicitudes/pendientes/count
+router.get("/solicitudes/pendientes/count", getPendientesCount);
+
+// Listar solicitudes con filtros
+// GET /api/admin/solicitudes?estado=pendiente&search=&page=1&limit=20
+router.get(
+  "/solicitudes",
+  paginationValidator,
+  searchQueryValidator,
+  handleValidationErrors,
+  listSolicitudes,
+);
+
+// Detalle de una solicitud
+// GET /api/admin/solicitudes/:id
+router.get("/solicitudes/:id", getSolicitudDetails);
+
+// Aprobar → crea usuario socio
+// PUT /api/admin/solicitudes/:id/aprobar
+router.put("/solicitudes/:id/aprobar", aprobarSolicitud);
+
+// Rechazar — Body: { motivo_rechazo }
+// PUT /api/admin/solicitudes/:id/rechazar
+router.put("/solicitudes/:id/rechazar", rechazarSolicitud);
+
+// Eliminar solicitud definitivamente
+// DELETE /api/admin/solicitudes/:id
+router.delete("/solicitudes/:id", adminStrictLimiter, deleteSolicitud);
 
 export default router;

@@ -22,10 +22,15 @@ const optionalEnvVars = [
   'JWT_REFRESH_EXPIRE',
   'STRIPE_PUBLISHABLE_KEY',
   'STRIPE_WEBHOOK_SECRET',
+  // ── Email ────────────────────────────────
   'EMAIL_HOST',
   'EMAIL_PORT',
+  'EMAIL_SECURE',
   'EMAIL_USER',
   'EMAIL_PASS',
+  'EMAIL_FROM',
+  'ADMIN_NOTIFICATION_EMAILS',
+  // ── App ──────────────────────────────────
   'MAX_FILE_SIZE',
   'UPLOAD_PATH',
   'MAX_SOCIOS',
@@ -58,11 +63,23 @@ export const validateEnv = () => {
 
   // Advertencias sobre variables opcionales pero recomendadas
   const warnings = [];
-  
-  if (!process.env.EMAIL_HOST) {
-    warnings.push('EMAIL_HOST - El sistema de notificaciones por email no funcionará');
+
+  // ── Email: avisar si falta alguna de las variables del bloque ──
+  const emailVars = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'EMAIL_FROM'];
+  const missingEmailVars = emailVars.filter(v => !process.env[v]);
+
+  if (missingEmailVars.length > 0) {
+    warnings.push(
+      `Email (modo mock activo) — faltan: ${missingEmailVars.join(', ')} — los emails se loguearán en consola pero NO se enviarán`
+    );
   }
-  
+
+  if (!process.env.ADMIN_NOTIFICATION_EMAILS) {
+    warnings.push(
+      'ADMIN_NOTIFICATION_EMAILS no configurado — los admins NO recibirán aviso de nuevas solicitudes de socio'
+    );
+  }
+
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
     warnings.push('STRIPE_WEBHOOK_SECRET - Los webhooks de Stripe no se procesarán');
   }
@@ -79,7 +96,7 @@ export const validateEnv = () => {
   validateJWTSecrets();
   validateStripeKeys();
   validateURLs();
-  
+
   console.log('✅ Variables de entorno validadas correctamente\n');
 };
 
@@ -88,15 +105,15 @@ export const validateEnv = () => {
  */
 const validateJWTSecrets = () => {
   const minLength = 32;
-  
+
   if (process.env.JWT_SECRET.length < minLength) {
     console.warn(`⚠️  JWT_SECRET debería tener al menos ${minLength} caracteres para mayor seguridad`);
   }
-  
+
   if (process.env.JWT_REFRESH_SECRET.length < minLength) {
     console.warn(`⚠️  JWT_REFRESH_SECRET debería tener al menos ${minLength} caracteres para mayor seguridad`);
   }
-  
+
   if (process.env.JWT_SECRET === process.env.JWT_REFRESH_SECRET) {
     console.error('❌ ERROR: JWT_SECRET y JWT_REFRESH_SECRET NO deben ser iguales');
     process.exit(1);
@@ -108,13 +125,13 @@ const validateJWTSecrets = () => {
  */
 const validateStripeKeys = () => {
   const { NODE_ENV, STRIPE_SECRET_KEY } = process.env;
-  
+
   if (NODE_ENV === 'production' && STRIPE_SECRET_KEY.startsWith('sk_test_')) {
     console.error('❌ ERROR: Estás usando claves de TEST de Stripe en PRODUCCIÓN');
     console.error('   Cambia a claves de LIVE (sk_live_...)');
     process.exit(1);
   }
-  
+
   if (NODE_ENV === 'development' && STRIPE_SECRET_KEY.startsWith('sk_live_')) {
     console.warn('⚠️  ADVERTENCIA: Estás usando claves de LIVE de Stripe en desarrollo');
     console.warn('   Se recomienda usar claves de TEST (sk_test_...)');
@@ -126,15 +143,15 @@ const validateStripeKeys = () => {
  */
 const validateURLs = () => {
   const { FRONTEND_URL, BACKEND_URL } = process.env;
-  
+
   const urlRegex = /^https?:\/\/.+/;
-  
+
   if (FRONTEND_URL && !urlRegex.test(FRONTEND_URL)) {
     console.error(`❌ ERROR: FRONTEND_URL tiene formato inválido: ${FRONTEND_URL}`);
     console.error('   Debe comenzar con http:// o https://');
     process.exit(1);
   }
-  
+
   if (BACKEND_URL && !urlRegex.test(BACKEND_URL)) {
     console.error(`❌ ERROR: BACKEND_URL tiene formato inválido: ${BACKEND_URL}`);
     console.error('   Debe comenzar con http:// o https://');

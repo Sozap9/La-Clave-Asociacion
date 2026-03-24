@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Activity, User, Calendar, Filter, RefreshCw } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AdminActivity = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ const AdminActivity = () => {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/activity', {
+      const response = await fetch(`${API_URL}/admin/activity`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -38,7 +40,7 @@ const AdminActivity = () => {
       }
     } catch (err) {
       console.error('Error en fetchActivity:', err);
-      setError('Error de conexión con el servidor. Verifica que el backend esté corriendo en http://localhost:5000');
+      setError('Error de conexión con el servidor');
       setActivities([]);
     } finally {
       setLoading(false);
@@ -53,50 +55,24 @@ const AdminActivity = () => {
 
   const getAccionIcon = (accion) => {
     switch (accion) {
-      case 'crear':
-        return '➕';
+      case 'crear':     return '➕';
       case 'editar':
-      case 'actualizar':
-        return '✏️';
-      case 'eliminar':
-        return '🗑️';
-      case 'login':
-        return '🔐';
-      case 'logout':
-        return '🚪';
-      case 'aprobar':
-        return '✅';
-      case 'rechazar':
-        return '❌';
-      case 'cancelar':
-        return '🚫';
-      case 'verificar':
-        return '✔️';
-      default:
-        return '📝';
+      case 'actualizar': return '✏️';
+      case 'eliminar':  return '🗑️';
+      case 'login':     return '🔐';
+      case 'logout':    return '🚪';
+      case 'aprobar':   return '✅';
+      case 'rechazar':  return '❌';
+      case 'cancelar':  return '🚫';
+      case 'verificar': return '✔️';
+      default:          return '📝';
     }
   };
 
   const getAccionColor = (accion) => {
     switch (accion) {
-      case 'crear':
-        return 'text-primary-300';
-      case 'editar':
-      case 'actualizar':
-        return 'text-primary-300';
-      case 'eliminar':
-      case 'cancelar':
-        return 'text-primary-300';
-      case 'aprobar':
-        return 'text-primary-300';
-      case 'rechazar':
-        return 'text-primary-300';
-      case 'login':
-        return 'text-primary-300';
-      case 'logout':
-        return 'text-gray-400';
-      default:
-        return 'text-gray-400';
+      case 'logout': return 'text-gray-400';
+      default:       return 'text-primary-300';
     }
   };
 
@@ -123,7 +99,6 @@ const AdminActivity = () => {
     });
   };
 
-  // Obtener acciones y entidades únicas para filtros
   const uniqueAcciones = [...new Set(activities.map(a => a.accion))].filter(Boolean);
   const uniqueEntidades = [...new Set(activities.map(a => a.entidad))].filter(Boolean);
 
@@ -153,7 +128,7 @@ const AdminActivity = () => {
       {/* Error */}
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-4 rounded-lg mb-6">
-          <p className="mb-2 font-semibold">❌ Error al cargar actividad reciente</p>
+          <p className="mb-2 font-semibold">Error al cargar actividad reciente</p>
           <p className="text-sm">{error}</p>
         </div>
       )}
@@ -161,7 +136,6 @@ const AdminActivity = () => {
       {/* Filtros */}
       <div className="mb-6 space-y-4">
         <div className="flex flex-wrap gap-4">
-          {/* Filtro por Acción */}
           <div className="flex-1 min-w-[200px]">
             <label className="block text-white text-sm font-medium mb-2">
               <Filter size={16} className="inline mr-2" />
@@ -181,7 +155,6 @@ const AdminActivity = () => {
             </select>
           </div>
 
-          {/* Filtro por Entidad */}
           <div className="flex-1 min-w-[200px]">
             <label className="block text-white text-sm font-medium mb-2">
               <Filter size={16} className="inline mr-2" />
@@ -204,10 +177,7 @@ const AdminActivity = () => {
 
         {(filterAccion !== 'all' || filterEntidad !== 'all') && (
           <button
-            onClick={() => {
-              setFilterAccion('all');
-              setFilterEntidad('all');
-            }}
+            onClick={() => { setFilterAccion('all'); setFilterEntidad('all'); }}
             className="text-primary-300 hover:text-primary-300 text-sm"
           >
             Limpiar filtros
@@ -215,30 +185,25 @@ const AdminActivity = () => {
         )}
       </div>
 
-      {/* Timeline de actividad */}
+      {/* Timeline */}
       {filteredActivities.length === 0 ? (
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Activity className="mx-auto mb-4 text-gray-600" size={48} />
           <p className="text-gray-400 text-lg">
-            {filterAccion !== 'all' || filterEntidad !== 'all' 
+            {filterAccion !== 'all' || filterEntidad !== 'all'
               ? 'No hay actividad que coincida con los filtros'
               : 'No hay actividad registrada'}
           </p>
         </div>
       ) : (
         <div className="relative">
-          {/* Línea vertical del timeline */}
           <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#262626]" />
-
           <div className="space-y-6">
             {filteredActivities.map((activity, index) => (
               <div key={activity.id || index} className="relative pl-16">
-                {/* Punto en el timeline */}
                 <div className="absolute left-3 top-2 w-6 h-6 rounded-full bg-gray-900 border-2 border-primary-500 flex items-center justify-center">
                   <span className="text-xs">{getAccionIcon(activity.accion)}</span>
                 </div>
-
-                {/* Card de actividad */}
                 <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -249,16 +214,13 @@ const AdminActivity = () => {
                         <span className="text-gray-500">•</span>
                         <span className="text-gray-400 text-sm">{activity.entidad}</span>
                       </div>
-                      
                       <p className="text-white">
                         {activity.descripcion || `${activity.accion} en ${activity.entidad}`}
                       </p>
-                      
                       {activity.detalles && (
                         <p className="text-gray-500 text-sm mt-1">{activity.detalles}</p>
                       )}
                     </div>
-
                     <div className="text-right ml-4">
                       <div className="flex items-center gap-2 text-gray-400 text-sm">
                         <Calendar size={14} />
@@ -266,7 +228,6 @@ const AdminActivity = () => {
                       </div>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#262626]">
                     {activity.usuario_nombre && (
                       <div className="flex items-center gap-2">
@@ -276,17 +237,11 @@ const AdminActivity = () => {
                         </span>
                       </div>
                     )}
-                    
                     {activity.ip_address && (
-                      <span className="text-gray-500 text-xs font-mono">
-                        IP: {activity.ip_address}
-                      </span>
+                      <span className="text-gray-500 text-xs font-mono">IP: {activity.ip_address}</span>
                     )}
-
                     {activity.entidad_id && (
-                      <span className="text-gray-500 text-xs">
-                        ID: {activity.entidad_id}
-                      </span>
+                      <span className="text-gray-500 text-xs">ID: {activity.entidad_id}</span>
                     )}
                   </div>
                 </div>

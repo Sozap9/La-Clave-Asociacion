@@ -4,42 +4,40 @@ import Loader from '../common/Loader';
 
 /**
  * Componente para proteger rutas según rol
- * 
- * @param {React.ReactNode} children - Contenido a renderizar si tiene permiso
- * @param {boolean} requireAdmin - Requiere rol admin
- * @param {boolean} requireSocio - Requiere rol socio o superior
- * @param {string} redirectTo - Ruta a la que redirigir si no tiene permiso
+ *
+ * @param {React.ReactNode} children   - Contenido a renderizar si tiene permiso
+ * @param {boolean} requireAdmin       - Requiere rol admin
+ * @param {boolean} requireSocio       - Requiere rol socio o superior
+ * @param {string}  redirectTo         - Ruta a la que redirigir si no tiene permiso
  */
-const ProtectedRoute = ({ 
-  children, 
-  requireAdmin = false, 
+const ProtectedRoute = ({
+  children,
+  requireAdmin = false,
   requireSocio = false,
-  redirectTo = '/login' 
+  redirectTo = '/login'
 }) => {
-  const { isAuthenticated, isAdmin, isSocio, loading, user } = useAuth();
+  const { isAuthenticated, isAdmin, isSocio, loading } = useAuth();
 
-  // Mostrar loader mientras carga
   if (loading) {
     return <Loader fullScreen />;
   }
 
-  // Si no está autenticado, redirigir al login
+  // No autenticado → login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Si requiere admin y no lo es, redirigir
+  // Requiere admin y no lo es → panel público
   if (requireAdmin && !isAdmin) {
     return <Navigate to="/panel" replace />;
   }
 
-  // Si requiere socio y no es socio ni admin, redirigir
+  // Requiere socio y no es ni socio ni admin → login
+  // (ya no existe /mejorar-cuenta; el flujo es solicitar membresía desde /registro)
   if (requireSocio && !isSocio && !isAdmin) {
-    // Usuario básico intentando acceder a contenido de socios
-    return <Navigate to="/mejorar-cuenta" replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  // Tiene los permisos necesarios
   return children;
 };
 

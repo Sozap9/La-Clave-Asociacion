@@ -1,9 +1,24 @@
 import { useState } from "react";
+import {
+  Upload,
+  CheckCircle,
+  FileText,
+  User,
+  Lock,
+  Phone,
+  Calendar,
+  CreditCard,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import Button from "../components/common/Button";
 import DatePickerInput from "../components/common/DatePickerInput";
 import { NAV_ROUTES } from "../utils/constants";
+import { useLanguage } from "../context/LanguageContext";
 
 const Register = () => {
+  const { t } = useLanguage();
+
   const [formData, setFormData] = useState({
     username: "",
     nombre: "",
@@ -14,70 +29,131 @@ const Register = () => {
     telefono: "",
     fecha_nacimiento: "",
     dni: "",
+    motivacion: "",
+    artistQuestion: "",
   });
+
+  const [dniFront, setDniFront] = useState(null);
+  const [dniBack, setDniBack] = useState(null);
+  const [dniFrontPreview, setDniFrontPreview] = useState(null);
+  const [dniBackPreview, setDniBackPreview] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [successEmail, setSuccessEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (side) => (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    if (side === "front") {
+      setDniFront(file);
+      setDniFrontPreview(preview);
+    } else {
+      setDniBack(file);
+      setDniBackPreview(preview);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    // Validar que las contraseñas coincidan
     if (formData.password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      setLoading(false);
+      setError(t("register.errorPasswords"));
+      return;
+    }
+    if (!dniFront || !dniBack) {
+      setError(t("register.errorDni"));
       return;
     }
 
+    setLoading(true);
+
     try {
-      // Preparar datos SIN confirmPassword
-      const { confirmPassword, ...dataToSend } = formData;
+      const body = new FormData();
+      const combinedMotivacion = [
+        formData.motivacion
+          ? `¿Cómo nos conociste? ${formData.motivacion}`
+          : "",
+        formData.artistQuestion
+          ? `¿Eres artista? ${formData.artistQuestion}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      Object.entries(formData).forEach(([key, val]) => {
+        if (key !== "confirmPassword" && key !== "artistQuestion") {
+          body.append(key, key === "motivacion" ? combinedMotivacion : val);
+        }
+      });
+      body.append("dni_front", dniFront);
+      body.append("dni_back", dniBack);
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/register/basic`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dataToSend),
-        },
+        `${import.meta.env.VITE_API_URL}/auth/solicitud-socio`,
+        { method: "POST", body },
       );
-
       const data = await response.json();
 
       if (data.success) {
         setSuccess(true);
-        // Guardar tokens si vienen
-        if (data.data.accessToken) {
-          localStorage.setItem("accessToken", data.data.accessToken);
-          localStorage.setItem("refreshToken", data.data.refreshToken);
-        }
-        setTimeout(() => {
-          window.location.href = NAV_ROUTES.HOME;
-        }, 2000);
+        setSuccessEmail(data.data?.email || formData.email);
       } else {
-        setError(data.message || "Error al registrarse");
+        setError(data.message || "Error al enviar la solicitud");
       }
     } catch (err) {
       console.error("Error en registro:", err);
-      setError("Error de conexión. Intenta de nuevo.");
+      setError(t("register.errorConnection"));
     } finally {
       setLoading(false);
     }
   };
 
+  // ── Pantalla de éxito ────────────────────────────────────────────
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-20">
+        <div className="max-w-lg w-full text-center">
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle size={48} className="text-green-400" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-4">
+            {t("register.success.title")}
+          </h1>
+          <p className="text-gray-300 text-lg mb-3">
+            {t("register.success.text")}
+          </p>
+          <p className="text-gray-400 mb-8">
+            {t("register.success.emailSent")}{" "}
+            <span className="text-primary-400 font-semibold">
+              {successEmail}
+            </span>
+            . {t("register.success.emailInfo")}
+          </p>
+          <a
+            href={NAV_ROUTES.HOME}
+            className="inline-block bg-primary-600 hover:bg-primary-500 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
+          >
+            {t("register.success.backHome")}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Formulario ───────────────────────────────────────────────────
   return (
-    <div className="min-h-screen py-20 px-4 relative overflow-hidden">
+    <div className="min-h-screen py-16 px-4 relative overflow-hidden">
       {/* Fondo */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-black z-10" />
@@ -88,203 +164,314 @@ const Register = () => {
         />
       </div>
 
-      {/* Contenido */}
-      <div className="relative z-20 container-custom max-w-4xl">
-        {/* Texto Explicativo */}
-        <div className="text-center mb-12">
-          <p className="text-gray-300 text-lg leading-relaxed max-w-3xl mx-auto">
-            Únete a La Clave y disfruta de eventos exclusivos, descuentos y
-            mucho más.
-          </p>
-          <p className="text-gray-400 mt-4 leading-relaxed max-w-3xl mx-auto">
-            Regístrate como usuario básico de forma gratuita. Si quieres acceder
-            a los beneficios exclusivos de la Clave, registrate como socio y
-            disfruta de todas las ventajas.
+      <div className="relative z-20 container-custom max-w-2xl">
+        {/* Cabecera */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-display text-white mb-3">
+            {t("register.title")}
+          </h1>
+          <p className="text-gray-300 leading-relaxed">
+            {t("register.subtitle")}
           </p>
         </div>
 
-        {/* Formulario */}
-        <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20 max-w-xl mx-auto">
-          <h2 className="text-3xl font-bold text-white text-center mb-8">
-            Registro
-          </h2>
-
+        <div className="bg-gradient-to-br from-primary-600/20 via-primary-700/10 to-primary-800/20 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20">
           {error && (
-            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 text-sm">
               {error}
             </div>
           )}
 
-          {success && (
-            <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded-lg mb-6">
-              ¡Registro exitoso! Redirigiendo...
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Username */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Usuario</label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className="input col-span-2"
-                required
-              />
+            {/* ── Datos personales ── */}
+            <p className="text-primary-400 text-xs font-semibold uppercase tracking-widest flex items-center gap-2">
+              <User size={14} /> {t("register.sectionPersonal")}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">
+                  {t("register.name")} {t("register.required")}
+                </label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  className="input w-full"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">
+                  {t("register.surnames")} {t("register.required")}
+                </label>
+                <input
+                  type="text"
+                  name="apellidos"
+                  value={formData.apellidos}
+                  onChange={handleChange}
+                  className="input w-full"
+                  required
+                />
+              </div>
             </div>
 
-            {/* Nombre */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Nombre</label>
-              <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-                className="input col-span-2"
-                required
-              />
-            </div>
-
-            {/* Apellidos */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Apellidos</label>
-              <input
-                type="text"
-                name="apellidos"
-                value={formData.apellidos}
-                onChange={handleChange}
-                className="input col-span-2"
-                required
-              />
-            </div>
-
-            {/* Email */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="input col-span-2"
-                required
-              />
-            </div>
-
-            {/* Password */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right">Contraseña</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="input col-span-2"
-                minLength={8}
-                required
-              />
-            </div>
-
-            {/* Confirm Password */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right"> Confirmar </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="input col-span-2"
-                minLength={8}
-                required
-              />
-            </div>
-
-            {/* Teléfono */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right"> Teléfono </label>
-              <input
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                className="input col-span-2"
-                required
-              />
-            </div>
-
-            {/* Fecha Nacimiento */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right"> Fecha Nac. </label>
-              <DatePickerInput
-                selected={
-                  formData.fecha_nacimiento
-                    ? new Date(formData.fecha_nacimiento)
-                    : null
-                }
-                onChange={(date) => {
-                  if (date) {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, "0");
-                    const day = String(date.getDate()).padStart(2, "0");
-                    setFormData({
-                      ...formData,
-                      fecha_nacimiento: `${year}-${month}-${day}`,
-                    });
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">
+                  {t("register.phone")} {t("register.required")}
+                </label>
+                <input
+                  type="tel"
+                  name="telefono"
+                  value={formData.telefono}
+                  onChange={handleChange}
+                  className="input w-full"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-1">
+                  {t("register.birthdate")} {t("register.required")}
+                </label>
+                <DatePickerInput
+                  selected={
+                    formData.fecha_nacimiento
+                      ? new Date(formData.fecha_nacimiento)
+                      : null
                   }
-                }}
-                required
-                className="col-span-2"
-              />
+                  onChange={(date) => {
+                    if (date) {
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, "0");
+                      const d = String(date.getDate()).padStart(2, "0");
+                      setFormData({
+                        ...formData,
+                        fecha_nacimiento: `${y}-${m}-${d}`,
+                      });
+                    }
+                  }}
+                  required
+                />
+              </div>
             </div>
 
-            {/* DNI (solo texto) */}
-            <div className="grid grid-cols-3 items-center gap-4">
-              <label className="text-gray-300 text-right"> DNI/NIE </label>
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">
+                {t("register.dni")} {t("register.required")}
+              </label>
               <input
                 type="text"
                 name="dni"
                 value={formData.dni}
                 onChange={handleChange}
-                className="input col-span-2"
+                className="input w-full"
                 maxLength={9}
                 required
               />
             </div>
 
-            {/* Submit Button */}
-            <div className="pt-4">
+            {/* ── Cuenta ── */}
+            <p className="text-primary-400 text-xs font-semibold uppercase tracking-widest flex items-center gap-2 pt-2">
+              <Lock size={14} /> {t("register.sectionAccess")}
+            </p>
+
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">
+                {t("register.username")} {t("register.required")}
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className="input w-full"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">
+                {t("register.email")} {t("register.required")}
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="input w-full"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="relative">
+                <label className="block text-gray-400 text-sm mb-1">
+                  {t("register.password")} {t("register.required")}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="input w-full pr-10"
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+                <label className="block text-gray-400 text-sm mb-1">
+                  {t("register.confirmPassword")} {t("register.required")}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="input w-full pr-10"
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Preguntas ── */}
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">
+                {t("register.howDidYouFind")}
+              </label>
+              <textarea
+                name="motivacion"
+                value={formData.motivacion}
+                onChange={handleChange}
+                rows={2}
+                className="input w-full resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-400 text-sm mb-1">
+                {t("register.artistQuestion")}
+              </label>
+              <textarea
+                name="artistQuestion"
+                value={formData.artistQuestion}
+                onChange={handleChange}
+                rows={2}
+                className="input w-full resize-none"
+              />
+            </div>
+
+            {/* ── DNI fotos ── */}
+            <p className="text-primary-400 text-xs font-semibold uppercase tracking-widest flex items-center gap-2 pt-2">
+              <CreditCard size={14} /> {t("register.sectionIdentity")}
+            </p>
+            <p className="text-gray-400 text-sm -mt-3">
+              {t("register.identityHelp")}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Cara delantera */}
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">
+                  {t("register.dniSideA")} {t("register.required")}
+                </label>
+                <label className="cursor-pointer block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange("front")}
+                    required
+                  />
+                  {dniFrontPreview ? (
+                    <img
+                      src={dniFrontPreview}
+                      alt="DNI delantera"
+                      className="w-full h-32 object-cover rounded-xl border-2 border-primary-500/50"
+                    />
+                  ) : (
+                    <div className="w-full h-32 border-2 border-dashed border-gray-600 hover:border-primary-500 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors">
+                      <Upload size={24} className="text-gray-500" />
+                      <span className="text-gray-500 text-sm">
+                        {t("register.uploadImage")}
+                      </span>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {/* Cara trasera */}
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">
+                  {t("register.dniSideB")} {t("register.required")}
+                </label>
+                <label className="cursor-pointer block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange("back")}
+                    required
+                  />
+                  {dniBackPreview ? (
+                    <img
+                      src={dniBackPreview}
+                      alt="DNI trasera"
+                      className="w-full h-32 object-cover rounded-xl border-2 border-primary-500/50"
+                    />
+                  ) : (
+                    <div className="w-full h-32 border-2 border-dashed border-gray-600 hover:border-primary-500 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors">
+                      <Upload size={24} className="text-gray-500" />
+                      <span className="text-gray-500 text-sm">
+                        {t("register.uploadImage")}
+                      </span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            {/* ── Submit ── */}
+            <div className="pt-2">
               <Button
                 type="submit"
                 variant="primary"
                 disabled={loading}
                 className="w-full"
               >
-                {loading ? "Registrando..." : "Registrarse"}
+                {loading ? t("register.loading") : t("register.submit")}
               </Button>
             </div>
           </form>
 
-          {/* Links */}
-          <div className="mt-6 space-y-2 text-center">
-            <p className="text-gray-400">
-              ¿Ya tienes cuenta?{" "}
+          <div className="mt-6 text-center">
+            <p className="text-gray-400 text-sm">
+              {t("register.hasAccount")}{" "}
               <a
                 href={NAV_ROUTES.LOGIN}
                 className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
               >
-                Inicia sesión aquí
-              </a>
-            </p>
-            <p className="text-gray-400">
-              ¿Quieres unirte como socio?{" "}
-              <a
-                href={NAV_ROUTES.REGISTER_SOCIO}
-                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
-              >
-                Regístrate aquí.
+                {t("register.loginLink")}
               </a>
             </p>
           </div>

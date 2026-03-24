@@ -1,4 +1,4 @@
-import { query } from '../config/database.js';
+import { query } from "../config/database.js";
 
 /**
  * Modelo Socio - Manejo de la tabla socios
@@ -21,7 +21,7 @@ class Socio {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findById:', error);
+      console.error("Error en findById:", error);
       throw error;
     }
   }
@@ -43,7 +43,7 @@ class Socio {
       const results = await query(sql, [userId]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findByUserId:', error);
+      console.error("Error en findByUserId:", error);
       throw error;
     }
   }
@@ -55,11 +55,11 @@ class Socio {
    */
   static async findByNumeroSocio(numeroSocio) {
     try {
-      const sql = 'SELECT * FROM socios WHERE numero_socio = ? LIMIT 1';
+      const sql = "SELECT * FROM socios WHERE numero_socio = ? LIMIT 1";
       const results = await query(sql, [numeroSocio]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findByNumeroSocio:', error);
+      console.error("Error en findByNumeroSocio:", error);
       throw error;
     }
   }
@@ -76,7 +76,7 @@ class Socio {
         stripe_customer_id,
         stripe_subscription_id,
         payment_method_id,
-        cuota_mensual = 10.00
+        cuota_mensual = 10.0,
       } = socioData;
 
       // El número de socio y fechas se generan automáticamente por triggers
@@ -96,15 +96,15 @@ class Socio {
         stripe_customer_id,
         stripe_subscription_id,
         payment_method_id,
-        cuota_mensual
+        cuota_mensual,
       ];
 
       const result = await query(sql, values);
-      
+
       // Obtener el socio recién creado
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error('Error en create:', error);
+      console.error("Error en create:", error);
       throw error;
     }
   }
@@ -118,18 +118,18 @@ class Socio {
   static async update(id, updateData) {
     try {
       const allowedFields = [
-        'cuota_mensual',
-        'estado',
-        'dias_morosidad',
-        'notas',
-        'stripe_subscription_id',
-        'payment_method_id'
+        "cuota_mensual",
+        "estado",
+        "dias_morosidad",
+        "notas",
+        "stripe_subscription_id",
+        "payment_method_id",
       ];
 
       const fields = [];
       const values = [];
 
-      Object.keys(updateData).forEach(key => {
+      Object.keys(updateData).forEach((key) => {
         if (allowedFields.includes(key) && updateData[key] !== undefined) {
           fields.push(`${key} = ?`);
           values.push(updateData[key]);
@@ -137,17 +137,17 @@ class Socio {
       });
 
       if (fields.length === 0) {
-        throw new Error('No hay campos válidos para actualizar');
+        throw new Error("No hay campos válidos para actualizar");
       }
 
       values.push(id);
 
-      const sql = `UPDATE socios SET ${fields.join(', ')} WHERE id = ?`;
+      const sql = `UPDATE socios SET ${fields.join(", ")} WHERE id = ?`;
       await query(sql, values);
 
       return await this.findById(id);
     } catch (error) {
-      console.error('Error en update:', error);
+      console.error("Error en update:", error);
       throw error;
     }
   }
@@ -161,13 +161,92 @@ class Socio {
     try {
       const sql = `
         UPDATE socios 
-        SET estado = 'cancelado', fecha_cancelacion = CURDATE()
+        SET estado = 'inactivo', fecha_baja = CURDATE()
         WHERE id = ?
       `;
       await query(sql, [id]);
       return await this.findById(id);
     } catch (error) {
-      console.error('Error en cancel:', error);
+      console.error("Error en cancel:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Dar de baja a un socio (marcar como cancelado y anotar motivo)
+   * @param {Number} id - ID del socio
+   * @param {String} motivo - Motivo de la baja
+   * @returns {Object} Socio actualizado
+   */
+  static async darDeBaja(id, motivo = null) {
+    try {
+      // Primero obtener el socio para tener el user_id
+      const socio = await this.findById(id);
+      if (!socio) {
+        throw new Error("Socio no encontrado");
+      }
+
+      // Actualizar tabla socios
+      let sql = `
+        UPDATE socios
+        SET estado = 'inactivo',
+            fecha_baja = CURDATE()
+      `;
+      const params = [];
+
+      if (motivo) {
+        sql += `, motivo_baja = ?`;
+        sql += `, notas_admin = CONCAT(IFNULL(notas_admin, ''), '\n', ?)`;
+        params.push(motivo, motivo);
+      }
+
+      sql += ` WHERE id = ?`;
+      params.push(id);
+
+      await query(sql, params);
+
+      // Actualizar tabla users para marcar como inactivo
+      const userSql = `UPDATE users SET activo = false WHERE id = ?`;
+      await query(userSql, [socio.user_id]);
+
+      return await this.findById(id);
+    } catch (error) {
+      console.error("Error en darDeBaja:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reactivar a un socio (volver a activo)
+   * @param {Number} id - ID del socio
+   * @returns {Object} Socio actualizado
+   */
+  static async reactivar(id) {
+    try {
+      // Primero obtener el socio para tener el user_id
+      const socio = await this.findById(id);
+      if (!socio) {
+        throw new Error("Socio no encontrado");
+      }
+
+      // Actualizar tabla socios
+      const sql = `
+        UPDATE socios
+        SET estado = 'activo',
+            fecha_baja = NULL,
+            dias_morosidad = 0,
+            motivo_baja = NULL
+        WHERE id = ?
+      `;
+      await query(sql, [id]);
+
+      // Actualizar tabla users para marcar como activo
+      const userSql = `UPDATE users SET activo = true WHERE id = ?`;
+      await query(userSql, [socio.user_id]);
+
+      return await this.findById(id);
+    } catch (error) {
+      console.error("Error en reactivar:", error);
       throw error;
     }
   }
@@ -179,12 +258,12 @@ class Socio {
    */
   static async delete(id) {
     try {
-      // Primero cambiar estado a cancelado
+      // Primero cambiar estado a inactivo
       await this.cancel(id);
       // En este caso, no eliminamos físicamente, solo cancelamos
       return true;
     } catch (error) {
-      console.error('Error en delete:', error);
+      console.error("Error en delete:", error);
       throw error;
     }
   }
@@ -203,7 +282,7 @@ class Socio {
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const offset = (pageNum - 1) * limitNum;
-      
+
       let sql = `
         SELECT 
           s.*, 
@@ -211,36 +290,36 @@ class Socio {
         FROM socios s
         INNER JOIN users u ON s.user_id = u.id
       `;
-      
+
       const params = [];
-      
+
       if (estado) {
-        sql += ' WHERE s.estado = ?';
+        sql += " WHERE s.estado = ?";
         params.push(estado);
       }
-      
+
       // Usar interpolación directa en lugar de placeholders
       sql += ` ORDER BY s.fecha_alta DESC LIMIT ${limitNum} OFFSET ${offset}`;
-      
+
       const socios = await query(sql, params);
-      
+
       // Contar total
-      let countSql = 'SELECT COUNT(*) as total FROM socios';
+      let countSql = "SELECT COUNT(*) as total FROM socios";
       if (estado) {
-        countSql += ' WHERE estado = ?';
+        countSql += " WHERE estado = ?";
       }
       const countParams = estado ? [estado] : [];
       const countResult = await query(countSql, countParams);
       const total = countResult[0].total;
-      
+
       return {
         socios,
         total,
         page: pageNum,
-        pages: Math.ceil(total / limitNum)
+        pages: Math.ceil(total / limitNum),
       };
     } catch (error) {
-      console.error('Error en list:', error);
+      console.error("Error en list:", error);
       throw error;
     }
   }
@@ -268,19 +347,19 @@ class Socio {
         ORDER BY s.fecha_alta DESC
         LIMIT 50
       `;
-      
+
       const searchPattern = `%${searchTerm}%`;
       const results = await query(sql, [
         searchPattern,
         searchPattern,
         searchPattern,
         searchPattern,
-        searchPattern
+        searchPattern,
       ]);
-      
+
       return results;
     } catch (error) {
-      console.error('Error en search:', error);
+      console.error("Error en search:", error);
       throw error;
     }
   }
@@ -301,11 +380,112 @@ class Socio {
         WHERE s.estado = 'moroso' OR s.dias_morosidad > 0
         ORDER BY s.dias_morosidad DESC, s.fecha_alta DESC
       `;
-      
+
       const results = await query(sql);
       return results;
     } catch (error) {
-      console.error('Error en getMorosos:', error);
+      console.error("Error en getMorosos:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verificar si se puede crear un nuevo socio (límite configurable)
+   * @param {Number} limite - Máximo de socios activos permitidos
+   * @returns {Boolean}
+   */
+  static async puedeCrearNuevoSocio(limite = parseInt(process.env.MAX_SOCIOS_ACTIVOS || '10000', 10)) {
+    try {
+      const sql = `SELECT COUNT(*) as total FROM socios WHERE estado = 'activo'`;
+      const result = await query(sql);
+      const total = result[0]?.total || 0;
+      return total < limite;
+    } catch (error) {
+      console.error('Error en puedeCrearNuevoSocio:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Registrar pago exitoso para un socio
+   * @param {Number} id - ID del socio
+   * @returns {Object} Socio actualizado
+   */
+  static async registrarPagoExitoso(id) {
+    try {
+      await query(
+        `
+        UPDATE socios
+        SET pagos_fallidos = 0,
+            dias_morosidad = 0,
+            ultimo_pago = NOW(),
+            estado = 'activo'
+        WHERE id = ?
+      `,
+        [id]
+      );
+
+      return this.findById(id);
+    } catch (error) {
+      console.error('Error en registrarPagoExitoso:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Incrementar contador de pagos fallidos para un socio
+   * @param {Number} id - ID del socio
+   * @returns {Object} Socio actualizado
+   */
+  static async incrementarPagosFallidos(id) {
+    try {
+      const socio = await this.findById(id);
+      if (!socio) {
+        throw new Error('Socio no encontrado');
+      }
+
+      const pagosFail = (socio.pagos_fallidos || 0) + 1;
+      const nuevoEstado = pagosFail >= 3 ? 'moroso' : socio.estado || 'activo';
+      const diasMorosidad = nuevoEstado === 'moroso' ? Math.max(socio.dias_morosidad || 0, 1) : socio.dias_morosidad || 0;
+
+      await query(
+        `
+        UPDATE socios 
+        SET pagos_fallidos = ?,
+            estado = ?,
+            dias_morosidad = ?
+        WHERE id = ?
+      `,
+        [pagosFail, nuevoEstado, diasMorosidad, id]
+      );
+
+      return this.findById(id);
+    } catch (error) {
+      console.error('Error en incrementarPagosFallidos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Marcar socio como moroso
+   * @param {Number} id - ID del socio
+   * @returns {Object} Socio actualizado
+   */
+  static async marcarComoMoroso(id) {
+    try {
+      await query(
+        `
+        UPDATE socios
+        SET estado = 'moroso',
+            dias_morosidad = GREATEST(COALESCE(dias_morosidad, 0), 1)
+        WHERE id = ?
+      `,
+        [id]
+      );
+
+      return this.findById(id);
+    } catch (error) {
+      console.error('Error en marcarComoMoroso:', error);
       throw error;
     }
   }
@@ -324,7 +504,7 @@ class Socio {
           SELECT socio_id, 
           DATEDIFF(CURDATE(), MAX(fecha_pago)) as dias_sin_pago
           FROM payments
-          WHERE estado = 'completado'
+          WHERE estado IN ('exitoso', 'completado')
           GROUP BY socio_id
         ) p ON s.id = p.socio_id
         SET s.dias_morosidad = GREATEST(0, p.dias_sin_pago - 30),
@@ -332,17 +512,17 @@ class Socio {
               WHEN p.dias_sin_pago > 30 THEN 'moroso'
               ELSE s.estado
             END
-        WHERE s.estado = 'activo' OR s.estado = 'moroso'
+        WHERE s.estado IN ('activo', 'moroso')
       `;
-      
+
       const result = await query(sql);
-      
+
       return {
         updated: result.affectedRows,
-        message: `Actualizado estado de morosidad de ${result.affectedRows} socios`
+        message: `Actualizado estado de morosidad de ${result.affectedRows} socios`,
       };
     } catch (error) {
-      console.error('Error en updateMorosidad:', error);
+      console.error("Error en updateMorosidad:", error);
       throw error;
     }
   }

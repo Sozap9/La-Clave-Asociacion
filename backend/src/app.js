@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import logger from "./config/logger.js";
 import httpLogger from "./middleware/httpLogger.js";
+import CronService from "./services/cronService.js"; // ✨ NUEVO
 
 // __dirname CONFIGURATION FOR ES MODULES
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +25,7 @@ app.set('trust proxy', 1);
 
 /**
  * 1. HELMET - Security headers
- * ✅ CORRECCIÓN: Permitir cross-origin para imágenes
+ * Permitir cross-origin para imágenes
  */
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -180,5 +181,15 @@ app.use((err, req, res, next) => {
     })
   });
 });
+
+// ══════════════════════════════════════════════════════════════
+// TAREAS PROGRAMADAS (CRON)
+// Se inicializan aquí, después de que todas las rutas y
+// middlewares estén registrados, pero antes del export.
+// Solo se activan si no estamos en entorno de test.
+// ══════════════════════════════════════════════════════════════
+if (process.env.NODE_ENV !== 'test') {
+  CronService.init();
+}
 
 export default app;

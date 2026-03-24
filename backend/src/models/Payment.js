@@ -18,7 +18,7 @@ class Payment {
         amount,
         currency = "EUR",
         estado = "pendiente",
-        tipo_pago = "cuota_mensual",
+        tipo = "cuota_mensual",
         descripcion,
         fecha_vencimiento,
         metadata = {},
@@ -27,7 +27,7 @@ class Payment {
       const sql = `
         INSERT INTO payments (
           socio_id, stripe_payment_id, stripe_invoice_id, amount, currency,
-          estado, tipo_pago, descripcion, fecha_vencimiento, metadata
+          estado, tipo, descripcion, fecha_vencimiento, metadata
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
@@ -41,7 +41,7 @@ class Payment {
         amount,
         currency,
         estado,
-        tipo_pago,
+        tipo,
         descripcion,
         fecha_vencimiento,
         metadataJson,
@@ -120,8 +120,8 @@ class Payment {
       }
 
       if (tipo_pago) {
-        sql += " AND tipo_pago = ?";
-        params.push(tipo_pago);
+        sql += " AND (tipo_pago = ? OR tipo = ?)";
+        params.push(tipo_pago, tipo_pago);
       }
 
       sql += ` ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
@@ -139,8 +139,8 @@ class Payment {
         countParams.push(estado);
       }
       if (tipo_pago) {
-        countSql += " AND tipo_pago = ?";
-        countParams.push(tipo_pago);
+        countSql += " AND (tipo_pago = ? OR tipo = ?)";
+        countParams.push(tipo_pago, tipo_pago);
       }
 
       const countResult = await query(countSql, countParams);
@@ -171,8 +171,8 @@ class Payment {
       const updates = ["estado = ?"];
       const params = [estado];
 
-      // Agregar fecha_pago si cambia a completado
-      if (estado === "completado") {
+      // Agregar fecha_pago si cambia a completado o exitoso
+      if (estado === "completado" || estado === "exitoso") {
         updates.push("fecha_pago = NOW()");
       }
 
@@ -235,10 +235,10 @@ class Payment {
         SELECT
           DATE_FORMAT(fecha_pago, '%Y-%m') as mes,
           COUNT(*) as total_transacciones,
-          SUM(amount) as total_ingresos,
+          SUM(COALESCE(amount, monto, 0)) as total_ingresos,
           COUNT(DISTINCT socio_id) as socios_pagaron
         FROM payments
-        WHERE estado = 'completado'
+        WHERE estado IN ('exitoso', 'completado')
         AND fecha_pago >= DATE_SUB(NOW(), INTERVAL ? MONTH)
         GROUP BY DATE_FORMAT(fecha_pago, '%Y-%m')
         ORDER BY mes DESC
@@ -381,7 +381,7 @@ class Payment {
       const sql = `
         SELECT * FROM payments
         WHERE socio_id = ?
-        AND estado = 'completado'
+        AND estado IN ('exitoso', 'completado')
         AND fecha_pago BETWEEN ? AND ?
         ORDER BY fecha_pago DESC
       `;

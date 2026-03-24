@@ -1,34 +1,10 @@
-/**
- * ARCHIVO MODIFICADO: AdminSidebar.jsx
- * 
- * CAMBIOS PRINCIPALES:
- * 
- * 1. RESPONSIVE:
- *    - Ahora recibe props: isOpen, onClose
- *    - Overlay oscuro en móvil
- *    - Botón X para cerrar (solo móvil)
- *    - Transiciones suaves
- *    - Fixed en móvil, sticky en desktop
- * 
- * 2. REORGANIZACIÓN DEL MENÚ:
- *    - Estadísticas de Eventos movidas a "Gestión Eventos"
- *    - Estadísticas de Reservas movidas a "Gestión Reservas"
- *    - Estadísticas de Pagos movidas a "Gestión Pagos"
- *    - "Menú y Estadísticas" ahora solo tiene: Actividad, Dashboard Stats, Generales
- * 
- * 3. FUNCIONALIDADES AÑADIDAS:
- *    - Cierre automático al cambiar de ruta
- *    - Prevención de scroll del body cuando está abierto
- *    - Click en overlay cierra el menú
- */
-
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  Users, 
+import {
+  LayoutDashboard,
+  Calendar,
+  Users,
   UserCheck,
   Ticket,
   CreditCard,
@@ -38,143 +14,114 @@ import {
   LogOut,
   Home,
   FileText,
-  X
+  X,
+  ClipboardList,
 } from 'lucide-react';
 import SidebarSection from './SidebarSection';
+import { getSolicitudesPendientesCount } from '../../api/adminApi';
 
 const AdminSidebar = ({ isOpen, onClose }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Estado para controlar qué menú está abierto
+
   const [openMenu, setOpenMenu] = useState(null);
+  const [pendientesCount, setPendientesCount] = useState(0);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  // ── Badge: contar solicitudes pendientes ──────────────────────────
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const res = await getSolicitudesPendientesCount();
+        if (res.success) setPendientesCount(res.data.total || 0);
+      } catch { /* silencioso */ }
+    };
+    fetchCount();
+    // Refrescar cada 60 s mientras el sidebar está montado
+    const interval = setInterval(fetchCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
-  // ========================================
-  // REORGANIZACIÓN: "Menú y Estadísticas" 
-  // Solo contiene items generales
-  // ========================================
+  const handleLogout = () => { logout(); navigate('/'); };
+
+  // ── Menús ─────────────────────────────────────────────────────────
   const statsItems = [
-    { path: '/admin/actividad', label: 'Actividad Reciente', icon: BarChart3 },
-    { path: '/admin/stats/dashboard', label: 'Dashboard Stats', icon: BarChart3 },
-    { path: '/admin/stats/generales', label: 'Generales', icon: BarChart3 }
+    { path: '/admin/actividad',      label: 'Actividad Reciente', icon: BarChart3 },
+    { path: '/admin/stats/dashboard',label: 'Dashboard Stats',    icon: BarChart3 },
+    { path: '/admin/stats/generales',label: 'Generales',          icon: BarChart3 },
   ];
 
-  // Gestión Usuarios
   const usersItems = [
-    { path: '/admin/usuarios', label: 'Listar usuarios', icon: Users }
+    { path: '/admin/usuarios', label: 'Listar usuarios', icon: Users },
   ];
 
-  // Gestión Socios
   const sociosItems = [
-    { path: '/admin/socios', label: 'Listar socios', icon: UserCheck },
-    { path: '/admin/socios/morosos', label: 'Socios morosos', icon: UserCheck },
-    { path: '/admin/socios/crear', label: 'Crear socio manual', icon: UserCheck }
+    { path: '/admin/socios',         label: 'Listar socios',     icon: UserCheck },
+    { path: '/admin/socios/morosos', label: 'Socios morosos',    icon: UserCheck },
+    { path: '/admin/socios/crear',   label: 'Crear socio manual',icon: UserCheck },
   ];
 
-  // ========================================
-  // REORGANIZACIÓN: Gestión Eventos
-  // Añadida "Estadísticas" aquí
-  // ========================================
+  const solicitudesItems = [
+    { path: '/admin/solicitudes', label: 'Solicitudes de socio', icon: ClipboardList },
+  ];
+
   const eventosItems = [
-    { path: '/admin/eventos', label: 'Listar eventos', icon: Calendar },
-    { path: '/admin/eventos/borradores', label: 'Borradores', icon: FileText },
-    { path: '/admin/eventos/nuevo', label: 'Crear evento', icon: Calendar },
-    { path: '/admin/stats/eventos', label: 'Estadísticas', icon: BarChart3 } // NUEVO
+    { path: '/admin/eventos',           label: 'Listar eventos', icon: Calendar  },
+    { path: '/admin/eventos/borradores',label: 'Borradores',     icon: FileText  },
+    { path: '/admin/eventos/nuevo',     label: 'Crear evento',   icon: Calendar  },
+    { path: '/admin/stats/eventos',     label: 'Estadísticas',   icon: BarChart3 },
   ];
 
-  // ========================================
-  // REORGANIZACIÓN: Gestión Reservas
-  // Añadida "Estadísticas" aquí
-  // ========================================
   const reservasItems = [
-    { path: '/admin/reservas', label: 'Listar reservas', icon: Ticket },
-    { path: '/admin/reservas/verificar-qr', label: 'Verificar QR', icon: Ticket },
-    { path: '/admin/stats/reservas', label: 'Estadísticas', icon: BarChart3 } // NUEVO
+    { path: '/admin/reservas',               label: 'Listar reservas', icon: Ticket    },
+    { path: '/admin/reservas/verificar-qr',  label: 'Verificar QR',   icon: Ticket    },
+    { path: '/admin/stats/reservas',         label: 'Estadísticas',   icon: BarChart3 },
   ];
 
-  // ========================================
-  // REORGANIZACIÓN: Gestión Pagos
-  // Añadida "Estadísticas" aquí
-  // ========================================
   const pagosItems = [
-    { path: '/admin/pagos', label: 'Listar pagos', icon: CreditCard },
-    { path: '/admin/pagos/mensuales', label: 'Ingresos mensuales', icon: CreditCard },
-    { path: '/admin/stats/pagos', label: 'Estadísticas', icon: BarChart3 } // NUEVO
+    { path: '/admin/pagos',          label: 'Listar pagos',      icon: CreditCard },
+    { path: '/admin/pagos/mensuales',label: 'Ingresos mensuales',icon: CreditCard },
+    { path: '/admin/stats/pagos',    label: 'Estadísticas',      icon: BarChart3  },
   ];
 
-  // ========================================
-  // REORGANIZACIÓN: Gestión Galería
-  // Reordenado: Gestión primero, estadísticas después
-  // ========================================
   const galeriaItems = [
-    { path: '/admin/galeria', label: 'Gestionar Álbumes', icon: Image },
-    { path: '/admin/stats/galeria', label: 'Estadísticas', icon: BarChart3 }
+    { path: '/admin/galeria',          label: 'Gestionar Álbumes',icon: Image    },
+    { path: '/admin/stats/galeria',    label: 'Estadísticas',    icon: BarChart3 },
   ];
 
-  // Exportaciones
   const exportItems = [
-    { path: '/admin/export/socios', label: 'Exportar socios ', icon: FileDown },
-    { path: '/admin/export/reservas', label: 'Exportar reservas', icon: FileDown },
-    { path: '/admin/export/usuarios', label: 'Exportar usuarios', icon: FileDown },
-    { path: '/admin/export/eventos', label: 'Exportar eventos', icon: FileDown }
+    { path: '/admin/export/socios',   label: 'Exportar socios',  icon: FileDown },
+    { path: '/admin/export/reservas', label: 'Exportar reservas',icon: FileDown },
+    { path: '/admin/export/usuarios', label: 'Exportar usuarios',icon: FileDown },
+    { path: '/admin/export/eventos',  label: 'Exportar eventos', icon: FileDown },
   ];
 
-  // Función para manejar apertura/cierre de menús
-  const handleMenuToggle = (menuId) => {
-    setOpenMenu(openMenu === menuId ? null : menuId);
-  };
+  const handleMenuToggle = (menuId) => setOpenMenu(openMenu === menuId ? null : menuId);
 
-  // Determinar qué menú debe estar abierto según la ruta actual
   const getActiveMenu = () => {
     if (location.pathname.startsWith('/admin/stats') || location.pathname === '/admin/actividad') return 'stats';
-    if (location.pathname.startsWith('/admin/usuarios')) return 'users';
-    if (location.pathname.startsWith('/admin/socios')) return 'socios';
-    if (location.pathname.startsWith('/admin/eventos')) return 'eventos';
-    if (location.pathname.startsWith('/admin/reservas')) return 'reservas';
-    if (location.pathname.startsWith('/admin/pagos')) return 'pagos';
-    if (location.pathname.startsWith('/admin/galeria')) return 'galeria';
-    if (location.pathname.startsWith('/admin/export')) return 'exports';
+    if (location.pathname.startsWith('/admin/usuarios'))    return 'users';
+    if (location.pathname.startsWith('/admin/socios'))      return 'socios';
+    if (location.pathname.startsWith('/admin/solicitudes')) return 'solicitudes';
+    if (location.pathname.startsWith('/admin/eventos'))     return 'eventos';
+    if (location.pathname.startsWith('/admin/reservas'))    return 'reservas';
+    if (location.pathname.startsWith('/admin/pagos'))       return 'pagos';
+    if (location.pathname.startsWith('/admin/galeria'))     return 'galeria';
+    if (location.pathname.startsWith('/admin/export'))      return 'exports';
     return null;
   };
 
   const activeMenu = getActiveMenu();
 
-  // ========================================
-  // NUEVO: Cerrar sidebar en móvil al cambiar de ruta
-  // ========================================
-  useEffect(() => {
-    if (onClose) {
-      onClose();
-    }
-  }, [location.pathname]);
+  useEffect(() => { if (onClose) onClose(); }, [location.pathname]);
 
-  // ========================================
-  // NUEVO: Prevenir scroll del body cuando el sidebar está abierto en móvil
-  // ========================================
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    // Cleanup: restaurar scroll al desmontar
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    document.body.style.overflow = isOpen ? 'hidden' : 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   return (
     <>
-      {/* ========================================
-          NUEVO: Overlay - solo visible en móvil cuando el menú está abierto
-          ======================================== */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/70 z-40 md:hidden animate-fade-in"
@@ -183,25 +130,18 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         />
       )}
 
-      {/* ========================================
-          Sidebar Principal
-          ======================================== */}
       <aside
         className={`
           fixed md:sticky top-0 left-0 h-screen z-50
-          w-64 bg-[#0a0a0a] border-r border-[#262626] 
+          w-64 bg-[#0a0a0a] border-r border-[#262626]
           flex flex-col
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        {/* ========================================
-            Header con botón cerrar
-            ======================================== */}
+        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#262626]">
           <h2 className="text-2xl font-display text-white">Panel Admin</h2>
-          
-          {/* NUEVO: Botón cerrar - solo visible en móvil */}
           <button
             onClick={onClose}
             className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-[#1a1a1a] rounded-lg transition-colors"
@@ -211,20 +151,18 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Botón Volver a la Web */}
-        <a 
-          href="/" 
+        {/* Volver a la web */}
+        <a
+          href="/"
           className="flex items-center gap-3 px-6 py-4 text-gray-400 hover:text-white hover:bg-[#1a1a1a] transition-all border-b border-[#262626]"
         >
           <Home size={20} />
           <span className="font-medium">Volver a la Web</span>
         </a>
 
-        {/* ========================================
-            Navigation
-            ======================================== */}
+        {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-4">
-          {/* Dashboard Principal */}
+          {/* Dashboard */}
           <NavLink
             to="/admin"
             end
@@ -240,81 +178,103 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             <span className="font-medium">Dashboard</span>
           </NavLink>
 
-          {/* Secciones Colapsables */}
           <div className="space-y-2">
-            {/* REORGANIZADO: Menú y Estadísticas - Solo items generales */}
-            <SidebarSection 
-              id="stats"
-              title="Menú y Estadísticas" 
-              icon={BarChart3} 
-              items={statsItems}
+            <SidebarSection
+              id="stats" title="Menú y Estadísticas" icon={BarChart3} items={statsItems}
               isOpen={openMenu === 'stats' || (openMenu === null && activeMenu === 'stats')}
               onToggle={() => handleMenuToggle('stats')}
             />
-            
-            <SidebarSection 
-              id="users"
-              title="Gestión Usuarios" 
-              icon={Users} 
-              items={usersItems}
+
+            <SidebarSection
+              id="users" title="Gestión Usuarios" icon={Users} items={usersItems}
               isOpen={openMenu === 'users' || (openMenu === null && activeMenu === 'users')}
               onToggle={() => handleMenuToggle('users')}
             />
-            
-            <SidebarSection 
-              id="socios"
-              title="Gestión Socios" 
-              icon={UserCheck} 
-              items={sociosItems}
+
+            <SidebarSection
+              id="socios" title="Gestión Socios" icon={UserCheck} items={sociosItems}
               isOpen={openMenu === 'socios' || (openMenu === null && activeMenu === 'socios')}
               onToggle={() => handleMenuToggle('socios')}
             />
-            
-            {/* REORGANIZADO: Gestión Eventos - Ahora incluye Estadísticas */}
-            <SidebarSection 
-              id="eventos"
-              title="Gestión Eventos" 
-              icon={Calendar} 
-              items={eventosItems}
+
+            {/* ── Solicitudes con badge ── */}
+            <div className="mb-2">
+              <button
+                onClick={() => handleMenuToggle('solicitudes')}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                  activeMenu === 'solicitudes'
+                    ? 'bg-gray-800 text-white'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <ClipboardList size={20} className="flex-shrink-0" />
+                  <span className="font-medium truncate">Solicitudes</span>
+                  {pendientesCount > 0 && (
+                    <span className="ml-1 min-w-[20px] h-5 px-1.5 bg-yellow-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
+                      {pendientesCount > 99 ? '99+' : pendientesCount}
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {/* Submenú (siempre abierto al hacer clic, o si la ruta está activa) */}
+              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                openMenu === 'solicitudes' || (openMenu === null && activeMenu === 'solicitudes')
+                  ? 'max-h-40 opacity-100 mt-1'
+                  : 'max-h-0 opacity-0'
+              }`}>
+                <div className="ml-4 space-y-1 border-l-2 border-gray-800 pl-2">
+                  <NavLink
+                    to="/admin/solicitudes"
+                    className={({ isActive }) =>
+                      `flex items-center justify-between gap-3 px-4 py-2 rounded-lg text-sm transition-colors ${
+                        isActive
+                          ? 'bg-primary-600 text-white'
+                          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      }`
+                    }
+                  >
+                    <span className="flex items-center gap-3">
+                      <ClipboardList size={16} className="flex-shrink-0" />
+                      <span className="truncate">Solicitudes de socio</span>
+                    </span>
+                    {pendientesCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 bg-yellow-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
+                        {pendientesCount > 99 ? '99+' : pendientesCount}
+                      </span>
+                    )}
+                  </NavLink>
+                </div>
+              </div>
+            </div>
+
+            <SidebarSection
+              id="eventos" title="Gestión Eventos" icon={Calendar} items={eventosItems}
               isOpen={openMenu === 'eventos' || (openMenu === null && activeMenu === 'eventos')}
               onToggle={() => handleMenuToggle('eventos')}
             />
-            
-            {/* REORGANIZADO: Gestión Reservas - Ahora incluye Estadísticas */}
-            <SidebarSection 
-              id="reservas"
-              title="Gestión Reservas" 
-              icon={Ticket} 
-              items={reservasItems}
+
+            <SidebarSection
+              id="reservas" title="Gestión Reservas" icon={Ticket} items={reservasItems}
               isOpen={openMenu === 'reservas' || (openMenu === null && activeMenu === 'reservas')}
               onToggle={() => handleMenuToggle('reservas')}
             />
-            
-            {/* REORGANIZADO: Gestión Pagos - Ahora incluye Estadísticas */}
-            <SidebarSection 
-              id="pagos"
-              title="Gestión Pagos" 
-              icon={CreditCard} 
-              items={pagosItems}
+
+            <SidebarSection
+              id="pagos" title="Gestión Pagos" icon={CreditCard} items={pagosItems}
               isOpen={openMenu === 'pagos' || (openMenu === null && activeMenu === 'pagos')}
               onToggle={() => handleMenuToggle('pagos')}
             />
-            
-            {/* REORGANIZADO: Gestión Galería - Reordenado */}
-            <SidebarSection 
-              id="galeria"
-              title="Gestión Galería" 
-              icon={Image} 
-              items={galeriaItems}
+
+            <SidebarSection
+              id="galeria" title="Gestión Galería" icon={Image} items={galeriaItems}
               isOpen={openMenu === 'galeria' || (openMenu === null && activeMenu === 'galeria')}
               onToggle={() => handleMenuToggle('galeria')}
             />
-            
-            <SidebarSection 
-              id="exports"
-              title="Exportaciones" 
-              icon={FileDown} 
-              items={exportItems}
+
+            <SidebarSection
+              id="exports" title="Exportaciones" icon={FileDown} items={exportItems}
               isOpen={openMenu === 'exports' || (openMenu === null && activeMenu === 'exports')}
               onToggle={() => handleMenuToggle('exports')}
             />

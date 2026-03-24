@@ -12,29 +12,15 @@ import {
 } from '../config/payment.js';
 
 /**
- * Upgrade de usuario básico a socio
+ * Upgrade de usuario básico a socio (DEPRECATED)
  * POST /api/socios/upgrade
  */
 export const upgradeToSocio = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { paymentMethodId } = req.body;
-
-    // Validaciones
-    if (!paymentMethodId) {
-      return res.status(400).json({
-        success: false,
-        message: 'El método de pago es obligatorio'
-      });
-    }
-
-    // Verificar que el usuario es básico
-    if (req.user.role !== 'basico') {
-      return res.status(400).json({
-        success: false,
-        message: 'Solo los usuarios básicos pueden hacerse socios'
-      });
-    }
+  return res.status(410).json({
+    success: false,
+    message:
+      'Este endpoint está obsoleto. Ahora la afiliación de socios se realiza mediante solicitud al admin y pago por evento.',
+  });
 
     // Verificar que no es ya socio
     const existingSocio = await Socio.findByUserId(userId);

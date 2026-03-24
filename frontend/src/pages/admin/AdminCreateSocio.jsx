@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { UserPlus, Search, CheckCircle } from "lucide-react";
 import Button from "../../components/common/Button";
 import { useNavigate } from "react-router-dom";
+import SearchInput from "../../components/UI/SearchInput";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const AdminCreateSocio = () => {
   const navigate = useNavigate();
@@ -21,7 +24,7 @@ const AdminCreateSocio = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/admin/users", {
+      const response = await fetch("${API_URL}/admin/users", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -55,7 +58,7 @@ const AdminCreateSocio = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/admin/socios", {
+      const response = await fetch("${API_URL}/admin/socios", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -170,35 +173,23 @@ const AdminCreateSocio = () => {
         </div>
       </div>
 
-      {/* Paso 1: Seleccionar usuario */}
+      {/* Seleccionar usuario */}
       {step === 1 && (
         <div>
           {/* Búsqueda */}
           <div className="mb-6">
             <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
+              <SearchInput
+            value={search}
+            onChange={setSearch}
+            onClear={() => setSearch('')}
+            placeholder="Buscar por nombre, email, número de socio..."
+            debounceMs={350}
               />
-              <input
-                type="text"
-                placeholder="Buscar usuario por nombre, email o username..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-[#262626] rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
           </div>
+        </div>
 
-          {/* Lista de usuarios */}
+        {/* Lista de usuarios */}
           {loading ? (
             <div className="text-center py-12">
               <p className="text-gray-400">Cargando usuarios...</p>

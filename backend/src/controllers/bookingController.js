@@ -4,7 +4,7 @@ import Socio from '../models/Socio.js';
 import User from '../models/User.js'; 
 import EmailService from '../services/emailService.js'; 
 import { generateQRCode } from '../utils/qrCodeGenerator.js';
-import { transaction, pool } from '../config/database.js';
+import { query, transaction, pool } from '../config/database.js';
 import logger from '../config/logger.js'; 
 
 /**
@@ -170,6 +170,27 @@ export const createBooking = async (req, res) => {
 
     // ✅ CORREGIDO: Recargar booking con QR actualizado antes de enviar email
     const bookingWithQR = await Booking.findById(booking.id);
+
+    // Registrar pago por la reserva (pago por entrada al evento)
+    try {
+      const paymentDescription = `Pago entrada ${event.titulo} (${bookingWithQR.numero_entradas} entradas)`;
+      await query(
+        `INSERT INTO payments (
+          socio_id, tipo, tipo_pago, amount, monto, currency, moneda,
+          descripcion, estado, fecha_pago, metadata
+        ) VALUES (?, 'evento', 'evento', ?, ?, 'EUR', 'EUR', ?, 'exitoso', NOW(), ?)`,
+        [
+          socio.id,
+          bookingWithQR.precio_pagado,
+          bookingWithQR.precio_pagado,
+          paymentDescription,
+          JSON.stringify({ event_id, booking_id: bookingWithQR.id })
+        ]
+      );
+    } catch (paymentErr) {
+      logger.error('Error al registrar pago de la reserva:', paymentErr);
+      // No interrumpir la reserva, pero reportar
+    }
 
     // ========== ENVIAR EMAIL DE CONFIRMACIÓN ==========
     try {
@@ -379,9 +400,37 @@ export const getEventBookings = async (req, res) => {
 
     const bookings = await Booking.getByEvent(eventId, estado);
 
+    // Para cada reserva, traer pagos asociados (pago de entrada)
+    const bookingsWithPayments = await Promise.all(
+      bookings.map(async (booking) => {
+        const payments = await query(
+          `SELECT
+             id,
+             socio_id,
+             COALESCE(amount, monto, 0) as amount,
+             COALESCE(currency, moneda, 'EUR') as currency,
+             estado,
+             tipo,
+             descripcion,
+             fecha_pago,
+             metadata
+           FROM payments
+           WHERE socio_id = ?
+             AND JSON_EXTRACT(metadata, '$.booking_id') = ?
+           ORDER BY fecha_pago DESC`,
+          [booking.socio_id, booking.id]
+        );
+
+        return {
+          ...booking,
+          pagos: payments,
+        };
+      })
+    );
+
     return res.status(200).json({
       success: true,
-      data: bookings
+      data: bookingsWithPayments
     });
 
   } catch (error) {

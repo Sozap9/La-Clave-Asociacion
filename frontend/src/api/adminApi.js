@@ -2,9 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   return headers;
 };
@@ -63,7 +61,6 @@ export const getAllEventsAdmin = async (params = {}) => {
     if (params.estado) queryParams.append("estado", params.estado);
     if (params.destacado !== undefined)
       queryParams.append("destacado", params.destacado);
-
     const response = await fetch(`${API_URL}/admin/events?${queryParams}`, {
       headers: getAuthHeaders(),
     });
@@ -103,9 +100,7 @@ export const createEvent = async (formData) => {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_URL}/admin/events`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     return await response.json();
@@ -120,9 +115,7 @@ export const updateEvent = async (id, formData) => {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_URL}/admin/events/${id}`, {
       method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     });
     return await response.json();
@@ -145,17 +138,11 @@ export const deleteEvent = async (id) => {
   }
 };
 
-/**
- * Publish/Unpublish event
- */
 export const togglePublishEvent = async (id) => {
   try {
     const response = await fetch(
       `${API_URL}/admin/events/${id}/toggle-publish`,
-      {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-      }
+      { method: "PATCH", headers: getAuthHeaders() },
     );
     return await response.json();
   } catch (error) {
@@ -190,17 +177,11 @@ export const unpublishEvent = async (id) => {
   }
 };
 
-/**
- * Feature/Unfeature event
- */
 export const toggleFeatureEvent = async (id) => {
   try {
     const response = await fetch(
       `${API_URL}/admin/events/${id}/toggle-feature`,
-      {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-      }
+      { method: "PATCH", headers: getAuthHeaders() },
     );
     return await response.json();
   } catch (error) {
@@ -235,9 +216,6 @@ export const unfeatureEvent = async (id) => {
   }
 };
 
-/**
- * Cancel event
- */
 export const cancelEvent = async (id, motivo) => {
   try {
     const response = await fetch(`${API_URL}/admin/events/${id}/cancel`, {
@@ -267,7 +245,6 @@ export const getAllUsers = async (params = {}) => {
     if (params.role) queryParams.append("role", params.role);
     if (params.activo !== undefined)
       queryParams.append("activo", params.activo);
-
     const response = await fetch(`${API_URL}/admin/users?${queryParams}`, {
       headers: getAuthHeaders(),
     });
@@ -303,10 +280,6 @@ export const toggleUserActive = async (id) => {
   }
 };
 
-/**
- * Legacy user management functions
- * These are kept for backward compatibility with existing components
- */
 export const updateUserRole = async (userId, newRole) => {
   try {
     const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
@@ -361,7 +334,6 @@ export const getAllSocios = async (params = {}) => {
     if (params.limit) queryParams.append("limit", params.limit);
     if (params.search) queryParams.append("search", params.search);
     if (params.estado) queryParams.append("estado", params.estado);
-
     const response = await fetch(`${API_URL}/admin/socios?${queryParams}`, {
       headers: getAuthHeaders(),
     });
@@ -412,6 +384,20 @@ export const updateSocio = async (id, data) => {
   }
 };
 
+export const deactivateSocio = async (id, motivo = "Baja administrativa") => {
+  try {
+    const response = await fetch(`${API_URL}/admin/socios/${id}/deactivate`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ motivo }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error deactivating socio:", error);
+    throw error;
+  }
+};
+
 export const deleteSocio = async (id, motivo) => {
   try {
     const response = await fetch(`${API_URL}/admin/socios/${id}`, {
@@ -426,11 +412,42 @@ export const deleteSocio = async (id, motivo) => {
   }
 };
 
-export const getSociosMorosos = async () => {
+export const deleteSocioPermanent = async (id) => {
   try {
-    const response = await fetch(`${API_URL}/admin/socios/morosos`, {
+    const response = await fetch(`${API_URL}/admin/socios/${id}/permanent`, {
+      method: "DELETE",
       headers: getAuthHeaders(),
     });
+    return await response.json();
+  } catch (error) {
+    console.error("Error permanently deleting socio:", error);
+    throw error;
+  }
+};
+
+export const reactivateSocio = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/admin/socios/${id}/reactivate`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error reactivating socio:", error);
+    throw error;
+  }
+};
+
+export const getSociosMorosos = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params.search) queryParams.append("search", params.search);
+    if (params.severidad) queryParams.append("severidad", params.severidad);
+    const queryString = queryParams.toString();
+    const response = await fetch(
+      `${API_URL}/admin/socios/morosos${queryString ? "?" + queryString : ""}`,
+      { headers: getAuthHeaders() },
+    );
     return await response.json();
   } catch (error) {
     console.error("Error fetching socios morosos:", error);
@@ -442,10 +459,7 @@ export const sendReminderSocio = async (id) => {
   try {
     const response = await fetch(
       `${API_URL}/admin/socios/${id}/send-reminder`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-      }
+      { method: "POST", headers: getAuthHeaders() },
     );
     return await response.json();
   } catch (error) {
@@ -481,7 +495,6 @@ export const getAllBookings = async (params = {}) => {
     if (params.search) queryParams.append("search", params.search);
     if (params.estado) queryParams.append("estado", params.estado);
     if (params.event_id) queryParams.append("event_id", params.event_id);
-
     const response = await fetch(`${API_URL}/admin/bookings?${queryParams}`, {
       headers: getAuthHeaders(),
     });
@@ -558,7 +571,6 @@ export const getAllPayments = async (params = {}) => {
     if (params.search) queryParams.append("search", params.search);
     if (params.estado) queryParams.append("estado", params.estado);
     if (params.tipo_pago) queryParams.append("tipo_pago", params.tipo_pago);
-
     const response = await fetch(`${API_URL}/admin/payments?${queryParams}`, {
       headers: getAuthHeaders(),
     });
@@ -586,9 +598,7 @@ export const getMonthlyRevenue = async (year) => {
     const queryParams = year ? `?year=${year}` : "";
     const response = await fetch(
       `${API_URL}/admin/payments/monthly${queryParams}`,
-      {
-        headers: getAuthHeaders(),
-      }
+      { headers: getAuthHeaders() },
     );
     return await response.json();
   } catch (error) {
@@ -635,175 +645,153 @@ export const getRecentActivity = async (limit = 50) => {
 
 /**
  * ========================================
- * 📤 EXPORTAR SOCIOS - PDF
+ * SOLICITUDES DE SOCIO  ✨ NUEVO
  * ========================================
  */
-export const exportSocios = async () => {
+
+export const getSolicitudesPendientesCount = async () => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}/admin/export/socios`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await fetch(
+      `${API_URL}/admin/solicitudes/pendientes/count`,
+      {
+        headers: getAuthHeaders(),
       },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || "No se pudo generar el PDF de socios"
-      );
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `socios_${new Date().toISOString().split("T")[0]}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    return { success: true, message: "PDF de socios descargado correctamente" };
+    );
+    return await response.json();
   } catch (error) {
-    console.error("Error al exportar socios:", error);
+    console.error("Error fetching solicitudes count:", error);
     throw error;
   }
 };
 
-/**
- * ========================================
- * 📤 EXPORTAR USUARIOS - PDF
- * ========================================
- */
-export const exportUsuarios = async () => {
+export const getSolicitudes = async (params = {}) => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}/admin/export/usuarios`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || "No se pudo generar el PDF de usuarios"
-      );
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `usuarios_${new Date().toISOString().split("T")[0]}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    return {
-      success: true,
-      message: "PDF de usuarios descargado correctamente",
-    };
-  } catch (error) {
-    console.error("Error al exportar usuarios:", error);
-    throw error;
-  }
-};
-
-/**
- * ========================================
- * 📤 EXPORTAR RESERVAS - PDF
- * ========================================
- */
-export const exportReservas = async (params = {}) => {
-  try {
-    const token = localStorage.getItem("token");
     const queryParams = new URLSearchParams();
-
-    // Agregar filtros opcionales
-    if (params.fecha_desde)
-      queryParams.append("fecha_desde", params.fecha_desde);
-    if (params.fecha_hasta)
-      queryParams.append("fecha_hasta", params.fecha_hasta);
-    if (params.event_id) queryParams.append("event_id", params.event_id);
-
-    const url = queryParams.toString()
-      ? `${API_URL}/admin/export/reservas?${queryParams}`
-      : `${API_URL}/admin/export/reservas`;
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    if (params.estado) queryParams.append("estado", params.estado);
+    if (params.search) queryParams.append("search", params.search);
+    if (params.page) queryParams.append("page", params.page);
+    if (params.limit) queryParams.append("limit", params.limit);
+    const response = await fetch(
+      `${API_URL}/admin/solicitudes?${queryParams}`,
+      {
+        headers: getAuthHeaders(),
       },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || "No se pudo generar el PDF de reservas"
-      );
-    }
-
-    const blob = await response.blob();
-    const url2 = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url2;
-    a.download = `reservas_${new Date().toISOString().split("T")[0]}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url2);
-    document.body.removeChild(a);
-
-    return {
-      success: true,
-      message: "PDF de reservas descargado correctamente",
-    };
+    );
+    return await response.json();
   } catch (error) {
-    console.error("Error al exportar reservas:", error);
+    console.error("Error fetching solicitudes:", error);
+    throw error;
+  }
+};
+
+export const getSolicitudDetails = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/admin/solicitudes/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching solicitud details:", error);
+    throw error;
+  }
+};
+
+export const aprobarSolicitud = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/admin/solicitudes/${id}/aprobar`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error aprobar solicitud:", error);
+    throw error;
+  }
+};
+
+export const rechazarSolicitud = async (id, motivo_rechazo) => {
+  try {
+    const response = await fetch(
+      `${API_URL}/admin/solicitudes/${id}/rechazar`,
+      {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ motivo_rechazo }),
+      },
+    );
+    return await response.json();
+  } catch (error) {
+    console.error("Error rechazar solicitud:", error);
+    throw error;
+  }
+};
+
+export const eliminarSolicitud = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/admin/solicitudes/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error eliminar solicitud:", error);
     throw error;
   }
 };
 
 /**
  * ========================================
- * 📤 EXPORTAR EVENTOS - PDF (OPCIONAL)
+ * EXPORTACIONES - PDF
  * ========================================
- * Solo si tienes esta función en tu adminApi.js
  */
-export const exportEventos = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}/admin/export/eventos`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || "No se pudo generar el PDF de eventos"
-      );
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `eventos_${new Date().toISOString().split("T")[0]}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    return {
-      success: true,
-      message: "PDF de eventos descargado correctamente",
-    };
-  } catch (error) {
-    console.error("Error al exportar eventos:", error);
-    throw error;
+const downloadPDF = async (url, filename) => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "No se pudo generar el PDF");
   }
+  const blob = await response.blob();
+  const objectUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(objectUrl);
+  document.body.removeChild(a);
+  return { success: true };
+};
+
+export const exportSocios = () =>
+  downloadPDF(
+    `${API_URL}/admin/export/socios`,
+    `socios_${new Date().toISOString().split("T")[0]}.pdf`,
+  );
+
+export const exportUsuarios = () =>
+  downloadPDF(
+    `${API_URL}/admin/export/usuarios`,
+    `usuarios_${new Date().toISOString().split("T")[0]}.pdf`,
+  );
+
+export const exportEventos = () =>
+  downloadPDF(
+    `${API_URL}/admin/export/eventos`,
+    `eventos_${new Date().toISOString().split("T")[0]}.pdf`,
+  );
+
+export const exportReservas = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.fecha_desde) queryParams.append("fecha_desde", params.fecha_desde);
+  if (params.fecha_hasta) queryParams.append("fecha_hasta", params.fecha_hasta);
+  if (params.event_id) queryParams.append("event_id", params.event_id);
+  const qs = queryParams.toString();
+  return downloadPDF(
+    `${API_URL}/admin/export/reservas${qs ? "?" + qs : ""}`,
+    `reservas_${new Date().toISOString().split("T")[0]}.pdf`,
+  );
 };

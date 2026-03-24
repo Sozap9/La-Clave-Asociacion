@@ -1,5 +1,3 @@
-
-
 // Constantes de la aplicación
 export const APP_NAME = 'La Clave';
 
@@ -27,18 +25,16 @@ export const NAV_ROUTES = {
   GALLERY: '/galeria',
   STATUTES: '/estatutos',
   LOGIN: '/login',
-  REGISTER: '/registro',
-  REGISTER_SOCIO: '/registro-socio',
+  REGISTER: '/registro',       // Única ruta de registro (solicitud de socio)
   DASHBOARD: '/panel',
   PROFILE: '/perfil',
   MY_BOOKINGS: '/mis-entradas',
-  UPGRADE: '/mejorar-cuenta',
-  ADMIN: '/admin'
+  ADMIN: '/admin',
+  ADMIN_SOLICITUDES: '/admin/solicitudes',
 };
 
 // Roles de usuario
 export const USER_ROLES = {
-  BASICO: 'basico',
   SOCIO: 'socio',
   ADMIN: 'admin'
 };

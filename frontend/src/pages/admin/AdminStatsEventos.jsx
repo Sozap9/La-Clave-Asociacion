@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getEventsStats, getDashboardStats } from "../../api/adminApi";
 import Loader from "../../components/common/Loader";
 import Alert from "../../components/common/Alert";
+import AdminCard from "../../components/admin/AdminCard.jsx";
 import { Calendar, Users, TrendingUp } from "lucide-react";
 
 const AdminStatsEventos = () => {
@@ -29,7 +30,6 @@ const AdminStatsEventos = () => {
           proximos_eventos: detailedResult.data.eventos.proximos_eventos,
         });
       } else {
-        console.error("Stats fetch failed", generalResult, detailedResult);
         const msg =
           generalResult.message ||
           detailedResult.message ||
@@ -37,7 +37,6 @@ const AdminStatsEventos = () => {
         setError(msg);
       }
     } catch (err) {
-      console.error("Error:", err);
       setError(
         err?.message || "No se pudieron cargar las estadísticas de eventos"
       );
@@ -55,7 +54,8 @@ const AdminStatsEventos = () => {
           Estadísticas de Eventos
         </h1>
         <p className="text-gray-400">
-          Estadísticas detalladas sobre el rendimiento y la participación en los eventos.
+          Estadísticas detalladas sobre el rendimiento y la participación en los
+          eventos.
         </p>
       </div>
 
@@ -65,8 +65,8 @@ const AdminStatsEventos = () => {
 
       {stats && (
         <>
-          {/* Principales */}
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
+          {/* KPIs */}
+          <div className="grid md:grid-cols-4 gap-6 mb-10">
             <StatCard
               title="Total Eventos"
               value={stats.total_eventos || 0}
@@ -89,12 +89,18 @@ const AdminStatsEventos = () => {
             />
           </div>
 
-          {/* Top Eventos */}
-          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-8">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Top 5 Eventos 
-            </h3>
-            <div className="space-y-3">
+          {/* Top eventos */}
+          <AdminCard
+            title="Top 5 eventos"
+            subtitle="Eventos con mayor ocupación"
+            badges={[
+              {
+                text: "Ranking",
+                color: "primary",
+              },
+            ]}
+          >
+            <div className="space-y-3 mt-4">
               {stats.top_eventos?.map((evento, index) => (
                 <div
                   key={evento.id}
@@ -104,12 +110,14 @@ const AdminStatsEventos = () => {
                     #{index + 1}
                   </span>
                   <div className="flex-1">
-                    <h4 className="text-white font-medium">{evento.titulo}</h4>
+                    <h4 className="text-white font-medium">
+                      {evento.titulo}
+                    </h4>
                     <p className="text-gray-400 text-sm">
                       {new Date(evento.fecha_evento).toLocaleDateString(
                         "es-ES"
                       )}{" "}
-                      •{evento.entradas_reservadas}/{evento.aforo_maximo}{" "}
+                      • {evento.entradas_reservadas}/{evento.aforo_maximo}{" "}
                       entradas
                     </p>
                   </div>
@@ -119,39 +127,49 @@ const AdminStatsEventos = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </AdminCard>
 
-          {/* Próximos Eventos */}
-          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Próximos Eventos
-            </h3>
-            <div className="space-y-3">
-              {stats.proximos_eventos?.map((evento) => (
-                <div
-                  key={evento.id}
-                  className="flex items-center justify-between p-3 bg-[#0f0f10] rounded-lg"
-                >
-                  <div>
-                    <h4 className="text-white font-medium">{evento.titulo}</h4>
-                    <p className="text-gray-400 text-sm">
-                      {new Date(evento.fecha_evento).toLocaleDateString(
-                        "es-ES"
-                      )}{" "}
-                      • {evento.hora_evento}
-                    </p>
+          {/* Próximos eventos */}
+          <div className="mt-8">
+            <AdminCard
+              title="Próximos eventos"
+              subtitle="Eventos que se celebrarán próximamente"
+              badges={[
+                {
+                  text: "Agenda",
+                  color: "primary",
+                },
+              ]}
+            >
+              <div className="space-y-3 mt-4">
+                {stats.proximos_eventos?.map((evento) => (
+                  <div
+                    key={evento.id}
+                    className="flex items-center justify-between p-3 bg-[#0f0f10] rounded-lg"
+                  >
+                    <div>
+                      <h4 className="text-white font-medium">
+                        {evento.titulo}
+                      </h4>
+                      <p className="text-gray-400 text-sm">
+                        {new Date(evento.fecha_evento).toLocaleDateString(
+                          "es-ES"
+                        )}{" "}
+                        • {evento.hora_evento}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-white font-semibold">
+                        {evento.entradas_reservadas}/{evento.aforo_maximo}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        {evento.entradas_disponibles} disponibles
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-white font-semibold">
-                      {evento.entradas_reservadas}/{evento.aforo_maximo}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      {evento.entradas_disponibles} disponibles
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </AdminCard>
           </div>
         </>
       )}
@@ -159,7 +177,7 @@ const AdminStatsEventos = () => {
   );
 };
 
-const StatCard = ({ title, value, icon: Icon, color = "blue" }) => (
+const StatCard = ({ title, value, icon: Icon }) => (
   <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
     <div className="flex items-start justify-between mb-4">
       <div>

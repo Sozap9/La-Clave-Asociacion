@@ -1,98 +1,80 @@
-import { Link } from "react-router-dom";
-import { AudioLines, Youtube, Instagram } from "lucide-react";
-import { SOCIAL_LINKS, FOOTER_LINKS, APP_NAME } from "../../utils/constants";
-import logo from "../../assets/logo.png";
+import { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Globe } from 'lucide-react';
+import { APP_NAME } from '../../utils/constants';
+import { useLanguage } from '../../context/LanguageContext';
+
+const LANGUAGES = [
+  { code: 'es', label: 'Español' },
+  { code: 'en', label: 'English' },
+];
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const { language, setLanguage, t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const socialIcons = [
-    {
-      icon: AudioLines,
-      href: SOCIAL_LINKS.soundcloud,
-      label: "SoundCloud",
-      color: "hover:text-primary-500",
-    },
-    {
-      icon: Instagram,
-      href: SOCIAL_LINKS.instagram,
-      label: "Instagram",
-      color: "hover:text-primary-500",
-    },
-  ];
+  const currentLang = LANGUAGES.find((l) => l.code === language);
 
-  const footerLinks = [
-    { label: "Privacidad", href: FOOTER_LINKS.privacy },
-    { label: "Términos", href: FOOTER_LINKS.terms },
-    { label: "Estatutos", href: FOOTER_LINKS.statutes },
-    { label: "Ubicación", href: FOOTER_LINKS.location },
-  ];
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <footer className="bg-[#0a0a0a] border-t border-[#262626] mt-auto">
-      <div className="container-custom py-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
-            {/* Enlaces del footer */}
-            <nav className="flex flex-wrap gap-4">
-              {footerLinks.map((link) => {
-                const isExternal = link.href.startsWith("http");
-                return isExternal ? (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-primary-400 text-sm transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className="text-gray-400 hover:text-primary-400 text-sm transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
+      <div className="container-custom py-4">
 
-          {/* Iconos y logo */}
-          <div className="flex items-center gap-6">
-            {socialIcons.map((social) => {
-              const Icon = social.icon;
-              return (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`text-gray-400 ${social.color} transition-colors p-2 hover:bg-[#1a1a1a] rounded-lg`}
-                  aria-label={social.label}
-                >
-                  <Icon size={20} />
-                </a>
-              );
-            })}
+        <div className="mt-6 pt-6 border-t border-[#262626] flex flex-col sm:flex-row items-center justify-between gap-3">
 
-            <div className="hidden sm:block">
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Derechos reservados */}
-        <div className="mt-6 pt-6 border-t border-[#262626]">
-          <p className="text-gray-500 text-sm text-center">
-            © {currentYear} {APP_NAME} todos los derechos reservados.
+          {/* Derechos */}
+          <p className="text-gray-500 text-sm text-center sm:text-left">
+            © {currentYear} {APP_NAME} {t('footer.rights')}
           </p>
+
+          {/* Selector de idioma — mismo tamaño que los derechos */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setOpen((prev) => !prev)}
+              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-400 transition-colors duration-200"
+            >
+              <Globe size={12} />
+              <span>{t('footer.language')}:</span>
+              <span className="text-gray-400">{currentLang?.label}</span>
+              <ChevronDown
+                size={12}
+                className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {/* Desplegable */}
+            {open && (
+              <div className="absolute bottom-full right-0 mb-2 w-32 bg-[#111111] border border-[#262626] rounded-md shadow-lg overflow-hidden z-50">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      setOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors duration-150
+                      ${language === lang.code
+                        ? 'text-white bg-[#1a1a1a]'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-[#161616]'
+                      }`}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </footer>
