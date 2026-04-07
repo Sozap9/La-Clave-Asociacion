@@ -1,11 +1,11 @@
-import Booking from '../models/Booking.js';
-import Event from '../models/Event.js';
-import Socio from '../models/Socio.js';
-import User from '../models/User.js'; 
-import EmailService from '../services/emailService.js'; 
-import { generateQRCode } from '../utils/qrCodeGenerator.js';
-import { query, transaction, pool } from '../config/database.js';
-import logger from '../config/logger.js'; 
+import Booking from "../models/Booking.js";
+import Event from "../models/Event.js";
+import Socio from "../models/Socio.js";
+import User from "../models/User.js";
+import EmailService from "../services/emailService.js";
+import { generateQRCode } from "../utils/qrCodeGenerator.js";
+import { query, transaction, pool } from "../config/database.js";
+import logger from "../config/logger.js";
 
 /**
  * Crear reserva de entrada
@@ -19,7 +19,7 @@ export const createBooking = async (req, res) => {
     if (!event_id) {
       return res.status(400).json({
         success: false,
-        message: 'El ID del evento es obligatorio'
+        message: "El ID del evento es obligatorio",
       });
     }
 
@@ -27,34 +27,38 @@ export const createBooking = async (req, res) => {
     let socio = await Socio.findByUserId(userId);
 
     // Si es admin y no tiene registro de socio, crear uno automáticamente
-    if (!socio && req.user.role === 'admin') {
+    if (!socio && req.user.role === "admin") {
       try {
         const [result] = await pool.execute(
-          `INSERT INTO members (user_id, numero_socio, estado, fecha_alta, metodo_pago)
-           VALUES (?, ?, 'activo', NOW(), 'admin')`,
-          [userId, `ADM-${userId.toString().padStart(3, '0')}`]
+          `INSERT INTO socios (user_id, numero_socio, estado, fecha_alta)
+           VALUES (?, ?, 'activo', NOW())`,
+          [userId, `ADM-${userId.toString().padStart(3, "0")}`],
         );
         socio = await Socio.findById(result.insertId);
-        logger.info('✅ Registro de socio creado automáticamente para admin:', userId);
+        logger.info(
+          "✅ Registro de socio creado automáticamente para admin:",
+          userId,
+        );
       } catch (error) {
-        logger.error('Error creando registro de socio para admin:', error);
+        logger.error("Error creando registro de socio para admin:", error);
         return res.status(500).json({
           success: false,
-          message: 'Error al crear información de socio'
+          message: "Error al crear información de socio",
         });
       }
     } else if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de socio'
+        message: "No se encontró información de socio",
       });
     }
 
     // Verificar que el socio esté activo (admins siempre están activos)
-    if (socio.estado !== 'activo' && req.user.role !== 'admin') {
+    if (socio.estado !== "activo" && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
-        message: 'Tu membresía no está activa. Actualiza tu método de pago para continuar'
+        message:
+          "Tu membresía no está activa. Actualiza tu método de pago para continuar",
       });
     }
 
@@ -63,15 +67,15 @@ export const createBooking = async (req, res) => {
     if (!event) {
       return res.status(404).json({
         success: false,
-        message: 'Evento no encontrado'
+        message: "Evento no encontrado",
       });
     }
 
     // ✅ CORREGIDO: Verificar que el evento está publicado (scheduled en lugar de publicado)
-    if (event.estado !== 'scheduled') {
+    if (event.estado !== "scheduled") {
       return res.status(400).json({
         success: false,
-        message: 'Este evento no está disponible para reservas'
+        message: "Este evento no está disponible para reservas",
       });
     }
 
@@ -80,115 +84,139 @@ export const createBooking = async (req, res) => {
     if (fechaEvento < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'No puedes reservar para un evento que ya pasó'
+        message: "No puedes reservar para un evento que ya pasó",
       });
     }
 
     // Verificar que no tenga ya una reserva
-    const existingBooking = await Booking.findBySocioAndEvent(socio.id, event_id);
+    const existingBooking = await Booking.findBySocioAndEvent(
+      socio.id,
+      event_id,
+    );
     if (existingBooking) {
       return res.status(409).json({
         success: false,
-        message: 'Ya tienes una reserva para este evento'
+        message: "Ya tienes una reserva para este evento",
       });
     }
 
     // Verificar disponibilidad
     const available = await Event.checkAvailability(event_id, numero_entradas);
-    
+
     if (!available) {
       // Agregar a lista de espera
       const inWaitingList = await Booking.checkWaitingList(socio.id, event_id);
-      
+
       if (inWaitingList) {
         return res.status(409).json({
           success: false,
-          message: 'Ya estás en la lista de espera para este evento',
+          message: "Ya estás en la lista de espera para este evento",
           data: {
-            position: inWaitingList.posicion
-          }
+            position: inWaitingList.posicion,
+          },
         });
       }
 
-      const waitingListEntry = await Booking.addToWaitingList(socio.id, event_id);
-      
+      const waitingListEntry = await Booking.addToWaitingList(
+        socio.id,
+        event_id,
+      );
+
       return res.status(200).json({
         success: true,
-        message: 'El aforo está completo. Has sido añadido a la lista de espera',
+        message:
+          "El aforo está completo. Has sido añadido a la lista de espera",
         data: {
           waiting_list: true,
-          position: waitingListEntry.position
-        }
+          position: waitingListEntry.position,
+        },
       });
     }
 
-    // Crear reserva en transacción
+    // Crear reserva con campos correctos de la tabla bookings
     const booking = await transaction(async (conn) => {
-      // Crear reserva
-      const bookingData = {
-        socio_id: socio.id,
-        event_id,
-        numero_entradas,
-        precio_pagado: event.precio_socio * numero_entradas
-      };
+      // Calcular precio total
+      const monto_total = event.precio_socio * numero_entradas;
+      const codigo_acceso = `ACC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
       const [result] = await conn.execute(
-        `INSERT INTO bookings (socio_id, event_id, codigo_reserva, numero_entradas, tipo_entrada, precio_pagado, estado)
-         VALUES (?, ?, ?, ?, 'socio', ?, 'confirmada')`,
-        [
-          bookingData.socio_id,
-          bookingData.event_id,
-          `LCV-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-          bookingData.numero_entradas,
-          bookingData.precio_pagado
-        ]
+        `INSERT INTO bookings (
+          socio_id, event_id, numero_entradas, estado, codigo_acceso, created_at
+        ) VALUES (?, ?, ?, 'confirmada', ?, NOW())`,
+        [socio.id, event_id, numero_entradas, codigo_acceso],
       );
 
       const bookingId = result.insertId;
 
-      // Actualizar entradas disponibles del evento
-      await conn.execute(
-        `UPDATE events 
-         SET entradas_reservadas = entradas_reservadas + ?,
-             entradas_disponibles = entradas_disponibles - ?
-         WHERE id = ?`,
-        [numero_entradas, numero_entradas, event_id]
-      );
+      // Actualizar entradas disponibles del evento (si la columna existe)
+      try {
+        await conn.execute(
+          `UPDATE events 
+           SET entradas_disponibles = entradas_disponibles - ?
+           WHERE id = ?`,
+          [numero_entradas, event_id],
+        );
+      } catch (updateError) {
+        logger.warn(
+          "No se pudo actualizar entradas disponibles:",
+          updateError.message,
+        );
+        // No fallar si la columna no existe
+      }
 
-      return await Booking.findById(bookingId);
+      // Obtener la reserva creada
+      const [rows] = await conn.execute(`SELECT * FROM bookings WHERE id = ?`, [
+        bookingId,
+      ]);
+      return rows[0];
     });
 
-    // ✅ CORREGIDO: Generar QR code y recargar booking
+    // Generar QR code asociado a la reserva
+    let qrCode = null;
     try {
-      const qrPath = await generateQRCode(booking.codigo_reserva, booking.id);
-      await Booking.saveQRCode(booking.id, qrPath);
-      logger.info('✅ QR Code generado:', { bookingId: booking.id, qrPath });
+      const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
+      qrCode = await generateQRCode(qrData, booking.id);
+
+      // Guardar QR en la booking
+      await query(`UPDATE bookings SET qr_code = ? WHERE id = ?`, [
+        qrCode,
+        booking.id,
+      ]);
+      logger.info("✅ QR Code generado para booking:", {
+        bookingId: booking.id,
+      });
     } catch (qrError) {
-      logger.error('❌ Error generando QR:', qrError);
+      logger.error("❌ Error generando QR:", qrError);
       // No falla la reserva si el QR falla
     }
 
-    // ✅ CORREGIDO: Recargar booking con QR actualizado antes de enviar email
+    // Recargar booking con QR actualizado
     const bookingWithQR = await Booking.findById(booking.id);
 
-    // Registrar pago por la reserva (pago por entrada al evento)
+    // Registrar pago por la entrada al evento
     try {
-      const paymentDescription = `Pago entrada ${event.titulo} (${bookingWithQR.numero_entradas} entradas)`;
+      const monto_total = event.precio_socio * numero_entradas;
+      const paymentDescription = `Entrada a ${event.titulo} (${numero_entradas} entrada${numero_entradas !== 1 ? "s" : ""})`;
+
       await query(
         `INSERT INTO payments (
-          socio_id, tipo, tipo_pago, amount, monto, currency, moneda,
-          descripcion, estado, fecha_pago, metadata
-        ) VALUES (?, 'evento', 'evento', ?, ?, 'EUR', 'EUR', ?, 'exitoso', NOW(), ?)`,
+          socio_id, stripe_payment_id, monto, moneda, tipo, descripcion, 
+          estado, fecha_pago, metadata, created_at
+        ) VALUES (?, ?, ?, 'EUR', 'evento', ?, 'completado', NOW(), ?, NOW())`,
         [
           socio.id,
-          bookingWithQR.precio_pagado,
-          bookingWithQR.precio_pagado,
+          `booking-${booking.id}-${Date.now()}`,
+          monto_total,
           paymentDescription,
-          JSON.stringify({ event_id, booking_id: bookingWithQR.id })
-        ]
+          JSON.stringify({ event_id, booking_id: booking.id }),
+        ],
       );
+      logger.info("✅ Pago registrado para booking:", {
+        bookingId: booking.id,
+        monto: monto_total,
+      });
     } catch (paymentErr) {
-      logger.error('Error al registrar pago de la reserva:', paymentErr);
+      logger.error("Error al registrar pago de la reserva:", paymentErr);
       // No interrumpir la reserva, pero reportar
     }
 
@@ -196,34 +224,33 @@ export const createBooking = async (req, res) => {
     try {
       // Obtener datos del usuario
       const user = await User.findById(userId);
-      
+
       if (user) {
         // Enviar email de confirmación con QR
         await EmailService.sendBookingConfirmation(bookingWithQR, event, user);
-        logger.info('✅ Email de confirmación enviado:', {
+        logger.info("✅ Email de confirmación enviado:", {
           userId: user.id,
           bookingId: bookingWithQR.id,
           eventId: event.id,
-          hasQR: !!bookingWithQR.qr_code_url
+          hasQR: !!bookingWithQR.qr_code_url,
         });
       }
     } catch (emailError) {
       // No fallar la reserva si el email falla
-      logger.error('❌ Error enviando email de confirmación:', emailError);
+      logger.error("❌ Error enviando email de confirmación:", emailError);
     }
     // ==================================================
 
     return res.status(201).json({
       success: true,
-      message: 'Reserva creada exitosamente',
-      data: bookingWithQR
+      message: "Reserva creada exitosamente",
+      data: bookingWithQR,
     });
-
   } catch (error) {
-    logger.error('Error en createBooking:', error);
+    logger.error("Error en createBooking:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al crear reserva'
+      message: "Error al crear reserva",
     });
   }
 };
@@ -241,7 +268,7 @@ export const getMyBookings = async (req, res) => {
     if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de socio'
+        message: "No se encontró información de socio",
       });
     }
 
@@ -249,14 +276,13 @@ export const getMyBookings = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: bookings
+      data: bookings,
     });
-
   } catch (error) {
-    logger.error('Error en getMyBookings:', error);
+    logger.error("Error en getMyBookings:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener reservas'
+      message: "Error al obtener reservas",
     });
   }
 };
@@ -275,29 +301,28 @@ export const getBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Reserva no encontrada'
+        message: "Reserva no encontrada",
       });
     }
 
     // Verificar que la reserva pertenece al usuario (o es admin)
     const socio = await Socio.findByUserId(userId);
-    if (req.user.role !== 'admin' && booking.socio_id !== socio?.id) {
+    if (req.user.role !== "admin" && booking.socio_id !== socio?.id) {
       return res.status(403).json({
         success: false,
-        message: 'No tienes acceso a esta reserva'
+        message: "No tienes acceso a esta reserva",
       });
     }
 
     return res.status(200).json({
       success: true,
-      data: booking
+      data: booking,
     });
-
   } catch (error) {
-    logger.error('Error en getBooking:', error);
+    logger.error("Error en getBooking:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener reserva'
+      message: "Error al obtener reserva",
     });
   }
 };
@@ -312,14 +337,14 @@ export const cancelBooking = async (req, res) => {
     const userId = req.user.id;
     const { motivo } = req.body;
 
-    logger.info('📋 Cancelando reserva:', { bookingId: id, userId, motivo });
+    logger.info("📋 Cancelando reserva:", { bookingId: id, userId, motivo });
 
     const booking = await Booking.findById(id);
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Reserva no encontrada'
+        message: "Reserva no encontrada",
       });
     }
 
@@ -328,15 +353,15 @@ export const cancelBooking = async (req, res) => {
     if (booking.socio_id !== socio?.id) {
       return res.status(403).json({
         success: false,
-        message: 'No puedes cancelar esta reserva'
+        message: "No puedes cancelar esta reserva",
       });
     }
 
     // Verificar que la reserva está confirmada
-    if (booking.estado !== 'confirmada') {
+    if (booking.estado !== "confirmada") {
       return res.status(400).json({
         success: false,
-        message: 'Esta reserva no puede ser cancelada'
+        message: "Esta reserva no puede ser cancelada",
       });
     }
 
@@ -346,7 +371,7 @@ export const cancelBooking = async (req, res) => {
     if (fechaEvento < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'No puedes cancelar una reserva de un evento que ya pasó'
+        message: "No puedes cancelar una reserva de un evento que ya pasó",
       });
     }
 
@@ -357,7 +382,7 @@ export const cancelBooking = async (req, res) => {
         `UPDATE bookings 
          SET estado = 'cancelada', fecha_cancelacion = NOW(), motivo_cancelacion = ?
          WHERE id = ?`,
-        [motivo || 'Cancelación voluntaria', id]
+        [motivo || "Cancelación voluntaria", id],
       );
 
       // Liberar entradas
@@ -366,25 +391,24 @@ export const cancelBooking = async (req, res) => {
          SET entradas_reservadas = entradas_reservadas - ?,
              entradas_disponibles = entradas_disponibles + ?
          WHERE id = ?`,
-        [booking.numero_entradas, booking.numero_entradas, booking.event_id]
+        [booking.numero_entradas, booking.numero_entradas, booking.event_id],
       );
     });
 
-    logger.info('✅ Reserva cancelada:', { bookingId: id });
+    logger.info("✅ Reserva cancelada:", { bookingId: id });
 
     // TODO: Notificar a persona en lista de espera si hay
 
     return res.status(200).json({
       success: true,
-      message: 'Reserva cancelada exitosamente'
+      message: "Reserva cancelada exitosamente",
     });
-
   } catch (error) {
-    logger.error('❌ Error en cancelBooking:', error);
+    logger.error("❌ Error en cancelBooking:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al cancelar reserva',
-      error: error.message
+      message: "Error al cancelar reserva",
+      error: error.message,
     });
   }
 };
@@ -418,26 +442,25 @@ export const getEventBookings = async (req, res) => {
            WHERE socio_id = ?
              AND JSON_EXTRACT(metadata, '$.booking_id') = ?
            ORDER BY fecha_pago DESC`,
-          [booking.socio_id, booking.id]
+          [booking.socio_id, booking.id],
         );
 
         return {
           ...booking,
           pagos: payments,
         };
-      })
+      }),
     );
 
     return res.status(200).json({
       success: true,
-      data: bookingsWithPayments
+      data: bookingsWithPayments,
     });
-
   } catch (error) {
-    logger.error('Error en getEventBookings:', error);
+    logger.error("Error en getEventBookings:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener reservas del evento'
+      message: "Error al obtener reservas del evento",
     });
   }
 };
@@ -453,7 +476,7 @@ export const verifyQRAndCheckIn = async (req, res) => {
     if (!codigo_reserva) {
       return res.status(400).json({
         success: false,
-        message: 'Código de reserva es obligatorio'
+        message: "Código de reserva es obligatorio",
       });
     }
 
@@ -462,14 +485,14 @@ export const verifyQRAndCheckIn = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Reserva no encontrada'
+        message: "Reserva no encontrada",
       });
     }
 
-    if (booking.estado !== 'confirmada') {
+    if (booking.estado !== "confirmada") {
       return res.status(400).json({
         success: false,
-        message: `Esta reserva está ${booking.estado}`
+        message: `Esta reserva está ${booking.estado}`,
       });
     }
 
@@ -478,20 +501,19 @@ export const verifyQRAndCheckIn = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Asistencia registrada exitosamente',
+      message: "Asistencia registrada exitosamente",
       data: {
         socio_nombre: booking.socio_nombre,
         socio_apellidos: booking.socio_apellidos,
         evento_titulo: booking.evento_titulo,
-        numero_entradas: booking.numero_entradas
-      }
+        numero_entradas: booking.numero_entradas,
+      },
     });
-
   } catch (error) {
-    logger.error('Error en verifyQRAndCheckIn:', error);
+    logger.error("Error en verifyQRAndCheckIn:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al verificar código'
+      message: "Error al verificar código",
     });
   }
 };
@@ -508,7 +530,7 @@ export const getMyBookingStats = async (req, res) => {
     if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de socio'
+        message: "No se encontró información de socio",
       });
     }
 
@@ -516,14 +538,13 @@ export const getMyBookingStats = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: stats
+      data: stats,
     });
-
   } catch (error) {
-    logger.error('Error en getMyBookingStats:', error);
+    logger.error("Error en getMyBookingStats:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener estadísticas'
+      message: "Error al obtener estadísticas",
     });
   }
 };
@@ -535,5 +556,5 @@ export default {
   cancelBooking,
   getEventBookings,
   verifyQRAndCheckIn,
-  getMyBookingStats
+  getMyBookingStats,
 };

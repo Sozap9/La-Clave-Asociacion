@@ -394,14 +394,16 @@ class Socio {
    * @param {Number} limite - Máximo de socios activos permitidos
    * @returns {Boolean}
    */
-  static async puedeCrearNuevoSocio(limite = parseInt(process.env.MAX_SOCIOS_ACTIVOS || '10000', 10)) {
+  static async puedeCrearNuevoSocio(
+    limite = parseInt(process.env.MAX_SOCIOS_ACTIVOS || "10000", 10),
+  ) {
     try {
       const sql = `SELECT COUNT(*) as total FROM socios WHERE estado = 'activo'`;
       const result = await query(sql);
       const total = result[0]?.total || 0;
       return total < limite;
     } catch (error) {
-      console.error('Error en puedeCrearNuevoSocio:', error);
+      console.error("Error en puedeCrearNuevoSocio:", error);
       throw error;
     }
   }
@@ -422,12 +424,12 @@ class Socio {
             estado = 'activo'
         WHERE id = ?
       `,
-        [id]
+        [id],
       );
 
       return this.findById(id);
     } catch (error) {
-      console.error('Error en registrarPagoExitoso:', error);
+      console.error("Error en registrarPagoExitoso:", error);
       throw error;
     }
   }
@@ -441,12 +443,15 @@ class Socio {
     try {
       const socio = await this.findById(id);
       if (!socio) {
-        throw new Error('Socio no encontrado');
+        throw new Error("Socio no encontrado");
       }
 
       const pagosFail = (socio.pagos_fallidos || 0) + 1;
-      const nuevoEstado = pagosFail >= 3 ? 'moroso' : socio.estado || 'activo';
-      const diasMorosidad = nuevoEstado === 'moroso' ? Math.max(socio.dias_morosidad || 0, 1) : socio.dias_morosidad || 0;
+      const nuevoEstado = pagosFail >= 3 ? "moroso" : socio.estado || "activo";
+      const diasMorosidad =
+        nuevoEstado === "moroso"
+          ? Math.max(socio.dias_morosidad || 0, 1)
+          : socio.dias_morosidad || 0;
 
       await query(
         `
@@ -456,12 +461,12 @@ class Socio {
             dias_morosidad = ?
         WHERE id = ?
       `,
-        [pagosFail, nuevoEstado, diasMorosidad, id]
+        [pagosFail, nuevoEstado, diasMorosidad, id],
       );
 
       return this.findById(id);
     } catch (error) {
-      console.error('Error en incrementarPagosFallidos:', error);
+      console.error("Error en incrementarPagosFallidos:", error);
       throw error;
     }
   }
@@ -480,12 +485,12 @@ class Socio {
             dias_morosidad = GREATEST(COALESCE(dias_morosidad, 0), 1)
         WHERE id = ?
       `,
-        [id]
+        [id],
       );
 
       return this.findById(id);
     } catch (error) {
-      console.error('Error en marcarComoMoroso:', error);
+      console.error("Error en marcarComoMoroso:", error);
       throw error;
     }
   }

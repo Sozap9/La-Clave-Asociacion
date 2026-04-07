@@ -1781,30 +1781,209 @@ export const getBookingsStats = async (req, res) => {
  */
 
 /**
- * Obtener ingresos por mes
- * GET /api/admin/payments/monthly
+ * Obtener pagos (entradas) de un evento específico
+ * GET /api/admin/events/:eventId/payments
+ *
+ * Nueva lógica: lista todas las entradas vendidas del evento con sus pagos
  */
-export const getMonthlyRevenue = async (req, res) => {
+/**
+ * Obtener pagos (entradas) de un evento específico
+ * GET /api/admin/events/:eventId/payments
+ */
+export const getEventPayments = async (req, res) => {
   try {
-    const { year = new Date().getFullYear() } = req.query;
+    const eventId = parseInt(req.params.eventId, 10);
 
-    const sql = `
-      SELECT 
-        MONTH(fecha_pago) as mes,
-        MONTHNAME(fecha_pago) as mes_nombre,
-        SUM(COALESCE(amount, monto, 0)) as total,
-        COUNT(*) as cantidad_pagos
-      FROM payments
-      WHERE YEAR(fecha_pago) = ? AND estado IN ('exitoso','completado')
-      GROUP BY MONTH(fecha_pago), MONTHNAME(fecha_pago)
-      ORDER BY MONTH(fecha_pago)
+    if (isNaN(eventId) || eventId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "ID de evento inválido",
+      });
+    }
+
+    // Paginación y filtros
+    const pageNum = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const offset = (pageNum - 1) * limitNum;
+    const { estado, search } = req.query;
+
+    console.log("📍 [getEventPayments] Consultando evento:", eventId);
+    console.log("   Filtros:", { search, estado, page: pageNum, limit: limitNum });
+
+    // 1. Verificar que el evento existe
+    const eventResult = await query(
+      "SELECT id, titulo, fecha_evento, precio_socio FROM events WHERE id = ?",
+      [eventId],
+    );
+
+    if (eventResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Evento no encontrado",
+      });
+    }
+
+    const event = eventResult[0];
+    console.log("✅ Evento encontrado:", event.titulo);
+
+    // 2. Stats globales del evento (sin filtros)
+    const allEntries = await query(
+      `SELECT b.estado, b.numero_entradas
+       FROM bookings b
+       WHERE b.event_id = ?`,
+      [eventId],
+    );
+
+    const stats = {
+      total_entradas:   allEntries.length,
+      pagos_exitosos:   allEntries.filter((e) => e.estado === "confirmada").length,
+      pagos_fallidos:   allEntries.filter((e) => e.estado === "cancelada").length,
+      pagos_pendientes: allEntries.filter((e) => e.estado === "esperando_pago").length,
+      total_ingresos:   0,
+    };
+
+    // 3. Query con filtros
+    const conditions = ["b.event_id = ?"];
+    const params = [eventId];
+
+    // El frontend manda directamente el estado del booking:
+    //   "confirmada" | "cancelada" | "esperando_pago" | "en_lista_espera"
+    if (estado && estado !== "all") {
+      conditions.push("b.estado = ?");
+      params.push(estado);
+    }
+
+    if (search && search.trim().length >= 2) {
+      conditions.push(
+        "(u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ? OR s.numero_socio LIKE ?)",
+      );
+      const term = "%" + search.trim() + "%";
+      params.push(term, term, term, term);
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const entriesSql = `
+      SELECT
+        b.id               AS booking_id,
+        b.numero_entradas,
+        b.estado           AS payment_estado,
+        b.codigo_acceso,
+        b.qr_code,
+        b.asistencia,
+        b.fecha_asistencia,
+        b.created_at,
+        COALESCE(b.precio_pagado, 0) AS precio_pagado,
+        s.id               AS socio_id,
+        s.numero_socio,
+        s.estado           AS socio_estado,
+        u.id               AS user_id,
+        u.nombre           AS socio_nombre,
+        u.apellidos        AS socio_apellidos,
+        u.email            AS socio_email,
+        u.telefono         AS socio_telefono
+      FROM bookings b
+      INNER JOIN socios s ON b.socio_id = s.id
+      INNER JOIN users  u ON s.user_id  = u.id
+      WHERE ${whereClause}
+      ORDER BY b.created_at DESC
+      LIMIT ${limitNum} OFFSET ${offset}
     `;
 
-    const result = await query(sql, [year]);
+    console.log("📍 Ejecutando query de bookings con filtros");
+    const entries = await query(entriesSql, params);
+    console.log("✅ Bookings encontrados:", entries.length);
+
+    console.log(
+      "✅ [getEventPayments] Éxito - Retornando",
+      entries.length,
+      "entradas",
+    );
 
     return res.status(200).json({
       success: true,
-      data: result,
+      data: {
+        event,
+        stats,
+        entries,
+        pagination: {
+          total: allEntries.length,
+          page:  pageNum,
+          pages: Math.ceil(allEntries.length / limitNum),
+          limit: limitNum,
+        },
+        filters: { search, estado },
+      },
+    });
+  } catch (error) {
+    console.error("❌ [getEventPayments] Error:", error.message);
+    console.error("Stack:", error.stack);
+    return res.status(500).json({
+      success: false,
+      message: "Error al obtener pagos del evento",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+
+export const getMonthlyRevenue = async (req, res) => {
+  try {
+    const { year = new Date().getFullYear() } = req.query;
+    const yearNum = parseInt(year, 10);
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentYear = now.getFullYear();
+
+    // Datos mensuales del año solicitado
+    const sqlMonthly = `
+      SELECT
+        DATE_FORMAT(fecha_pago, '%Y-%m-01') as mes,
+        SUM(COALESCE(amount, 0)) as total_ingresos,
+        COUNT(*) as total_pagos
+      FROM payments
+      WHERE YEAR(fecha_pago) = ? AND estado = 'exitoso'
+      GROUP BY DATE_FORMAT(fecha_pago, '%Y-%m-01')
+      ORDER BY mes ASC
+    `;
+    const monthly_data = await query(sqlMonthly, [yearNum]);
+
+    // Mes actual
+    const sqlCurrentMonth = `
+      SELECT
+        SUM(COALESCE(amount, 0)) as total_ingresos,
+        COUNT(*) as total_pagos
+      FROM payments
+      WHERE MONTH(fecha_pago) = ? AND YEAR(fecha_pago) = ? AND estado = 'exitoso'
+    `;
+    const [current_month] = await query(sqlCurrentMonth, [currentMonth, currentYear]);
+
+    // Mes anterior
+    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const prevYear  = currentMonth === 1 ? currentYear - 1 : currentYear;
+    const [previous_month] = await query(sqlCurrentMonth, [prevMonth, prevYear]);
+
+    // Desglose por tipo de pago
+    const sqlByType = `
+      SELECT
+        tipo_pago,
+        SUM(COALESCE(amount, 0)) as total_ingresos,
+        COUNT(*) as total_pagos
+      FROM payments
+      WHERE YEAR(fecha_pago) = ? AND estado = 'exitoso'
+      GROUP BY tipo_pago
+      ORDER BY total_ingresos DESC
+    `;
+    const by_payment_type = await query(sqlByType, [yearNum]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        monthly_data,
+        current_month:  current_month  || { total_ingresos: 0, total_pagos: 0 },
+        previous_month: previous_month || { total_ingresos: 0, total_pagos: 0 },
+        by_payment_type,
+      },
     });
   } catch (error) {
     console.error("Error en getMonthlyRevenue:", error);
@@ -2295,17 +2474,18 @@ export const exportReservas = async (req, res) => {
     // Construir consulta con filtros opcionales
     let sql = `
       SELECT 
-        b.codigo_reserva,
+        b.codigo_acceso,
         e.titulo as evento,
-        u.nombre as socio,
+        CONCAT(u.nombre, ' ', u.apellidos) as socio,
         DATE_FORMAT(e.fecha_evento, '%d/%m/%Y') as fecha_evento,
         TIME_FORMAT(e.hora_evento, '%H:%i') as hora_evento,
         b.estado,
-        DATE_FORMAT(b.fecha_reserva, '%d/%m/%Y') as fecha_reserva,
-        b.num_acompanantes
+        DATE_FORMAT(b.created_at, '%d/%m/%Y') as fecha_reserva,
+        0 as num_acompanantes
       FROM bookings b
       INNER JOIN events e ON b.event_id = e.id
-      INNER JOIN users u ON b.user_id = u.id
+      INNER JOIN socios s ON b.socio_id = s.id
+      INNER JOIN users u ON s.user_id = u.id
       WHERE 1=1
     `;
 
@@ -3614,6 +3794,7 @@ export default {
   getBookingDetails,
   cancelBookingAdmin,
   getBookingsStats,
+  getEventPayments,
   getMonthlyRevenue,
   getPaymentsStats,
   listPayments,
@@ -3623,7 +3804,6 @@ export default {
   exportReservas,
   exportUsuarios,
   exportEventos,
-  // ✨ NUEVO
   listSolicitudes,
   getSolicitudDetails,
   aprobarSolicitud,

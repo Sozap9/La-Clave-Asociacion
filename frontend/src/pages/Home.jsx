@@ -71,7 +71,7 @@ const Home = () => {
             <div className="text-center">
               <Button
                 variant="primary"
-                to="/registro"
+                to="/estatutos"
                 className="rounded-full px-12 py-4 text-base"
               >
                 {t('home.normativa.button')}
@@ -108,7 +108,7 @@ const Home = () => {
             <div className="text-center">
               <Button
                 variant="primary"
-                to="/estatutos"
+                to="/registro"
                 className="rounded-full px-12 py-4 text-base"
               >
                 {t('home.socios.button')}

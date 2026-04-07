@@ -38,6 +38,7 @@ import {
   listPayments,
   getMonthlyRevenue,
   getPaymentsStats,
+  getEventPayments,
 
   // Galería
   getGalleryStats,
@@ -397,6 +398,20 @@ router.get(
   dateRangeValidator,
   handleValidationErrors,
   listPayments,
+);
+
+// Obtener pagos por evento
+router.get(
+  "/events/:eventId/payments",
+  param("eventId")
+    .isInt({ min: 1 })
+    .withMessage("El ID del evento debe ser un número entero positivo")
+    .toInt(),
+  paginationValidator,
+  searchQueryValidator,
+  statusFilterValidator,
+  handleValidationErrors,
+  getEventPayments,
 );
 
 // Obtener ingresos mensuales por año

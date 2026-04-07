@@ -21,7 +21,6 @@ const EventCard = ({ event, onViewDetail }) => {
     }
   };
 
-  // ✅ Usar VITE_BASE_URL para imágenes (sin /api)
   const imageUrl = event.imagen_cartel_url 
     ? `${import.meta.env.VITE_BASE_URL}${event.imagen_cartel_url}`
     : null;

@@ -1,6 +1,6 @@
-import Socio from '../models/Socio.js';
-import User from '../models/User.js';
-import { query } from '../config/database.js';
+import Socio from "../models/Socio.js";
+import User from "../models/User.js";
+import { query } from "../config/database.js";
 import {
   createStripeCustomer,
   attachPaymentMethod,
@@ -8,8 +8,8 @@ import {
   cancelSubscription,
   updatePaymentMethod as updateStripePaymentMethod,
   getInvoices,
-  createSetupIntent
-} from '../config/payment.js';
+  createSetupIntent,
+} from "../config/payment.js";
 
 /**
  * Upgrade de usuario básico a socio (DEPRECATED)
@@ -19,97 +19,8 @@ export const upgradeToSocio = async (req, res) => {
   return res.status(410).json({
     success: false,
     message:
-      'Este endpoint está obsoleto. Ahora la afiliación de socios se realiza mediante solicitud al admin y pago por evento.',
+      "Este endpoint está obsoleto. Ahora la afiliación de socios se realiza mediante solicitud al admin y pago por evento.",
   });
-
-    // Verificar que no es ya socio
-    const existingSocio = await Socio.findByUserId(userId);
-    if (existingSocio) {
-      return res.status(409).json({
-        success: false,
-        message: 'Ya eres socio'
-      });
-    }
-
-    // Verificar límite de socios
-    const puedeCrear = await Socio.puedeCrearNuevoSocio();
-    if (!puedeCrear) {
-      return res.status(403).json({
-        success: false,
-        message: 'Se ha alcanzado el límite máximo de socios'
-      });
-    }
-
-    // Obtener datos completos del usuario
-    const user = await User.findById(userId);
-
-    // 1. Crear cliente en Stripe
-    const stripeCustomer = await createStripeCustomer({
-      id: user.id,
-      email: user.email,
-      nombre: user.nombre,
-      apellidos: user.apellidos,
-      telefono: user.telefono,
-      username: user.username
-    });
-
-    // 2. Adjuntar método de pago
-    await attachPaymentMethod(paymentMethodId, stripeCustomer.id);
-
-    // 3. Crear suscripción mensual
-    const cuotaMensual = parseFloat(process.env.CUOTA_MENSUAL_SOCIO) || 10.00;
-    const subscription = await createSubscription(stripeCustomer.id, cuotaMensual);
-
-    // 4. Crear registro de socio en la base de datos
-    const socioData = {
-      user_id: userId,
-      stripe_customer_id: stripeCustomer.id,
-      stripe_subscription_id: subscription.id,
-      payment_method_id: paymentMethodId,
-      cuota_mensual: cuotaMensual
-    };
-
-    const socio = await Socio.create(socioData);
-
-    // 5. Actualizar rol del usuario a 'socio'
-    await query('UPDATE users SET role = ? WHERE id = ?', ['socio', userId]);
-
-    // 6. Registrar pago inicial en tabla payments
-    await query(`
-      INSERT INTO payments (socio_id, tipo_pago, amount, currency, stripe_payment_intent_id, estado, fecha_pago)
-      VALUES (?, 'cuota_mensual', ?, 'EUR', ?, 'exitoso', NOW())
-    `, [socio.id, cuotaMensual, subscription.latest_invoice?.payment_intent?.id || null]);
-
-    return res.status(201).json({
-      success: true,
-      message: 'Te has convertido en socio exitosamente',
-      data: {
-        socio: {
-          id: socio.id,
-          numero_socio: socio.numero_socio,
-          fecha_alta: socio.fecha_alta,
-          cuota_mensual: socio.cuota_mensual,
-          estado: socio.estado
-        },
-        subscription: {
-          id: subscription.id,
-          status: subscription.status,
-          current_period_end: subscription.current_period_end
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Error en upgradeToSocio:', error);
-    
-    // TODO: Implementar rollback si algo falla
-    
-    return res.status(500).json({
-      success: false,
-      message: 'Error al procesar la membresía',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
 };
 
 /**
@@ -120,10 +31,10 @@ export const getMyMembership = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    if (req.user.role !== 'socio') {
+    if (req.user.role !== "socio") {
       return res.status(403).json({
         success: false,
-        message: 'No eres socio'
+        message: "No eres socio",
       });
     }
 
@@ -132,7 +43,7 @@ export const getMyMembership = async (req, res) => {
     if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de membresía'
+        message: "No se encontró información de membresía",
       });
     }
 
@@ -147,15 +58,14 @@ export const getMyMembership = async (req, res) => {
         ultimo_pago: socio.ultimo_pago,
         proximo_pago: socio.proximo_pago,
         estado: socio.estado,
-        pagos_fallidos: socio.pagos_fallidos
-      }
+        pagos_fallidos: socio.pagos_fallidos,
+      },
     });
-
   } catch (error) {
-    console.error('Error en getMyMembership:', error);
+    console.error("Error en getMyMembership:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener información de membresía'
+      message: "Error al obtener información de membresía",
     });
   }
 };
@@ -172,14 +82,14 @@ export const updatePaymentMethod = async (req, res) => {
     if (!paymentMethodId) {
       return res.status(400).json({
         success: false,
-        message: 'El método de pago es obligatorio'
+        message: "El método de pago es obligatorio",
       });
     }
 
-    if (req.user.role !== 'socio') {
+    if (req.user.role !== "socio") {
       return res.status(403).json({
         success: false,
-        message: 'No eres socio'
+        message: "No eres socio",
       });
     }
 
@@ -188,7 +98,7 @@ export const updatePaymentMethod = async (req, res) => {
     if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de socio'
+        message: "No se encontró información de socio",
       });
     }
 
@@ -200,14 +110,13 @@ export const updatePaymentMethod = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Método de pago actualizado exitosamente'
+      message: "Método de pago actualizado exitosamente",
     });
-
   } catch (error) {
-    console.error('Error en updatePaymentMethod:', error);
+    console.error("Error en updatePaymentMethod:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al actualizar método de pago'
+      message: "Error al actualizar método de pago",
     });
   }
 };
@@ -221,17 +130,17 @@ export const cancelMembership = async (req, res) => {
     const userId = req.user.id;
     const { confirmacion } = req.body;
 
-    if (confirmacion !== 'CANCELAR') {
+    if (confirmacion !== "CANCELAR") {
       return res.status(400).json({
         success: false,
-        message: 'Debes confirmar escribiendo "CANCELAR"'
+        message: 'Debes confirmar escribiendo "CANCELAR"',
       });
     }
 
-    if (req.user.role !== 'socio') {
+    if (req.user.role !== "socio") {
       return res.status(403).json({
         success: false,
-        message: 'No eres socio'
+        message: "No eres socio",
       });
     }
 
@@ -240,7 +149,7 @@ export const cancelMembership = async (req, res) => {
     if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de socio'
+        message: "No se encontró información de socio",
       });
     }
 
@@ -248,29 +157,31 @@ export const cancelMembership = async (req, res) => {
     await cancelSubscription(socio.stripe_subscription_id);
 
     // Dar de baja en base de datos
-    await Socio.darDeBaja(socio.id, 'Cancelación voluntaria');
+    await Socio.darDeBaja(socio.id, "Cancelación voluntaria");
 
     // Actualizar rol de usuario a básico
-    await query('UPDATE users SET role = ? WHERE id = ?', ['basico', userId]);
+    await query("UPDATE users SET role = ? WHERE id = ?", ["basico", userId]);
 
     // Cancelar reservas futuras
-    await query(`
+    await query(
+      `
       UPDATE bookings 
       SET estado = 'cancelada', motivo_cancelacion = 'Membresía cancelada'
       WHERE socio_id = ? AND estado = 'confirmada'
       AND event_id IN (SELECT id FROM events WHERE fecha_evento > CURDATE())
-    `, [socio.id]);
+    `,
+      [socio.id],
+    );
 
     return res.status(200).json({
       success: true,
-      message: 'Membresía cancelada exitosamente. Lamentamos verte partir'
+      message: "Membresía cancelada exitosamente. Lamentamos verte partir",
     });
-
   } catch (error) {
-    console.error('Error en cancelMembership:', error);
+    console.error("Error en cancelMembership:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al cancelar membresía'
+      message: "Error al cancelar membresía",
     });
   }
 };
@@ -283,10 +194,10 @@ export const getMyPayments = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    if (req.user.role !== 'socio') {
+    if (req.user.role !== "socio") {
       return res.status(403).json({
         success: false,
-        message: 'No eres socio'
+        message: "No eres socio",
       });
     }
 
@@ -295,7 +206,7 @@ export const getMyPayments = async (req, res) => {
     if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de socio'
+        message: "No se encontró información de socio",
       });
     }
 
@@ -314,14 +225,13 @@ export const getMyPayments = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: payments
+      data: payments,
     });
-
   } catch (error) {
-    console.error('Error en getMyPayments:', error);
+    console.error("Error en getMyPayments:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener historial de pagos'
+      message: "Error al obtener historial de pagos",
     });
   }
 };
@@ -349,7 +259,7 @@ export const createPaymentSetup = async (req, res) => {
         nombre: user.nombre,
         apellidos: user.apellidos,
         telefono: user.telefono,
-        username: user.username
+        username: user.username,
       });
       customerId = customer.id;
     }
@@ -361,15 +271,14 @@ export const createPaymentSetup = async (req, res) => {
       success: true,
       data: {
         clientSecret: setupIntent.client_secret,
-        customerId: customerId
-      }
+        customerId: customerId,
+      },
     });
-
   } catch (error) {
-    console.error('Error en createPaymentSetup:', error);
+    console.error("Error en createPaymentSetup:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al configurar método de pago'
+      message: "Error al configurar método de pago",
     });
   }
 };
@@ -381,12 +290,12 @@ export const createPaymentSetup = async (req, res) => {
 export const getMyEvents = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { filter = 'proximos' } = req.query; // proximos, pasados, todos
+    const { filter = "proximos" } = req.query; // proximos, pasados, todos
 
-    if (req.user.role !== 'socio') {
+    if (req.user.role !== "socio") {
       return res.status(403).json({
         success: false,
-        message: 'No eres socio'
+        message: "No eres socio",
       });
     }
 
@@ -395,7 +304,7 @@ export const getMyEvents = async (req, res) => {
     if (!socio) {
       return res.status(404).json({
         success: false,
-        message: 'No se encontró información de socio'
+        message: "No se encontró información de socio",
       });
     }
 
@@ -410,26 +319,25 @@ export const getMyEvents = async (req, res) => {
       WHERE b.socio_id = ?
     `;
 
-    if (filter === 'proximos') {
-      sql += ' AND e.fecha_evento >= CURDATE() AND b.estado IN (\'confirmada\')';
-    } else if (filter === 'pasados') {
-      sql += ' AND e.fecha_evento < CURDATE()';
+    if (filter === "proximos") {
+      sql += " AND e.fecha_evento >= CURDATE() AND b.estado IN ('confirmada')";
+    } else if (filter === "pasados") {
+      sql += " AND e.fecha_evento < CURDATE()";
     }
 
-    sql += ' ORDER BY e.fecha_evento DESC';
+    sql += " ORDER BY e.fecha_evento DESC";
 
     const events = await query(sql, [socio.id]);
 
     return res.status(200).json({
       success: true,
-      data: events
+      data: events,
     });
-
   } catch (error) {
-    console.error('Error en getMyEvents:', error);
+    console.error("Error en getMyEvents:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error al obtener eventos'
+      message: "Error al obtener eventos",
     });
   }
 };
@@ -441,5 +349,5 @@ export default {
   cancelMembership,
   getMyPayments,
   createPaymentSetup,
-  getMyEvents
+  getMyEvents,
 };
