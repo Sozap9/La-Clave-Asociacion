@@ -6,17 +6,12 @@ import {
   getGeneralStats,
 
   // Usuarios
-  listUsers,
   getUserDetails,
-  deleteUser,
   updateUserRole,
-  approveUser,
-  rejectUser,
 
   // Socios
   listSocios,
   getSocioDetails,
-  createSocio,
   updateSocio,
   deleteSocio,
   deleteSocioPermanent,
@@ -83,7 +78,6 @@ import { handleValidationErrors } from "../middleware/validationMiddleware.js";
 // Validators
 import { verifyQRValidator } from "../validators/bookingValidator.js";
 import {
-  createSocioValidator,
   updateSocioValidator,
   deleteSocioValidator,
   paginationValidator,
@@ -117,69 +111,6 @@ router.get("/dashboard/stats", getDashboardStats);
 router.get("/stats", getGeneralStats);
 
 /**
- * MÓDULO: GESTIÓN DE USUARIOS
- */
-
-// Listar usuarios con filtros
-// Query params: search, role, activo, email_verified, page, limit
-
-router.get(
-  "/users",
-  paginationValidator,
-  searchQueryValidator,
-  handleValidationErrors,
-  listUsers,
-);
-
-// Obtener detalles de un usuario específico
-// Incluye: datos de usuario, info de socio (si aplica), estadísticas de reservas
-router.get(
-  "/users/:id",
-  idParamValidator,
-  handleValidationErrors,
-  getUserDetails,
-);
-
-// Desactivar usuario básico (OPERACIÓN CRÍTICA - 20 ops/hora)
-// Solo permite desactivar usuarios con role='basico'
-router.delete(
-  "/users/:id",
-  adminStrictLimiter,
-  idParamValidator,
-  handleValidationErrors,
-  deleteUser,
-);
-
-/**
- * NUEVAS RUTAS: GESTIÓN DE ROLES
- */
-
-// Cambiar rol de un usuario
-// Body: { role: 'basico' | 'socio' | 'admin' }
-router.patch(
-  "/users/:id/role",
-  idParamValidator,
-  handleValidationErrors,
-  updateUserRole,
-);
-
-// Aprobar usuario como socio
-router.patch(
-  "/users/:id/approve",
-  idParamValidator,
-  handleValidationErrors,
-  approveUser,
-);
-
-// Rechazar solicitud de usuario
-router.patch(
-  "/users/:id/reject",
-  idParamValidator,
-  handleValidationErrors,
-  rejectUser,
-);
-
-/**
  * MÓDULO: GESTIÓN DE SOCIOS
  */
 
@@ -202,14 +133,6 @@ router.get(
   idParamValidator,
   handleValidationErrors,
   getSocioDetails,
-);
-
-// Crear socio manualmente (sin Stripe)
-router.post(
-  "/socios",
-  createSocioValidator,
-  handleValidationErrors,
-  createSocio,
 );
 
 // Actualizar datos de un socio
@@ -492,5 +415,20 @@ router.put("/solicitudes/:id/rechazar", rechazarSolicitud);
 // Eliminar solicitud definitivamente
 // DELETE /api/admin/solicitudes/:id
 router.delete("/solicitudes/:id", adminStrictLimiter, deleteSolicitud);
+
+/**
+ * ========================================
+ * GESTIÓN DE ROLES DE USUARIO
+ * ========================================
+ */
+
+// Cambiar el rol de un usuario (admin <-> socio)
+// PATCH /api/admin/users/:id/role
+router.patch(
+  "/users/:id/role",
+  idParamValidator,
+  handleValidationErrors,
+  updateUserRole
+);
 
 export default router;

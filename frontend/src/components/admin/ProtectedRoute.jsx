@@ -27,9 +27,9 @@ const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
-  // Requiere admin y no lo es → panel público
+  // Requiere admin y no lo es → home
   if (requireAdmin && !isAdmin) {
-    return <Navigate to="/panel" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Requiere socio y no es ni socio ni admin → login

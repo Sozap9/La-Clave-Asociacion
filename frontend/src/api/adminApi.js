@@ -232,28 +232,9 @@ export const cancelEvent = async (id, motivo) => {
 
 /**
  * ========================================
- * USER MANAGEMENT
+ * USER DETAILS (USADO CON SOCIOS)
  * ========================================
  */
-
-export const getAllUsers = async (params = {}) => {
-  try {
-    const queryParams = new URLSearchParams();
-    if (params.page) queryParams.append("page", params.page);
-    if (params.limit) queryParams.append("limit", params.limit);
-    if (params.search) queryParams.append("search", params.search);
-    if (params.role) queryParams.append("role", params.role);
-    if (params.activo !== undefined)
-      queryParams.append("activo", params.activo);
-    const response = await fetch(`${API_URL}/admin/users?${queryParams}`, {
-      headers: getAuthHeaders(),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    throw error;
-  }
-};
 
 export const getUserDetails = async (id) => {
   try {
@@ -263,19 +244,6 @@ export const getUserDetails = async (id) => {
     return await response.json();
   } catch (error) {
     console.error("Error fetching user details:", error);
-    throw error;
-  }
-};
-
-export const toggleUserActive = async (id) => {
-  try {
-    const response = await fetch(`${API_URL}/admin/users/${id}/toggle-active`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("Error toggling user active status:", error);
     throw error;
   }
 };
@@ -290,33 +258,6 @@ export const updateUserRole = async (userId, newRole) => {
     return await response.json();
   } catch (error) {
     console.error("Error updating user role:", error);
-    throw error;
-  }
-};
-
-export const approveUser = async (userId) => {
-  try {
-    const response = await fetch(`${API_URL}/admin/users/${userId}/approve`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("Error approving user:", error);
-    throw error;
-  }
-};
-
-export const rejectUser = async (userId, reason) => {
-  try {
-    const response = await fetch(`${API_URL}/admin/users/${userId}/reject`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ reason }),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("Error rejecting user:", error);
     throw error;
   }
 };
@@ -352,20 +293,6 @@ export const getSocioDetails = async (id) => {
     return await response.json();
   } catch (error) {
     console.error("Error fetching socio details:", error);
-    throw error;
-  }
-};
-
-export const createSocio = async (data) => {
-  try {
-    const response = await fetch(`${API_URL}/admin/socios`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating socio:", error);
     throw error;
   }
 };

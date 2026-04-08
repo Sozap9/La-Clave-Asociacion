@@ -696,105 +696,7 @@ export const getAdminMenu = async (req, res) => {
  */
 
 /**
- * Listar todos los usuarios básicos
- * GET /api/admin/users
- */
-export const listUsers = async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 20,
-      search,
-      role,
-      activo,
-      email_verified,
-    } = req.query;
-
-    // Validar paginación
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
-    const offset = (pageNum - 1) * limitNum;
-
-    // Construir condiciones WHERE
-    const conditions = ["role = ?"];
-    const params = ["basico"];
-
-    // Búsqueda general
-    if (search && search.trim()) {
-      conditions.push(
-        "(username LIKE ? OR email LIKE ? OR nombre LIKE ? OR apellidos LIKE ?)",
-      );
-      const searchPattern = `%${search.trim()}%`;
-      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
-    }
-
-    // Filtro por role
-    if (role && role !== "basico") {
-      conditions[0] = "role = ?";
-      params[0] = role;
-    }
-
-    // Filtro por activo
-    if (activo !== undefined) {
-      const activoValue = activo === "true" || activo === true ? 1 : 0;
-      conditions.push("activo = ?");
-      params.push(activoValue);
-    }
-
-    // Filtro por email_verified
-    if (email_verified !== undefined) {
-      const verifiedValue =
-        email_verified === "true" || email_verified === true ? 1 : 0;
-      conditions.push("email_verified = ?");
-      params.push(verifiedValue);
-    }
-
-    const whereClause = "WHERE " + conditions.join(" AND ");
-
-    // SQL SIN placeholders en LIMIT/OFFSET
-    const sql = `
-      SELECT 
-        id, username, email, nombre, apellidos, telefono,
-        fecha_nacimiento, role, activo, email_verified, created_at
-      FROM users
-      ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT ${limitNum} OFFSET ${offset}
-    `;
-
-    const users = await query(sql, params);
-
-    // Contar total
-    const countSql = `SELECT COUNT(*) as total FROM users ${whereClause}`;
-    const countResult = await query(countSql, params);
-    const total = countResult[0].total;
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        users,
-        pagination: {
-          total,
-          page: pageNum,
-          pages: Math.ceil(total / limitNum),
-          limit: limitNum,
-        },
-        filters: { search, role, activo, email_verified },
-      },
-    });
-  } catch (error) {
-    console.error("Error en listUsers:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error al listar usuarios",
-      error: error.message,
-    });
-  }
-};
-
-/**
  * Obtener detalles de un usuario específico
- * GET /api/admin/users/:id
  */
 export const getUserDetails = async (req, res) => {
   try {
@@ -851,44 +753,6 @@ export const getUserDetails = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al obtener detalles del usuario",
-    });
-  }
-};
-
-/**
- * Eliminar usuario básico
- * DELETE /api/admin/users/:id
- */
-export const deleteUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuario no encontrado",
-      });
-    }
-
-    if (user.role !== "basico") {
-      return res.status(400).json({
-        success: false,
-        message: "Solo se pueden eliminar usuarios básicos desde aquí",
-      });
-    }
-
-    await User.deactivate(id);
-
-    return res.status(200).json({
-      success: true,
-      message: "Usuario desactivado exitosamente",
-    });
-  } catch (error) {
-    console.error("Error en deleteUser:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error al eliminar usuario",
     });
   }
 };
@@ -1009,77 +873,6 @@ export const getSocioDetails = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al obtener detalles del socio",
-    });
-  }
-};
-
-/**
- * Crear socio manualmente (sin pago)
- * POST /api/admin/socios
- */
-export const createSocio = async (req, res) => {
-  try {
-    const { user_id } = req.body;
-
-    if (!user_id) {
-      return res.status(400).json({
-        success: false,
-        message: "El ID del usuario es obligatorio",
-      });
-    }
-
-    const user = await User.findById(user_id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuario no encontrado",
-      });
-    }
-
-    if (user.role !== "basico") {
-      return res.status(400).json({
-        success: false,
-        message: "El usuario ya tiene otro rol",
-      });
-    }
-
-    const existingSocio = await Socio.findByUserId(user_id);
-    if (existingSocio) {
-      return res.status(409).json({
-        success: false,
-        message: "El usuario ya es socio",
-      });
-    }
-
-    const puedeCrear = await Socio.puedeCrearNuevoSocio();
-    if (!puedeCrear) {
-      return res.status(403).json({
-        success: false,
-        message: "Se ha alcanzado el límite máximo de socios",
-      });
-    }
-
-    const socioData = {
-      user_id,
-      stripe_customer_id: null,
-      stripe_subscription_id: null,
-      payment_method_id: null,
-      cuota_mensual: parseFloat(process.env.CUOTA_MENSUAL_SOCIO) || 10.0,
-    };
-
-    const socio = await Socio.create(socioData);
-    await query("UPDATE users SET role = ? WHERE id = ?", ["socio", user_id]);
-
-    return res.status(201).json({
-      success: true,
-      message: "Socio creado exitosamente",
-      data: socio,
-    });
-  } catch (error) {
-    console.error("Error en createSocio:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error al crear socio",
     });
   }
 };
@@ -1803,12 +1596,20 @@ export const getEventPayments = async (req, res) => {
 
     // Paginación y filtros
     const pageNum = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(req.query.limit, 10) || 50),
+    );
     const offset = (pageNum - 1) * limitNum;
     const { estado, search } = req.query;
 
     console.log("📍 [getEventPayments] Consultando evento:", eventId);
-    console.log("   Filtros:", { search, estado, page: pageNum, limit: limitNum });
+    console.log("   Filtros:", {
+      search,
+      estado,
+      page: pageNum,
+      limit: limitNum,
+    });
 
     // 1. Verificar que el evento existe
     const eventResult = await query(
@@ -1835,11 +1636,13 @@ export const getEventPayments = async (req, res) => {
     );
 
     const stats = {
-      total_entradas:   allEntries.length,
-      pagos_exitosos:   allEntries.filter((e) => e.estado === "confirmada").length,
-      pagos_fallidos:   allEntries.filter((e) => e.estado === "cancelada").length,
-      pagos_pendientes: allEntries.filter((e) => e.estado === "esperando_pago").length,
-      total_ingresos:   0,
+      total_entradas: allEntries.length,
+      pagos_exitosos: allEntries.filter((e) => e.estado === "confirmada")
+        .length,
+      pagos_fallidos: allEntries.filter((e) => e.estado === "cancelada").length,
+      pagos_pendientes: allEntries.filter((e) => e.estado === "esperando_pago")
+        .length,
+      total_ingresos: 0,
     };
 
     // 3. Query con filtros
@@ -1908,7 +1711,7 @@ export const getEventPayments = async (req, res) => {
         entries,
         pagination: {
           total: allEntries.length,
-          page:  pageNum,
+          page: pageNum,
           pages: Math.ceil(allEntries.length / limitNum),
           limit: limitNum,
         },
@@ -1925,7 +1728,6 @@ export const getEventPayments = async (req, res) => {
     });
   }
 };
-
 
 export const getMonthlyRevenue = async (req, res) => {
   try {
@@ -1956,12 +1758,18 @@ export const getMonthlyRevenue = async (req, res) => {
       FROM payments
       WHERE MONTH(fecha_pago) = ? AND YEAR(fecha_pago) = ? AND estado = 'exitoso'
     `;
-    const [current_month] = await query(sqlCurrentMonth, [currentMonth, currentYear]);
+    const [current_month] = await query(sqlCurrentMonth, [
+      currentMonth,
+      currentYear,
+    ]);
 
     // Mes anterior
     const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const prevYear  = currentMonth === 1 ? currentYear - 1 : currentYear;
-    const [previous_month] = await query(sqlCurrentMonth, [prevMonth, prevYear]);
+    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    const [previous_month] = await query(sqlCurrentMonth, [
+      prevMonth,
+      prevYear,
+    ]);
 
     // Desglose por tipo de pago
     const sqlByType = `
@@ -1980,7 +1788,7 @@ export const getMonthlyRevenue = async (req, res) => {
       success: true,
       data: {
         monthly_data,
-        current_month:  current_month  || { total_ingresos: 0, total_pagos: 0 },
+        current_month: current_month || { total_ingresos: 0, total_pagos: 0 },
         previous_month: previous_month || { total_ingresos: 0, total_pagos: 0 },
         by_payment_type,
       },
@@ -3318,193 +3126,6 @@ export const exportEventos = async (req, res) => {
  */
 
 /**
- * Cambiar rol de un usuario
- * PATCH /api/admin/users/:id/role
- */
-export const updateUserRole = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { role } = req.body;
-
-    // Validar rol
-    const validRoles = ["basico", "socio", "admin"];
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: `Rol inválido. Debe ser uno de: ${validRoles.join(", ")}`,
-      });
-    }
-
-    // Verificar que el usuario existe
-    const checkSql = "SELECT id, username, email, role FROM users WHERE id = ?";
-    const users = await query(checkSql, [id]);
-
-    if (users.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuario no encontrado",
-      });
-    }
-
-    const user = users[0];
-
-    // No permitir cambiar el rol del propio admin
-    if (user.id === req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "No puedes cambiar tu propio rol",
-      });
-    }
-
-    // Si ya tiene ese rol, no hacer nada
-    if (user.role === role) {
-      return res.status(200).json({
-        success: true,
-        message: "El usuario ya tiene ese rol",
-        data: { id: user.id, role: user.role },
-      });
-    }
-
-    // Actualizar rol
-    const updateSql = "UPDATE users SET role = ? WHERE id = ?";
-    await query(updateSql, [role, id]);
-
-    return res.status(200).json({
-      success: true,
-      message: `Rol actualizado a ${role} correctamente`,
-      data: {
-        id: parseInt(id),
-        username: user.username,
-        email: user.email,
-        previousRole: user.role,
-        newRole: role,
-      },
-    });
-  } catch (error) {
-    console.error("Error en updateUserRole:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error al actualizar el rol del usuario",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};
-
-/**
- * Aprobar usuario como socio
- * PATCH /api/admin/users/:id/approve
- */
-export const approveUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Verificar que el usuario existe
-    const checkSql = "SELECT id, username, email, role FROM users WHERE id = ?";
-    const users = await query(checkSql, [id]);
-
-    if (users.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuario no encontrado",
-      });
-    }
-
-    const user = users[0];
-
-    // Verificar si ya tiene registro de socio
-    const socioCheckSql = "SELECT id, estado FROM socios WHERE user_id = ?";
-    const socios = await query(socioCheckSql, [id]);
-
-    if (socios.length > 0) {
-      // Ya existe registro de socio
-      const socio = socios[0];
-
-      if (socio.estado === "pendiente") {
-        // Actualizar estado a activo
-        const updateSocioSql = "UPDATE socios SET estado = ? WHERE user_id = ?";
-        await query(updateSocioSql, ["activo", id]);
-      }
-
-      // Actualizar rol a socio
-      const updateUserSql = "UPDATE users SET role = ? WHERE id = ?";
-      await query(updateUserSql, ["socio", id]);
-
-      return res.status(200).json({
-        success: true,
-        message: "Usuario aprobado como socio correctamente",
-        data: { id: parseInt(id), role: "socio" },
-      });
-    }
-
-    // Si no existe registro de socio, solo cambiar el rol
-    const updateUserSql = "UPDATE users SET role = ? WHERE id = ?";
-    await query(updateUserSql, ["socio", id]);
-
-    return res.status(200).json({
-      success: true,
-      message: "Usuario aprobado como socio correctamente",
-      data: { id: parseInt(id), role: "socio" },
-    });
-  } catch (error) {
-    console.error("Error en approveUser:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error al aprobar usuario",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};
-
-/**
- * Rechazar solicitud de usuario
- * PATCH /api/admin/users/:id/reject
- */
-export const rejectUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-
-    // Verificar que el usuario existe
-    const checkSql = "SELECT id, username, email FROM users WHERE id = ?";
-    const users = await query(checkSql, [id]);
-
-    if (users.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuario no encontrado",
-      });
-    }
-
-    // Verificar si tiene registro de socio pendiente
-    const socioCheckSql = "SELECT id, estado FROM socios WHERE user_id = ?";
-    const socios = await query(socioCheckSql, [id]);
-
-    if (socios.length > 0 && socios[0].estado === "pendiente") {
-      // Actualizar estado a rechazado
-      const updateSocioSql = "UPDATE socios SET estado = ? WHERE user_id = ?";
-      await query(updateSocioSql, ["cancelado", id]);
-    }
-
-    // Actualizar rol a básico
-    const updateUserSql = "UPDATE users SET role = ? WHERE id = ?";
-    await query(updateUserSql, ["basico", id]);
-
-    return res.status(200).json({
-      success: true,
-      message: "Solicitud rechazada correctamente",
-      data: { id: parseInt(id), role: "basico" },
-    });
-  } catch (error) {
-    console.error("Error en rejectUser:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error al rechazar usuario",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};
-
-/**
  * ========================================
  * GESTIÓN DE SOLICITUDES DE SOCIO        ✨ NUEVO
  * ========================================
@@ -3765,6 +3386,46 @@ export const getPendientesCount = async (req, res) => {
 };
 
 /**
+ * Cambiar el rol de un usuario
+ * PATCH /api/admin/users/:id/role
+ */
+export const updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!role || !["admin", "socio"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Rol no válido. Debe ser 'admin' o 'socio'",
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Usuario no encontrado",
+      });
+    }
+
+    await query(`UPDATE users SET role = ? WHERE id = ?`, [role, id]);
+
+    return res.status(200).json({
+      success: true,
+      message: `Rol actualizado a '${role}' correctamente`,
+    });
+  } catch (error) {
+    console.error("Error en updateUserRole:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al actualizar el rol del usuario",
+      ...(process.env.NODE_ENV === "development" ? { error: error.message } : {}),
+    });
+  }
+};
+
+/**
  * ========================================
  * EXPORT DEFAULT
  * ========================================
@@ -3773,15 +3434,9 @@ export default {
   getGeneralStats,
   getDashboardStats,
   getAdminMenu,
-  listUsers,
   getUserDetails,
-  deleteUser,
-  updateUserRole,
-  approveUser,
-  rejectUser,
   listSocios,
   getSocioDetails,
-  createSocio,
   updateSocio,
   deleteSocio,
   deleteSocioPermanent,
@@ -3810,4 +3465,5 @@ export default {
   rechazarSolicitud,
   deleteSolicitud,
   getPendientesCount,
+  updateUserRole,
 };

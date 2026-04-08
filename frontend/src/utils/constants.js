@@ -26,7 +26,7 @@ export const NAV_ROUTES = {
   STATUTES: '/estatutos',
   LOGIN: '/login',
   REGISTER: '/registro',       // Única ruta de registro (solicitud de socio)
-  DASHBOARD: '/panel',
+  DASHBOARD: '/',
   PROFILE: '/perfil',
   MY_BOOKINGS: '/mis-entradas',
   ADMIN: '/admin',

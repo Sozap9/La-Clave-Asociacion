@@ -1,4 +1,4 @@
-import { X, Calendar, MapPin, Users, Clock, Info } from "lucide-react";
+import { X, Calendar, MapPin, Clock } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { createBooking } from "../../api/eventsApi";
@@ -20,12 +20,9 @@ const EventDetail = ({ event, isOpen, onClose }) => {
     fecha_evento,
     hora_evento,
     ubicacion,
-    aforo_maximo,
     entradas_disponibles,
     imagen_cartel_url,
     precio_socio,
-    precio_invitado,
-    permite_invitados,
   } = event;
 
   const formatDate = (dateString) => {
@@ -33,12 +30,11 @@ const EventDetail = ({ event, isOpen, onClose }) => {
     return date.toLocaleDateString("es-ES", {
       weekday: "long",
       year: "numeric",
-      month: "short",
+      month: "long",
       day: "numeric",
     });
   };
 
-  const entradas_reservadas = event.entradas_reservadas_real || 0;
   const isFull = entradas_disponibles <= 0;
   const canBook = !isFull && isAuthenticated;
 
@@ -75,150 +71,140 @@ const EventDetail = ({ event, isOpen, onClose }) => {
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-95 z-50 animate-fade-in"
+        className="fixed inset-0 bg-black/90 z-50 animate-fade-in"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-[#0a0a0a] max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl 
-                        border border-[#262626] animate-slide-up"
+          className="bg-[#0a0a0a] border border-[#262626] max-w-5xl w-full h-[88vh] flex flex-col shadow-2xl animate-slide-up overflow-hidden"
         >
-          {/* Header con imagen */}
-          <div className="relative h-80">
-            {imagen_cartel_url ? (
-              <img
-                src={`${import.meta.env.VITE_BASE_URL}${imagen_cartel_url}`}
-                alt={titulo}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-[#1a1a1a] flex items-center justify-center">
-                <span className="text-gray-600">Sin imagen</span>
+          {/* Botón cerrar */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 bg-black/80 hover:bg-[#1a1a1a] text-white p-2
+                      border border-[#333] transition-colors z-10"
+            aria-label="Cerrar"
+          >
+            <X size={18} />
+          </button>
+
+          {/* ── CABECERA: título + info grid ── */}
+          <div className="bg-[#111111] border-b border-[#262626] px-8 pt-10 pb-8 flex-none">
+            <h2 className="text-3xl md:text-4xl font-light text-white uppercase tracking-widest mb-8">
+              {titulo}
+            </h2>
+
+            {/* Info grid: fecha / hora / ubicación */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
+                <p className="text-primary-400 text-xs uppercase tracking-widest mb-1">
+                  Fecha
+                </p>
+                <p className="text-white text-sm font-light">
+                  {formatDate(fecha_evento)}
+                </p>
               </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-black/60 to-transparent" />
 
-            {/* Botón cerrar */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 bg-black/90 hover:bg-[#1a1a1a] text-white p-3 
-                        rounded-full transition-colors border border-[#333333]"
-              aria-label="Cerrar"
-            >
-              <X size={16} />
-            </button>
+              <div>
+                <p className="text-primary-400 text-xs uppercase tracking-widest mb-1">
+                  Horario
+                </p>
+                <p className="text-white text-sm font-light">
+                  {hora_evento ? hora_evento.slice(0, 5) : "Por confirmar"}
+                </p>
+              </div>
 
-            {/* Título sobre la imagen */}
-            <div className="absolute bottom-6 left-6 right-6">
-              <h2 className="text-4xl font-light text-white uppercase tracking-wide">
-                {titulo}
-              </h2>
+              <div>
+                <p className="text-primary-400 text-xs uppercase tracking-widest mb-1">
+                  Ubicación
+                </p>
+                <p className="text-white text-sm font-light">{ubicacion}</p>
+              </div>
             </div>
           </div>
 
-          {/* Contenido */}
-          <div className="p-8 space-y-6 bg-[#0a0a0a]">
-            {/* Alertas */}
-            {error && (
-              <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 rounded-lg">
-                ¡Reserva confirmada! Redirigiendo a tus entradas...
-              </div>
-            )}
-
-            {/* Info Grid */}
-            <div className="flex flex-col md:flex-row md:justify-between items-start gap-2">
-              <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <Calendar className="text-purple-400 mt-1" size={20} />
-                  <div>
-                    <p className="text-gray-400 text-sm font-light">Fecha</p>
-                    <p className="text-white font-medium whitespace-nowrap">
-                      {formatDate(fecha_evento)}
-                    </p>
-                  </div>
+          {/* ── CUERPO: descripción (izq) + cartel (der) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 overflow-hidden">
+            {/* Columna izquierda: descripción + precio + botón */}
+            <div className="p-8 flex flex-col gap-6 border-r border-[#262626] overflow-hidden">
+              {/* Alertas */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 text-sm">
+                  {error}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <Clock className="text-purple-400 mt-1" size={20} />
-                  <div>
-                    <p className="text-gray-400 text-sm font-light">Horario</p>
-                    {/*Hora sin segundos (HH:MM) */}
-                    <p className="text-white font-medium">
-                      {hora_evento ? hora_evento.slice(0, 5) : "Por confirmar"}
-                    </p>
-                  </div>
+              )}
+              {success && (
+                <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 text-sm">
+                  ¡Reserva confirmada! Redirigiendo a tus entradas...
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <MapPin className="text-purple-400 mt-1" size={20} />
-                  <div>
-                    <p className="text-gray-400 text-sm font-light">
-                      Ubicación
-                    </p>
-                    <p className="text-white font-medium">{ubicacion}</p>
-                  </div>
+              {/* Descripción */}
+              {descripcion && (
+                <p className="text-gray-300 leading-relaxed font-light text-sm whitespace-pre-line">
+                  {descripcion}
+                </p>
+              )}
+
+              {/* Separador */}
+              <div className="border-t border-[#262626]" />
+
+              {/* Precio */}
+              {precio_socio > 0 && (
+                <div>
+                  <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">
+                    Precio
+                  </p>
+                  <p className="text-primary-400 text-2xl font-light">
+                    {precio_socio}€
+                  </p>
                 </div>
+              )}
+
+              {/* Botón reserva — empujado al fondo */}
+              <div className="mt-auto pt-2">
+                {isAuthenticated ? (
+                  <Button
+                    variant="primary"
+                    onClick={handleBooking}
+                    disabled={!canBook || loading}
+                    className="w-full"
+                  >
+                    {loading
+                      ? "Reservando..."
+                      : isFull
+                        ? "Aforo Completo"
+                        : "Reservar Plaza"}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    to="/login"
+                    className="w-full"
+                  >
+                    Inicia sesión para reservar
+                  </Button>
+                )}
               </div>
             </div>
 
-            {/* Descripción */}
-            {descripcion && (
-              <div>
-                <p className="text-gray-300 leading-relaxed font-light">
-                  {descripcion}
-                </p>
-              </div>
-            )}
-
-            {/* Precios */}
-            {(precio_socio || precio_invitado) && (
-              <div className="bg-[#1a1a1a]/50 border border-[#262626] rounded-lg p-4">
-                <p className="text-gray-400 text-sm font-light mb-2">Precio</p>
-                <div className="space-y-1">
-                  {precio_socio > 0 && (
-                    <p className="text-white font-medium">
-                      <span className="text-purple-400">{precio_socio}€</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Botones de acción */}
-            <div className="flex gap-4 pt-4">
-              {isAuthenticated ? (
-                <Button
-                  variant="primary"
-                  onClick={handleBooking}
-                  disabled={!canBook || loading}
-                  className="flex-1 rounded-full"
-                >
-                  {loading
-                    ? "Reservando..."
-                    : isFull
-                      ? "Aforo Completo"
-                      : "Reservar Plaza"}
-                </Button>
+            {/* Columna derecha: cartel */}
+            <div className="bg-[#080808] overflow-hidden">
+              {imagen_cartel_url ? (
+                <img
+                  src={`${import.meta.env.VITE_BASE_URL}${imagen_cartel_url}`}
+                  alt={titulo}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <Button
-                  variant="primary"
-                  to="/login"
-                  className="flex-1 rounded-full"
-                >
-                  Inicia sesión para reservar
-                </Button>
+                <div className="flex flex-col items-center gap-3 text-gray-600 p-12">
+                  <Calendar size={48} strokeWidth={1} />
+                  <span className="text-sm font-light uppercase tracking-widest">
+                    Sin imagen
+                  </span>
+                </div>
               )}
             </div>
           </div>

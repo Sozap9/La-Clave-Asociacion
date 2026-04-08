@@ -104,13 +104,7 @@ const AdminStatsGenerales = () => {
                 subtitle={`${stats.socios?.total || 0} total`}
               />
               
-              <StatCard
-                title="Socios Morosos"
-                value={stats.socios?.morosos || 0}
-                icon={Users}
-                color="red"
-                subtitle={`${stats.socios?.baja || 0} de baja`}
-              />
+
             </div>
           </section>
 

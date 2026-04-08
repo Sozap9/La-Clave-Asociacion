@@ -290,12 +290,19 @@ const AdminSocios = () => {
                   color: "primary",
                   title: "Ver detalles",
                 },
-                {
-                  icon: <UserMinus size={20} />,
-                  onClick: () => handleDeactivateSocio(socio.id),
-                  color: "primary",
-                  title: "Dar de baja",
-                },
+                socio.activo
+                  ? {
+                      icon: <UserMinus size={20} />,
+                      onClick: () => handleDeactivateSocio(socio.id),
+                      color: "primary",
+                      title: "Dar de baja",
+                    }
+                  : {
+                      icon: <RotateCcw size={20} />,
+                      onClick: () => handleReactivateSocio(socio.id),
+                      color: "primary",
+                      title: "Reactivar socio",
+                    },
                 {
                   icon: <Trash2 size={20} />,
                   onClick: () => handleDeleteSocio(socio.id),

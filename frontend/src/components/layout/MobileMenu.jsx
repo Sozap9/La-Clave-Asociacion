@@ -158,7 +158,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                   </div>
                 </button>
 
-                {(isAdmin || isSocio) && (
+                {isAdmin && (
                   <Button
                     variant="primary"
                     onClick={() => handleNavigation(isAdmin ? NAV_ROUTES.ADMIN : NAV_ROUTES.DASHBOARD)}

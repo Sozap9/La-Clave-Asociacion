@@ -15,6 +15,8 @@ import {
 import Button from "../components/common/Button";
 import Loader from "../components/common/Loader";
 import EventDetail from "../components/events/EventDetail";
+import FilterBar from "../components/UI/FilterBar";
+import SearchInput from "../components/UI/SearchInput";
 
 const MisEntradas = () => {
   const navigate = useNavigate();
@@ -91,14 +93,12 @@ const MisEntradas = () => {
     let filtered = [...bookings];
     const now = new Date();
 
-    // Filtro de búsqueda por nombre
     if (searchTerm.trim()) {
       filtered = filtered.filter((b) =>
         b.evento_titulo.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filtro por estado/fecha
     switch (filter) {
       case "upcoming":
         filtered = filtered.filter(
@@ -251,20 +251,6 @@ const MisEntradas = () => {
     return booking.estado === "confirmada" && isFuture;
   };
 
-  // ✅ Colores iguales a Events (bg-primary-600)
-  const FilterButton = ({ value, label, count }) => (
-    <button
-      onClick={() => setFilter(value)}
-      className={`px-6 py-3 rounded-lg font-medium transition-all ${
-        filter === value
-          ? "bg-primary-600 text-white shadow-glow"
-          : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-      }`}
-    >
-      {label} {count !== undefined && `(${count})`}
-    </button>
-  );
-
   const counts = {
     all: bookings.length,
     upcoming: bookings.filter(
@@ -276,6 +262,28 @@ const MisEntradas = () => {
         (b.estado === "confirmada" && new Date(b.fecha_evento) < new Date())
     ).length,
   };
+
+  // Filtros con contadores para FilterBar
+  const entradaFilters = [
+    { value: "upcoming", label: "Próximos", count: counts.upcoming },
+    { value: "past",     label: "Pasados",  count: counts.past     },
+    { value: "all",      label: "Todos",    count: counts.all      },
+  ];
+
+  // Mensaje del estado vacío según filtro activo
+  const emptyTitle = searchTerm
+    ? "No se encontraron eventos"
+    : filter === "upcoming"
+      ? "No tienes eventos próximos"
+      : filter === "past"
+        ? "No tienes eventos pasados"
+        : "No tienes entradas";
+
+  const emptySubtitle = searchTerm
+    ? `No hay resultados para "${searchTerm}"`
+    : filter !== "all"
+      ? "Intenta con otro filtro"
+      : "Reserva tu primera entrada para un evento";
 
   return (
     <div className="min-h-screen py-20 px-4 bg-black">
@@ -290,51 +298,21 @@ const MisEntradas = () => {
 
         {/* Filtros y Búsqueda */}
         <div className="flex items-center gap-4 mb-8 flex-wrap">
-          {/* Filtros */}
-          <div className="flex gap-3">
-            <FilterButton
-              value="upcoming"
-              label="Próximos"
-              count={counts.upcoming}
-            />
-            <FilterButton value="past" label="Pasados" count={counts.past} />
-            <FilterButton value="all" label="Todos" count={counts.all} />
-          </div>
+          <FilterBar
+            customFilters={entradaFilters}
+            activeFilter={filter}
+            onFilterChange={setFilter}
+            showCounts={true}
+          />
 
-          {/* Barra de búsqueda */}
           <div className="flex-1 max-w-md ml-auto">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar por evento..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 pl-10 bg-[#1a1a1a]/60 border border-purple-500/30 rounded-lg 
-                           text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 
-                           focus:ring-2 focus:ring-purple-500/20 backdrop-blur-sm transition-all"
-              />
-              <svg
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onClear={() => setSearchTerm("")}
+              placeholder="Buscar por evento..."
+              debounceMs={300}
+            />
           </div>
         </div>
 
@@ -356,16 +334,14 @@ const MisEntradas = () => {
                 key={booking.id}
                 onClick={() => handleViewEvent(booking)}
                 className="bg-[#0a0a0a] border border-[#262626] rounded-xl overflow-hidden 
-                          hover:border-purple-500/50 transition-all group cursor-pointer"
+                          hover:border-primary-500/50 transition-all group cursor-pointer"
               >
-                <div className="flex flex-col sm:flex-row">
-                  {/* IMAGEN */}
-                  <div className="relative sm:w-40 sm:h-40 h-48 flex-shrink-0 bg-[#1a1a1a]">
+                <div className="flex flex-col sm:flex-row sm:items-stretch">
+                  {/* Imagen */}
+                  <div className="relative sm:w-40 h-48 sm:h-auto flex-shrink-0 bg-[#1a1a1a] self-stretch">
                     {booking.imagen_cartel_url ? (
                       <img
-                        src={`${import.meta.env.VITE_BASE_URL}${
-                          booking.imagen_cartel_url
-                        }`}
+                        src={`${import.meta.env.VITE_BASE_URL}${booking.imagen_cartel_url}`}
                         alt={booking.evento_titulo}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
@@ -382,22 +358,22 @@ const MisEntradas = () => {
                       <div className="flex-1">
                         <h3
                           className="text-xl font-light text-white mb-2 uppercase tracking-wide 
-                                      group-hover:text-purple-400 transition-colors"
+                                      group-hover:text-primary-300 transition-colors"
                         >
                           {booking.evento_titulo}
                         </h3>
 
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400">
                           <div className="flex items-center gap-1.5">
-                            <Calendar size={14} />
+                            <Calendar className="text-primary-300" size={14} />
                             <span>{formatDate(booking.fecha_evento)}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <Clock size={14} />
+                            <Clock className="text-primary-300" size={14} />
                             <span>{formatTime(booking.hora_evento)}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <MapPin size={14} />
+                            <MapPin className="text-primary-300" size={14} />
                             <span>{booking.ubicacion}</span>
                           </div>
                         </div>
@@ -410,7 +386,7 @@ const MisEntradas = () => {
 
                     <div className="mb-3">
                       <span className="text-xs text-gray-500">Código: </span>
-                      <span className="font-mono text-sm text-purple-400">
+                      <span className="font-mono text-sm text-primary-300">
                         {booking.codigo_reserva}
                       </span>
                     </div>
@@ -445,30 +421,15 @@ const MisEntradas = () => {
 
         {/* Sin resultados */}
         {!loading && filteredBookings.length === 0 && !error && (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🎫</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              {searchTerm ? (
-                "No se encontraron eventos"
-              ) : (
-                <>
-                  {filter === "all" && "No tienes eventos"}
-                  {filter === "upcoming" && "No tienes eventos próximos"}
-                  {filter === "past" && "No tienes eventos pasados"}
-                </>
-              )}
+          <div className="text-center py-16">
+            <Ticket
+              className="mx-auto mb-4 text-gray-700"
+              size={44}
+              strokeWidth={1}
+            />
+            <h3 className="text-lg font-light text-gray-400 uppercase tracking-widest mb-6">
+              {emptyTitle}
             </h3>
-            <p className="text-gray-400 text-lg mb-6">
-              {searchTerm ? (
-                `No hay resultados para "${searchTerm}"`
-              ) : (
-                <>
-                  {filter === "all" &&
-                    "Reserva tu primera entrada para un evento"}
-                  {filter !== "all" && "Intenta con otro filtro"}
-                </>
-              )}
-            </p>
             {filter === "all" && !searchTerm && (
               <Button variant="primary" to="/eventos">
                 Ver Eventos Disponibles
@@ -489,13 +450,13 @@ const MisEntradas = () => {
       {showQRModal && selectedBooking && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-95 z-50"
+            className="fixed inset-0 bg-black/90 z-50"
             onClick={() => setShowQRModal(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#0a0a0a] max-w-md w-full rounded-xl border border-[#262626] p-6">
+            <div className="bg-[#0a0a0a] max-w-md w-full border border-[#262626] p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-light text-white uppercase">
+                <h3 className="text-2xl font-light text-white uppercase tracking-wide">
                   Tu Entrada
                 </h3>
                 <button
@@ -508,19 +469,19 @@ const MisEntradas = () => {
 
               <div className="text-center space-y-6">
                 <div>
-                  <p className="text-gray-400 mb-2">Evento</p>
-                  <p className="text-white text-xl font-medium">
+                  <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">
+                    Evento
+                  </p>
+                  <p className="text-white text-lg font-light uppercase tracking-wide">
                     {selectedBooking.evento_titulo}
                   </p>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg">
+                <div className="bg-white p-6">
                   {selectedBooking.qr_code_url ? (
                     <>
                       <img
-                        src={`${import.meta.env.VITE_BASE_URL}${
-                          selectedBooking.qr_code_url
-                        }`}
+                        src={`${import.meta.env.VITE_BASE_URL}${selectedBooking.qr_code_url}`}
                         alt="QR Code"
                         className="w-full h-auto"
                         onError={(e) => {
@@ -559,11 +520,11 @@ const MisEntradas = () => {
                   )}
                 </div>
 
-                <div className="bg-[#1a1a1a]/50 border border-[#333333] rounded-lg p-4">
-                  <p className="text-gray-400 text-sm mb-1">
+                <div className="bg-[#1a1a1a] border border-[#262626] p-4">
+                  <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">
                     Código de Reserva
                   </p>
-                  <p className="text-purple-400 font-mono text-lg font-bold">
+                  <p className="text-primary-300 font-mono text-lg font-bold">
                     {selectedBooking.codigo_reserva}
                   </p>
                 </div>
@@ -589,13 +550,13 @@ const MisEntradas = () => {
       {showCancelModal && selectedBooking && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-95 z-50"
+            className="fixed inset-0 bg-black/90 z-50"
             onClick={() => !cancelling && setShowCancelModal(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#0a0a0a] max-w-md w-full rounded-xl border border-[#262626] p-6">
+            <div className="bg-[#0a0a0a] max-w-md w-full border border-[#262626] p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-light text-white uppercase">
+                <h3 className="text-2xl font-light text-white uppercase tracking-wide">
                   Cancelar Reserva
                 </h3>
                 <button
@@ -610,25 +571,27 @@ const MisEntradas = () => {
               {!cancelSuccess ? (
                 <>
                   <div className="mb-6">
-                    <p className="text-gray-400 mb-2">Evento</p>
-                    <p className="text-white text-lg font-medium">
+                    <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">
+                      Evento
+                    </p>
+                    <p className="text-white text-lg font-light uppercase tracking-wide">
                       {selectedBooking.evento_titulo}
                     </p>
                     <p className="text-gray-500 text-sm mt-1">
-                      {formatDate(selectedBooking.fecha_evento)} -{" "}
+                      {formatDate(selectedBooking.fecha_evento)} —{" "}
                       {formatTime(selectedBooking.hora_evento)}
                     </p>
                   </div>
 
-                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-lg p-4 mb-6">
-                    <p className="text-gray-300 text-sm">
+                  <div className="bg-[#1a1a1a] border border-[#262626] p-4 mb-6">
+                    <p className="text-gray-400 text-sm">
                       Esta acción no se puede deshacer. Tu plaza quedará
                       disponible para otros socios.
                     </p>
                   </div>
 
                   <div className="mb-6">
-                    <label className="block text-gray-400 text-sm mb-2">
+                    <label className="block text-gray-500 text-xs uppercase tracking-widest mb-2">
                       Motivo de cancelación (opcional)
                     </label>
                     <textarea
@@ -661,8 +624,8 @@ const MisEntradas = () => {
                 </>
               ) : (
                 <div className="text-center py-8">
-                  <CheckCircle className="text-green-500 w-16 h-16 mx-auto mb-4" />
-                  <h4 className="text-xl text-white font-medium mb-2">
+                  <CheckCircle className="text-primary-300 w-16 h-16 mx-auto mb-4" />
+                  <h4 className="text-xl font-light text-white uppercase tracking-wide mb-2">
                     Reserva Cancelada
                   </h4>
                   <p className="text-gray-400">

@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import { useState, useEffect } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import {
   LayoutDashboard,
   Calendar,
-  Users,
   UserCheck,
   Ticket,
   CreditCard,
@@ -16,9 +15,9 @@ import {
   FileText,
   X,
   ClipboardList,
-} from 'lucide-react';
-import SidebarSection from './SidebarSection';
-import { getSolicitudesPendientesCount } from '../../api/adminApi';
+} from "lucide-react";
+import SidebarSection from "./SidebarSection";
+import { getSolicitudesPendientesCount } from "../../api/adminApi";
 
 const AdminSidebar = ({ isOpen, onClose }) => {
   const { logout } = useAuth();
@@ -34,7 +33,9 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       try {
         const res = await getSolicitudesPendientesCount();
         if (res.success) setPendientesCount(res.data.total || 0);
-      } catch { /* silencioso */ }
+      } catch {
+        /* silencioso */
+      }
     };
     fetchCount();
     // Refrescar cada 60 s mientras el sidebar está montado
@@ -42,82 +43,124 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = () => { logout(); navigate('/'); };
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   // ── Menús ─────────────────────────────────────────────────────────
   const statsItems = [
-    { path: '/admin/actividad',      label: 'Actividad Reciente', icon: BarChart3 },
-    { path: '/admin/stats/dashboard',label: 'Dashboard Stats',    icon: BarChart3 },
-    { path: '/admin/stats/generales',label: 'Generales',          icon: BarChart3 },
-  ];
-
-  const usersItems = [
-    { path: '/admin/usuarios', label: 'Listar usuarios', icon: Users },
+    { path: "/admin/actividad", label: "Actividad Reciente", icon: BarChart3 },
+    {
+      path: "/admin/stats/dashboard",
+      label: "Dashboard Stats",
+      icon: BarChart3,
+    },
+    { path: "/admin/stats/generales", label: "Generales", icon: BarChart3 },
   ];
 
   const sociosItems = [
-    { path: '/admin/socios',         label: 'Listar socios',     icon: UserCheck },
-    { path: '/admin/socios/morosos', label: 'Socios morosos',    icon: UserCheck },
-    { path: '/admin/socios/crear',   label: 'Crear socio manual',icon: UserCheck },
+    { path: "/admin/socios", label: "Listar socios", icon: UserCheck },
+    {
+      path: "/admin/solicitudes",
+      label: "Solicitudes de socio",
+      icon: ClipboardList,
+      badge: pendientesCount,
+    },
   ];
 
   const solicitudesItems = [
-    { path: '/admin/solicitudes', label: 'Solicitudes de socio', icon: ClipboardList },
+    {
+      path: "/admin/solicitudes",
+      label: "Solicitudes de socio",
+      icon: ClipboardList,
+    },
   ];
 
   const eventosItems = [
-    { path: '/admin/eventos',           label: 'Listar eventos', icon: Calendar  },
-    { path: '/admin/eventos/borradores',label: 'Borradores',     icon: FileText  },
-    { path: '/admin/eventos/nuevo',     label: 'Crear evento',   icon: Calendar  },
-    { path: '/admin/stats/eventos',     label: 'Estadísticas',   icon: BarChart3 },
+    { path: "/admin/eventos", label: "Listar eventos", icon: Calendar },
+    { path: "/admin/eventos/borradores", label: "Borradores", icon: FileText },
+    { path: "/admin/eventos/nuevo", label: "Crear evento", icon: Calendar },
+    { path: "/admin/stats/eventos", label: "Estadísticas", icon: BarChart3 },
   ];
 
   const reservasItems = [
-    { path: '/admin/reservas',               label: 'Listar reservas', icon: Ticket    },
-    { path: '/admin/reservas/verificar-qr',  label: 'Verificar QR',   icon: Ticket    },
-    { path: '/admin/stats/reservas',         label: 'Estadísticas',   icon: BarChart3 },
+    { path: "/admin/reservas", label: "Listar reservas", icon: Ticket },
+    {
+      path: "/admin/reservas/verificar-qr",
+      label: "Verificar QR",
+      icon: Ticket,
+    },
+    { path: "/admin/stats/reservas", label: "Estadísticas", icon: BarChart3 },
   ];
 
   const pagosItems = [
-    { path: '/admin/pagos',          label: 'Listar pagos',      icon: CreditCard },
-    { path: '/admin/pagos/mensuales',label: 'Ingresos mensuales',icon: CreditCard },
-    { path: '/admin/stats/pagos',    label: 'Estadísticas',      icon: BarChart3  },
+    { path: "/admin/pagos", label: "Listar pagos", icon: CreditCard },
+    {
+      path: "/admin/pagos/mensuales",
+      label: "Ingresos mensuales",
+      icon: CreditCard,
+    },
+    { path: "/admin/stats/pagos", label: "Estadísticas", icon: BarChart3 },
   ];
 
   const galeriaItems = [
-    { path: '/admin/galeria',          label: 'Gestionar Álbumes',icon: Image    },
-    { path: '/admin/stats/galeria',    label: 'Estadísticas',    icon: BarChart3 },
+    { path: "/admin/galeria", label: "Gestionar Álbumes", icon: Image },
+    { path: "/admin/stats/galeria", label: "Estadísticas", icon: BarChart3 },
   ];
 
   const exportItems = [
-    { path: '/admin/export/socios',   label: 'Exportar socios',  icon: FileDown },
-    { path: '/admin/export/reservas', label: 'Exportar reservas',icon: FileDown },
-    { path: '/admin/export/usuarios', label: 'Exportar usuarios',icon: FileDown },
-    { path: '/admin/export/eventos',  label: 'Exportar eventos', icon: FileDown },
+    { path: "/admin/export/socios", label: "Exportar socios", icon: FileDown },
+    {
+      path: "/admin/export/reservas",
+      label: "Exportar reservas",
+      icon: FileDown,
+    },
+    {
+      path: "/admin/export/usuarios",
+      label: "Exportar usuarios",
+      icon: FileDown,
+    },
+    {
+      path: "/admin/export/eventos",
+      label: "Exportar eventos",
+      icon: FileDown,
+    },
   ];
 
-  const handleMenuToggle = (menuId) => setOpenMenu(openMenu === menuId ? null : menuId);
+  const handleMenuToggle = (menuId) =>
+    setOpenMenu(openMenu === menuId ? null : menuId);
 
   const getActiveMenu = () => {
-    if (location.pathname.startsWith('/admin/stats') || location.pathname === '/admin/actividad') return 'stats';
-    if (location.pathname.startsWith('/admin/usuarios'))    return 'users';
-    if (location.pathname.startsWith('/admin/socios'))      return 'socios';
-    if (location.pathname.startsWith('/admin/solicitudes')) return 'solicitudes';
-    if (location.pathname.startsWith('/admin/eventos'))     return 'eventos';
-    if (location.pathname.startsWith('/admin/reservas'))    return 'reservas';
-    if (location.pathname.startsWith('/admin/pagos'))       return 'pagos';
-    if (location.pathname.startsWith('/admin/galeria'))     return 'galeria';
-    if (location.pathname.startsWith('/admin/export'))      return 'exports';
+    if (
+      location.pathname.startsWith("/admin/stats") ||
+      location.pathname === "/admin/actividad"
+    )
+      return "stats";
+    if (
+      location.pathname.startsWith("/admin/socios") ||
+      location.pathname.startsWith("/admin/solicitudes")
+    )
+      return "socios";
+    if (location.pathname.startsWith("/admin/eventos")) return "eventos";
+    if (location.pathname.startsWith("/admin/reservas")) return "reservas";
+    if (location.pathname.startsWith("/admin/pagos")) return "pagos";
+    if (location.pathname.startsWith("/admin/galeria")) return "galeria";
+    if (location.pathname.startsWith("/admin/export")) return "exports";
     return null;
   };
 
   const activeMenu = getActiveMenu();
 
-  useEffect(() => { if (onClose) onClose(); }, [location.pathname]);
+  useEffect(() => {
+    if (onClose) onClose();
+  }, [location.pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : 'unset';
-    return () => { document.body.style.overflow = 'unset'; };
+    document.body.style.overflow = isOpen ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [isOpen]);
 
   return (
@@ -136,7 +179,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           w-64 bg-[#0a0a0a] border-r border-[#262626]
           flex flex-col
           transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
         {/* Header */}
@@ -169,8 +212,8 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 mb-4 rounded-lg transition-all ${
                 isActive
-                  ? 'bg-primary-600 text-white shadow-glow'
-                  : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white'
+                  ? "bg-primary-600 text-white shadow-glow"
+                  : "text-gray-400 hover:bg-[#1a1a1a] hover:text-white"
               }`
             }
           >
@@ -180,103 +223,87 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
           <div className="space-y-2">
             <SidebarSection
-              id="stats" title="Menú y Estadísticas" icon={BarChart3} items={statsItems}
-              isOpen={openMenu === 'stats' || (openMenu === null && activeMenu === 'stats')}
-              onToggle={() => handleMenuToggle('stats')}
+              id="stats"
+              title="Menú y Estadísticas"
+              icon={BarChart3}
+              items={statsItems}
+              isOpen={
+                openMenu === "stats" ||
+                (openMenu === null && activeMenu === "stats")
+              }
+              onToggle={() => handleMenuToggle("stats")}
             />
 
             <SidebarSection
-              id="users" title="Gestión Usuarios" icon={Users} items={usersItems}
-              isOpen={openMenu === 'users' || (openMenu === null && activeMenu === 'users')}
-              onToggle={() => handleMenuToggle('users')}
+              id="socios"
+              title="Gestión Socios"
+              icon={UserCheck}
+              items={sociosItems}
+              isOpen={
+                openMenu === "socios" ||
+                (openMenu === null && activeMenu === "socios")
+              }
+              onToggle={() => handleMenuToggle("socios")}
             />
 
             <SidebarSection
-              id="socios" title="Gestión Socios" icon={UserCheck} items={sociosItems}
-              isOpen={openMenu === 'socios' || (openMenu === null && activeMenu === 'socios')}
-              onToggle={() => handleMenuToggle('socios')}
-            />
-
-            {/* ── Solicitudes con badge ── */}
-            <div className="mb-2">
-              <button
-                onClick={() => handleMenuToggle('solicitudes')}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
-                  activeMenu === 'solicitudes'
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <ClipboardList size={20} className="flex-shrink-0" />
-                  <span className="font-medium truncate">Solicitudes</span>
-                  {pendientesCount > 0 && (
-                    <span className="ml-1 min-w-[20px] h-5 px-1.5 bg-yellow-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
-                      {pendientesCount > 99 ? '99+' : pendientesCount}
-                    </span>
-                  )}
-                </div>
-              </button>
-
-              {/* Submenú (siempre abierto al hacer clic, o si la ruta está activa) */}
-              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                openMenu === 'solicitudes' || (openMenu === null && activeMenu === 'solicitudes')
-                  ? 'max-h-40 opacity-100 mt-1'
-                  : 'max-h-0 opacity-0'
-              }`}>
-                <div className="ml-4 space-y-1 border-l-2 border-gray-800 pl-2">
-                  <NavLink
-                    to="/admin/solicitudes"
-                    className={({ isActive }) =>
-                      `flex items-center justify-between gap-3 px-4 py-2 rounded-lg text-sm transition-colors ${
-                        isActive
-                          ? 'bg-primary-600 text-white'
-                          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                      }`
-                    }
-                  >
-                    <span className="flex items-center gap-3">
-                      <ClipboardList size={16} className="flex-shrink-0" />
-                      <span className="truncate">Solicitudes de socio</span>
-                    </span>
-                    {pendientesCount > 0 && (
-                      <span className="min-w-[18px] h-[18px] px-1 bg-yellow-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
-                        {pendientesCount > 99 ? '99+' : pendientesCount}
-                      </span>
-                    )}
-                  </NavLink>
-                </div>
-              </div>
-            </div>
-
-            <SidebarSection
-              id="eventos" title="Gestión Eventos" icon={Calendar} items={eventosItems}
-              isOpen={openMenu === 'eventos' || (openMenu === null && activeMenu === 'eventos')}
-              onToggle={() => handleMenuToggle('eventos')}
+              id="eventos"
+              title="Gestión Eventos"
+              icon={Calendar}
+              items={eventosItems}
+              isOpen={
+                openMenu === "eventos" ||
+                (openMenu === null && activeMenu === "eventos")
+              }
+              onToggle={() => handleMenuToggle("eventos")}
             />
 
             <SidebarSection
-              id="reservas" title="Gestión Reservas" icon={Ticket} items={reservasItems}
-              isOpen={openMenu === 'reservas' || (openMenu === null && activeMenu === 'reservas')}
-              onToggle={() => handleMenuToggle('reservas')}
+              id="reservas"
+              title="Gestión Reservas"
+              icon={Ticket}
+              items={reservasItems}
+              isOpen={
+                openMenu === "reservas" ||
+                (openMenu === null && activeMenu === "reservas")
+              }
+              onToggle={() => handleMenuToggle("reservas")}
             />
 
             <SidebarSection
-              id="pagos" title="Gestión Pagos" icon={CreditCard} items={pagosItems}
-              isOpen={openMenu === 'pagos' || (openMenu === null && activeMenu === 'pagos')}
-              onToggle={() => handleMenuToggle('pagos')}
+              id="pagos"
+              title="Gestión Pagos"
+              icon={CreditCard}
+              items={pagosItems}
+              isOpen={
+                openMenu === "pagos" ||
+                (openMenu === null && activeMenu === "pagos")
+              }
+              onToggle={() => handleMenuToggle("pagos")}
             />
 
             <SidebarSection
-              id="galeria" title="Gestión Galería" icon={Image} items={galeriaItems}
-              isOpen={openMenu === 'galeria' || (openMenu === null && activeMenu === 'galeria')}
-              onToggle={() => handleMenuToggle('galeria')}
+              id="galeria"
+              title="Gestión Galería"
+              icon={Image}
+              items={galeriaItems}
+              isOpen={
+                openMenu === "galeria" ||
+                (openMenu === null && activeMenu === "galeria")
+              }
+              onToggle={() => handleMenuToggle("galeria")}
             />
 
             <SidebarSection
-              id="exports" title="Exportaciones" icon={FileDown} items={exportItems}
-              isOpen={openMenu === 'exports' || (openMenu === null && activeMenu === 'exports')}
-              onToggle={() => handleMenuToggle('exports')}
+              id="exports"
+              title="Exportaciones"
+              icon={FileDown}
+              items={exportItems}
+              isOpen={
+                openMenu === "exports" ||
+                (openMenu === null && activeMenu === "exports")
+              }
+              onToggle={() => handleMenuToggle("exports")}
             />
           </div>
         </nav>
