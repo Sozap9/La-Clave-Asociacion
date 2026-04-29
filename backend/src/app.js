@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import logger from "./config/logger.js";
 import httpLogger from "./middleware/httpLogger.js";
-import CronService from "./services/cronService.js"; // ✨ NUEVO
+import CronService from "./services/cronService.js";
 
 // __dirname CONFIGURATION FOR ES MODULES
 const __filename = fileURLToPath(import.meta.url);
@@ -30,19 +30,28 @@ app.set('trust proxy', 1);
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" }  // ← CRÍTICO: Permite cargar imágenes desde otro puerto
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 /**
  * 2. CORS - Permitir múltiples orígenes
  */
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",  // Vite default
-    "http://localhost:3006",  // Puerto alternativo
-    "http://localhost:3000",  // React default
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "http://localhost:3006",
+      "http://localhost:3000",
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+
+    // Permitir sin origin (ej: Postman, curl), orígenes permitidos, y subdominios de pages.dev
+    if (!origin || allowedOrigins.includes(origin) || /\.pages\.dev$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -184,12 +193,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ══════════════════════════════════════════════════════════════
 // TAREAS PROGRAMADAS (CRON)
-// Se inicializan aquí, después de que todas las rutas y
-// middlewares estén registrados, pero antes del export.
-// Solo se activan si no estamos en entorno de test.
-// ══════════════════════════════════════════════════════════════
 if (process.env.NODE_ENV !== 'test') {
   CronService.init();
 }
