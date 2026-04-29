@@ -4,7 +4,7 @@ import MobileMenu from './MobileMenu';
 import logo from '../../assets/laclavelogo.png';
 import { useLanguage } from '../../context/LanguageContext';
 
-const Navbar = () => {
+const NavBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useLanguage();
 
@@ -53,4 +53,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default NavBar;
