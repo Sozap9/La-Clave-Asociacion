@@ -24,7 +24,7 @@ const AdminCreateSocio = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("${API_URL}/admin/users", {
+      const response = await fetch(`${API_URL}/admin/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,7 +58,7 @@ const AdminCreateSocio = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("${API_URL}/admin/socios", {
+      const response = await fetch(`${API_URL}/admin/socios`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
