@@ -78,7 +78,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-[#0a0a0a] border border-[#262626] max-w-5xl w-full h-[88vh] flex flex-col shadow-2xl animate-slide-up overflow-hidden"
+          className="bg-[#0a0a0a] border border-[#262626] max-w-5xl w-full h-[90vh] md:h-[88vh] flex flex-col shadow-2xl animate-slide-up overflow-hidden"
         >
           {/* Botón cerrar */}
           <button
@@ -91,13 +91,13 @@ const EventDetail = ({ event, isOpen, onClose }) => {
           </button>
 
           {/* ── CABECERA: título + info grid ── */}
-          <div className="bg-[#111111] border-b border-[#262626] px-8 pt-10 pb-8 flex-none">
-            <h2 className="text-3xl md:text-4xl font-light text-white uppercase tracking-widest mb-8">
+          <div className="bg-[#111111] border-b border-[#262626] px-4 sm:px-8 pt-6 sm:pt-10 pb-4 sm:pb-8 flex-none">
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-light text-white uppercase tracking-widest mb-4 sm:mb-8">
               {titulo}
             </h2>
 
             {/* Info grid: fecha / hora / ubicación */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
               <div>
                 <p className="text-primary-400 text-xs uppercase tracking-widest mb-1">
                   Fecha
@@ -125,10 +125,12 @@ const EventDetail = ({ event, isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* ── CUERPO: descripción (izq) + cartel (der) ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 overflow-hidden">
-            {/* Columna izquierda: descripción + precio + botón */}
-            <div className="p-8 flex flex-col gap-6 border-r border-[#262626] overflow-hidden">
+          {/* ── CUERPO: mobile = columna, desktop = dos columnas ── */}
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-0 flex-1 overflow-hidden">
+
+            {/* Columna izquierda (desktop) / scroll único (mobile) */}
+            <div className="p-4 sm:p-8 flex flex-col gap-5 border-r border-[#262626] overflow-y-auto">
+
               {/* Alertas */}
               {error && (
                 <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 text-sm">
@@ -148,6 +150,17 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 </p>
               )}
 
+              {/* Imagen — solo mobile, entre descripción y reserva */}
+              {imagen_cartel_url && (
+                <div className="md:hidden w-full flex-shrink-0 rounded-lg overflow-hidden">
+                  <img
+                    src={`${import.meta.env.VITE_BASE_URL}${imagen_cartel_url}`}
+                    alt={titulo}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+              )}
+
               {/* Separador */}
               <div className="border-t border-[#262626]" />
 
@@ -163,8 +176,8 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* Botón reserva — empujado al fondo */}
-              <div className="mt-auto pt-2">
+              {/* Botón reserva */}
+              <div className="md:mt-auto pt-2">
                 {isAuthenticated ? (
                   <Button
                     variant="primary"
@@ -190,8 +203,8 @@ const EventDetail = ({ event, isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Columna derecha: cartel */}
-            <div className="bg-[#080808] overflow-hidden">
+            {/* Columna derecha: cartel — solo desktop */}
+            <div className="bg-[#080808] overflow-hidden hidden md:flex md:items-center md:justify-center">
               {imagen_cartel_url ? (
                 <img
                   src={`${import.meta.env.VITE_BASE_URL}${imagen_cartel_url}`}

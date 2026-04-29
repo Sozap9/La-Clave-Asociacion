@@ -23,7 +23,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // ✅ CORREGIDO: Obtener o crear socio (admins pueden reservar automáticamente)
+    // Obtener o crear socio (admins pueden reservar automáticamente)
     let socio = await Socio.findByUserId(userId);
 
     // Si es admin y no tiene registro de socio, crear uno automáticamente
@@ -36,7 +36,7 @@ export const createBooking = async (req, res) => {
         );
         socio = await Socio.findById(result.insertId);
         logger.info(
-          "✅ Registro de socio creado automáticamente para admin:",
+          "Registro de socio creado automáticamente para admin:",
           userId,
         );
       } catch (error) {
@@ -71,7 +71,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // ✅ CORREGIDO: Verificar que el evento está publicado (scheduled en lugar de publicado)
+    // Verificar que el evento está publicado (scheduled en lugar de publicado)
     if (event.estado !== "scheduled") {
       return res.status(400).json({
         success: false,
@@ -134,24 +134,35 @@ export const createBooking = async (req, res) => {
     }
 
     // Crear reserva con campos correctos de la tabla bookings
-    const booking = await transaction(async (conn) => {
+     const booking = await transaction(async (conn) => {
       // Calcular precio total
       const monto_total = event.precio_socio * numero_entradas;
+ 
+      // codigo_acceso — referencia interna corta (ACC-XXXXX)
       const codigo_acceso = `ACC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
+ 
+      // codigo_reserva — código visible para el socio (LCV-YYYYMM-XXXX)
+      // Mismo formato que Booking.js para consistencia
+      const now = new Date();
+      const year  = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const codigo_reserva = `LCV-${year}${month}-${randomPart}`;
+ 
       const [result] = await conn.execute(
         `INSERT INTO bookings (
-          socio_id, event_id, numero_entradas, estado, codigo_acceso, created_at
-        ) VALUES (?, ?, ?, 'confirmada', ?, NOW())`,
-        [socio.id, event_id, numero_entradas, codigo_acceso],
+          socio_id, event_id, numero_entradas, estado,
+          codigo_reserva, codigo_acceso, created_at
+        ) VALUES (?, ?, ?, 'confirmada', ?, ?, NOW())`,
+        [socio.id, event_id, numero_entradas, codigo_reserva, codigo_acceso],
       );
-
+ 
       const bookingId = result.insertId;
-
+ 
       // Actualizar entradas disponibles del evento (si la columna existe)
       try {
         await conn.execute(
-          `UPDATE events 
+          `UPDATE events
            SET entradas_disponibles = entradas_disponibles - ?
            WHERE id = ?`,
           [numero_entradas, event_id],
@@ -163,7 +174,7 @@ export const createBooking = async (req, res) => {
         );
         // No fallar si la columna no existe
       }
-
+ 
       // Obtener la reserva creada
       const [rows] = await conn.execute(`SELECT * FROM bookings WHERE id = ?`, [
         bookingId,
@@ -178,11 +189,11 @@ export const createBooking = async (req, res) => {
       qrCode = await generateQRCode(qrData, booking.id);
 
       // Guardar QR en la booking
-      await query(`UPDATE bookings SET qr_code = ? WHERE id = ?`, [
+      await query(`UPDATE bookings SET qr_code_url = ? WHERE id = ?`, [
         qrCode,
         booking.id,
       ]);
-      logger.info("✅ QR Code generado para booking:", {
+      logger.info(" QR Code generado para booking:", {
         bookingId: booking.id,
       });
     } catch (qrError) {
@@ -200,9 +211,9 @@ export const createBooking = async (req, res) => {
 
       await query(
         `INSERT INTO payments (
-          socio_id, stripe_payment_id, monto, moneda, tipo, descripcion, 
+          socio_id, stripe_payment_intent_id, amount, currency, tipo_pago, descripcion, 
           estado, fecha_pago, metadata, created_at
-        ) VALUES (?, ?, ?, 'EUR', 'evento', ?, 'completado', NOW(), ?, NOW())`,
+        ) VALUES (?, ?, ?, 'EUR', 'entrada_evento', ?, 'exitoso', NOW(), ?, NOW())`,
         [
           socio.id,
           `booking-${booking.id}-${Date.now()}`,
@@ -431,10 +442,10 @@ export const getEventBookings = async (req, res) => {
           `SELECT
              id,
              socio_id,
-             COALESCE(amount, monto, 0) as amount,
-             COALESCE(currency, moneda, 'EUR') as currency,
+             amount,
+             COALESCE(currency, 'EUR') as currency,
              estado,
-             tipo,
+             tipo_pago,
              descripcion,
              fecha_pago,
              metadata

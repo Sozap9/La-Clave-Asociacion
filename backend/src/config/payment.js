@@ -3,28 +3,48 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Inicializar Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16'
-});
+/**
+ * ================================================================
+ * CONFIGURACIÓN DE STRIPE - LA CLAVE ASOCIACIÓN
+ * ================================================================
+ * Lazy init: Stripe solo se instancia cuando se necesita por primera
+ * vez. Si STRIPE_SECRET_KEY no está en el .env, el servidor arranca
+ * igualmente y solo falla cuando se intenta usar un endpoint de pago.
+ * ================================================================
+ */
+
+let _stripe = null;
+
+const getStripe = () => {
+  if (_stripe) return _stripe;
+
+  const key = process.env.STRIPE_SECRET_KEY;
+
+  if (!key) {
+    throw new Error(
+      '⚠️  STRIPE_SECRET_KEY no está configurada en el .env. ' +
+      'Configúrala para activar los pagos con Stripe.'
+    );
+  }
+
+  _stripe = new Stripe(key, { apiVersion: '2023-10-16' });
+  return _stripe;
+};
 
 /**
  * Crear cliente en Stripe
- * @param {Object} userData - Datos del usuario
- * @returns {Object} Cliente de Stripe
  */
 export const createStripeCustomer = async (userData) => {
   try {
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       email: userData.email,
       name: `${userData.nombre} ${userData.apellidos}`,
       phone: userData.telefono,
       metadata: {
         user_id: userData.id.toString(),
-        username: userData.username
-      }
+        username: userData.username,
+      },
     });
-
     return customer;
   } catch (error) {
     console.error('Error creando cliente Stripe:', error);
@@ -33,25 +53,17 @@ export const createStripeCustomer = async (userData) => {
 };
 
 /**
- * Crear método de pago
- * @param {String} paymentMethodId - ID del método de pago de Stripe
- * @param {String} customerId - ID del cliente en Stripe
- * @returns {Object} Método de pago
+ * Adjuntar método de pago a un cliente y establecerlo como predeterminado
  */
 export const attachPaymentMethod = async (paymentMethodId, customerId) => {
   try {
-    // Adjuntar método de pago al cliente
+    const stripe = getStripe();
     const paymentMethod = await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: customerId
+      customer: customerId,
     });
-
-    // Establecer como método de pago predeterminado
     await stripe.customers.update(customerId, {
-      invoice_settings: {
-        default_payment_method: paymentMethodId
-      }
+      invoice_settings: { default_payment_method: paymentMethodId },
     });
-
     return paymentMethod;
   } catch (error) {
     console.error('Error adjuntando método de pago:', error);
@@ -60,37 +72,27 @@ export const attachPaymentMethod = async (paymentMethodId, customerId) => {
 };
 
 /**
- * Crear suscripción mensual
- * @param {String} customerId - ID del cliente en Stripe
- * @param {Number} amount - Monto en euros
- * @returns {Object} Suscripción creada
+ * Crear suscripción mensual (cuota de membresía)
  */
-export const createSubscription = async (customerId, amount = 10.00) => {
+export const createSubscription = async (customerId, amount = 10.0) => {
   try {
-    // Crear precio (price) en Stripe
+    const stripe = getStripe();
     const price = await stripe.prices.create({
-      unit_amount: Math.round(amount * 100), // Convertir a céntimos
+      unit_amount: Math.round(amount * 100),
       currency: 'eur',
-      recurring: {
-        interval: 'month'
-      },
+      recurring: { interval: 'month' },
       product_data: {
         name: 'Membresía La Clave',
-        description: 'Cuota mensual de socio de La Clave'
-      }
+        description: 'Cuota mensual de socio de La Clave',
+      },
     });
-
-    // Crear suscripción
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: price.id }],
       payment_behavior: 'default_incomplete',
-      payment_settings: {
-        save_default_payment_method: 'on_subscription'
-      },
-      expand: ['latest_invoice.payment_intent']
+      payment_settings: { save_default_payment_method: 'on_subscription' },
+      expand: ['latest_invoice.payment_intent'],
     });
-
     return subscription;
   } catch (error) {
     console.error('Error creando suscripción:', error);
@@ -100,13 +102,10 @@ export const createSubscription = async (customerId, amount = 10.00) => {
 
 /**
  * Cancelar suscripción
- * @param {String} subscriptionId - ID de la suscripción
- * @returns {Object} Suscripción cancelada
  */
 export const cancelSubscription = async (subscriptionId) => {
   try {
-    const subscription = await stripe.subscriptions.cancel(subscriptionId);
-    return subscription;
+    return await getStripe().subscriptions.cancel(subscriptionId);
   } catch (error) {
     console.error('Error cancelando suscripción:', error);
     throw error;
@@ -115,25 +114,14 @@ export const cancelSubscription = async (subscriptionId) => {
 
 /**
  * Actualizar método de pago de suscripción
- * @param {String} customerId - ID del cliente
- * @param {String} paymentMethodId - Nuevo ID del método de pago
- * @returns {Object} Cliente actualizado
  */
 export const updatePaymentMethod = async (customerId, paymentMethodId) => {
   try {
-    // Adjuntar nuevo método de pago
-    await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: customerId
+    const stripe = getStripe();
+    await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
+    return await stripe.customers.update(customerId, {
+      invoice_settings: { default_payment_method: paymentMethodId },
     });
-
-    // Actualizar método predeterminado
-    const customer = await stripe.customers.update(customerId, {
-      invoice_settings: {
-        default_payment_method: paymentMethodId
-      }
-    });
-
-    return customer;
   } catch (error) {
     console.error('Error actualizando método de pago:', error);
     throw error;
@@ -141,14 +129,11 @@ export const updatePaymentMethod = async (customerId, paymentMethodId) => {
 };
 
 /**
- * Obtener información de suscripción
- * @param {String} subscriptionId - ID de la suscripción
- * @returns {Object} Información de la suscripción
+ * Obtener suscripción
  */
 export const getSubscription = async (subscriptionId) => {
   try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    return subscription;
+    return await getStripe().subscriptions.retrieve(subscriptionId);
   } catch (error) {
     console.error('Error obteniendo suscripción:', error);
     throw error;
@@ -157,16 +142,10 @@ export const getSubscription = async (subscriptionId) => {
 
 /**
  * Obtener facturas de un cliente
- * @param {String} customerId - ID del cliente
- * @param {Number} limit - Límite de facturas a obtener
- * @returns {Array} Lista de facturas
  */
 export const getInvoices = async (customerId, limit = 10) => {
   try {
-    const invoices = await stripe.invoices.list({
-      customer: customerId,
-      limit: limit
-    });
+    const invoices = await getStripe().invoices.list({ customer: customerId, limit });
     return invoices.data;
   } catch (error) {
     console.error('Error obteniendo facturas:', error);
@@ -175,17 +154,14 @@ export const getInvoices = async (customerId, limit = 10) => {
 };
 
 /**
- * Crear Setup Intent (para guardar método de pago sin cargo inmediato)
- * @param {String} customerId - ID del cliente
- * @returns {Object} Setup Intent
+ * Crear Setup Intent (guardar método de pago sin cargo inmediato)
  */
 export const createSetupIntent = async (customerId) => {
   try {
-    const setupIntent = await stripe.setupIntents.create({
+    return await getStripe().setupIntents.create({
       customer: customerId,
-      payment_method_types: ['card']
+      payment_method_types: ['card'],
     });
-    return setupIntent;
   } catch (error) {
     console.error('Error creando setup intent:', error);
     throw error;
@@ -193,16 +169,12 @@ export const createSetupIntent = async (customerId) => {
 };
 
 /**
- * Verificar webhook de Stripe
- * @param {String} payload - Cuerpo de la petición
- * @param {String} signature - Firma del webhook
- * @returns {Object} Evento verificado
+ * Verificar firma de webhook de Stripe
  */
 export const verifyWebhook = (payload, signature) => {
   try {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-    return event;
+    return getStripe().webhooks.constructEvent(payload, signature, webhookSecret);
   } catch (error) {
     console.error('Error verificando webhook:', error);
     throw error;
@@ -211,22 +183,21 @@ export const verifyWebhook = (payload, signature) => {
 
 /**
  * Reembolsar pago
- * @param {String} paymentIntentId - ID del payment intent
- * @returns {Object} Reembolso
  */
 export const refundPayment = async (paymentIntentId) => {
   try {
-    const refund = await stripe.refunds.create({
-      payment_intent: paymentIntentId
-    });
-    return refund;
+    return await getStripe().refunds.create({ payment_intent: paymentIntentId });
   } catch (error) {
     console.error('Error creando reembolso:', error);
     throw error;
   }
 };
 
-export { stripe };
+// Exportar instancia como Proxy lazy para acceso directo (usado en webhookController)
+export const stripe = new Proxy(
+  {},
+  { get(_, prop) { return getStripe()[prop]; } }
+);
 
 export default {
   stripe,
@@ -239,5 +210,5 @@ export default {
   getInvoices,
   createSetupIntent,
   verifyWebhook,
-  refundPayment
+  refundPayment,
 };

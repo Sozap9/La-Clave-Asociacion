@@ -66,11 +66,11 @@ const AdminExports = () => {
   };
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Exportaciones CSV</h1>
-        <p className="text-gray-400 text-lg">
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Exportaciones CSV</h1>
+        <p className="text-gray-400 text-sm md:text-lg">
           Descarga datos en formato CSV compatible con Excel y Google Sheets
         </p>
       </div>
@@ -114,7 +114,7 @@ const AdminExports = () => {
       </div>
 
       {/* Cards de exportación */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Exportar Socios */}
         <ExportCard
           title="Exportar Socios CSV"

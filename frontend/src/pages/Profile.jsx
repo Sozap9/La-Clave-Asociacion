@@ -106,25 +106,25 @@ const Profile = () => {
   const isBasicUser = userData.role === 'basico';
 
   return (
-    <div className="min-h-screen p-8 bg-[#0a0a0a]">
+    <div className="min-h-screen p-4 md:p-8 bg-[#0a0a0a]">
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-gradient mb-2 text-4xl"> Mi Perfil</h1>
-          <p className="text-gray-400 text-lg"> Información de tu cuenta.</p>
+          <h1 className="text-gradient mb-2 text-2xl md:text-4xl"> Mi Perfil</h1>
+          <p className="text-gray-400 text-sm md:text-lg"> Información de tu cuenta.</p>
         </div>
 
         {/* Card Principal */}
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl overflow-hidden shadow-2xl">
           
           {/* Header con avatar y nombre */}
-          <div className="relative p-8 border-b border-[#262626]">
+          <div className="relative p-4 sm:p-8 border-b border-[#262626]">
             <div className="flex flex-col lg:flex-row items-start gap-8">
               
               {/* Avatar con badge */}
               <div className="relative flex-shrink-0">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-4xl font-bold shadow-2xl">
+                <div className="w-20 h-20 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-2xl sm:text-4xl font-bold shadow-2xl">
                   {userData.avatar_url ? (
                     <img 
                       src={userData.avatar_url} 
@@ -149,7 +149,7 @@ const Profile = () => {
               {/* Información */}
               <div className="flex-1 w-full">
                 <div>
-                  <h2 className="text-3xl font-bold text-white mb-2">
+                  <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">
                     {userData.nombre || 'Usuario'} {userData.apellidos || ''}
                   </h2>
                   {/* Línea más fina y solo morado */}
@@ -178,8 +178,8 @@ const Profile = () => {
           </div>
 
           {/* Información del perfil */}
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-4 sm:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               
               {/* Email */}
               <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">

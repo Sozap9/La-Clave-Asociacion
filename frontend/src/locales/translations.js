@@ -3,6 +3,10 @@ export const translations = {
     footer: {
       rights: 'todos los derechos reservados.',
       language: 'Idioma',
+      links: {
+        statutes: 'Estatutos',
+        contact: 'Contacto',
+      },
     },
     nav: {
       openMenu: 'Abrir menú',
@@ -16,6 +20,7 @@ export const translations = {
       gallery: 'Galería',
       myTickets: 'Mis Entradas',
       statutes: 'Estatutos',
+      contact: 'Contacto',
       profile: 'Mi Perfil',
       adminPanel: 'Panel Admin',
       myPanel: 'Mi Panel',
@@ -91,6 +96,90 @@ export const translations = {
         backHome: 'Volver al inicio',
       },
     },
+    estatutos: {
+      title: 'Estatutos',
+      subtitle: 'Normativa interna que regula el funcionamiento, los derechos y los deberes de los miembros de la asociación.',
+      chapters: 'capítulos',
+      articles: 'artículos',
+      expand_all: 'Expandir todo',
+      collapse_all: 'Colapsar todo',
+      footer_note: 'Estos estatutos están registrados ante el organismo competente de la Comunidad Autónoma de Galicia. Para cualquier consulta sobre su contenido, contacta con la junta directiva.',
+      capitulos: [
+        {
+          titulo: 'Capítulo I — Denominación, Fines y Domicilio',
+          articulos: [
+            { num: 1, titulo: 'Denominación', texto: 'La asociación denominada La Clave 981, de ámbito local, se constituye al amparo de la Ley Orgánica 1/2002, de 22 de marzo, reguladora del Derecho de Asociación, y de la normativa de la Comunidad Autónoma de Galicia. Tendrá personalidad jurídica propia y plena capacidad de obrar, careciendo de ánimo de lucro.' },
+            { num: 2, titulo: 'Fines', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam vehicula magna at nunc facilisis, nec iaculis turpis gravida. Sed euismod urna vel justo dictum, nec ultrices leo commodo. Proin suscipit mauris sit amet lorem venenatis, at fringilla risus condimentum.' },
+            { num: 3, titulo: 'Domicilio', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque facilisis mauris ut est interdum, vel feugiat nisi eleifend. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.' },
+          ],
+        },
+        {
+          titulo: 'Capítulo II — Miembros de la Asociación',
+          articulos: [
+            { num: 4, titulo: 'Clases de socios', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur euismod augue vitae magna lacinia, eu volutpat eros vestibulum. Sed vel libero lacus. Morbi at quam nec nisi tincidunt bibendum.' },
+            { num: 5, titulo: 'Adquisición de la condición de socio', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque ornare lorem eget magna dapibus, et aliquet sapien volutpat. Nulla facilisi. Fusce elementum odio vel ligula condimentum, vel suscipit lectus commodo.' },
+            { num: 6, titulo: 'Pérdida de la condición de socio', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Nunc luctus eros sit amet enim tincidunt, vel fringilla nisi aliquet.' },
+            { num: 7, titulo: 'Derechos de los socios', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id eros at felis convallis dictum. Duis efficitur ipsum sit amet purus tincidunt, non venenatis eros aliquet.' },
+            { num: 8, titulo: 'Deberes de los socios', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. In vehicula dui ut ligula posuere laoreet. Ut ultrices sapien at quam facilisis, sed tincidunt lacus efficitur.' },
+          ],
+        },
+        {
+          titulo: 'Capítulo III — Órganos de Gobierno',
+          articulos: [
+            { num: 9, titulo: 'Órganos de gobierno y representación', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed malesuada lorem ut felis posuere, nec tincidunt orci efficitur. Curabitur dignissim lorem sit amet arcu rhoncus.' },
+            { num: 10, titulo: 'La Asamblea General', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vel urna vitae lorem aliquet dapibus. Morbi id eros nec sapien faucibus pretium. In euismod ligula sit amet urna condimentum.' },
+            { num: 11, titulo: 'La Junta Directiva', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum id sapien a eros condimentum pretium. Sed luctus augue vel lorem venenatis, nec aliquet enim feugiat.' },
+          ],
+        },
+        {
+          titulo: 'Capítulo IV — Régimen Económico',
+          articulos: [
+            { num: 12, titulo: 'Patrimonio', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent id ligula ut eros efficitur sodales. Sed ornare sapien nec felis aliquet, et condimentum lorem fermentum.' },
+            { num: 13, titulo: 'Cuotas', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi malesuada nunc vitae urna interdum, vel feugiat augue tincidunt. Quisque condimentum eros nec sapien laoreet.' },
+            { num: 14, titulo: 'Ejercicio económico y contabilidad', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus euismod arcu nec lorem efficitur, vel venenatis enim faucibus. Sed convallis felis ut urna scelerisque.' },
+          ],
+        },
+        {
+          titulo: 'Capítulo V — Régimen Disciplinario',
+          articulos: [
+            { num: 15, titulo: 'Infracciones', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam efficitur orci vel sapien interdum, nec varius augue tincidunt. Sed convallis nisi nec arcu pretium.' },
+            { num: 16, titulo: 'Sanciones', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque faucibus enim nec eros venenatis, vel ornare sapien tincidunt. Morbi euismod lorem sit amet nisi efficitur.' },
+          ],
+        },
+        {
+          titulo: 'Capítulo VI — Disolución',
+          articulos: [
+            { num: 17, titulo: 'Causas de disolución', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed fringilla sapien vel quam interdum, et venenatis eros feugiat. Nunc euismod nisi nec arcu tincidunt.' },
+            { num: 18, titulo: 'Liquidación', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer condimentum augue nec lorem scelerisque, vel feugiat eros interdum. Phasellus luctus enim sit amet sapien efficitur.' },
+          ],
+        },
+      ],
+    },
+    contact: {
+      title: 'Contacto',
+      subtitle: 'Estamos aquí para responder tus dudas. Escríbenos y te responderemos lo antes posible.',
+      info: {
+        title: 'Cómo contactarnos',
+        description: 'Puedes ponerte en contacto con nosotros a través del formulario, por email o mediante nuestras redes sociales. Intentamos responder lo antes posible.',
+        email_label: 'Correo electrónico',
+        note_label: 'A tener en cuenta',
+        note: 'La asociación no gestiona solicitudes de membresía por este canal. Para hacerte socio, utiliza el formulario de registro disponible en la web.',
+      },
+      form: {
+        title: 'Envíanos un mensaje',
+        name: 'Nombre',
+        name_placeholder: 'Tu nombre completo',
+        email: 'Email',
+        subject: 'Asunto',
+        subject_placeholder: 'Motivo de tu consulta',
+        message: 'Mensaje',
+        message_placeholder: 'Escribe tu mensaje aquí...',
+        submit: 'Enviar mensaje',
+        sending: 'Enviando...',
+        success: 'Mensaje enviado correctamente. Te responderemos pronto.',
+        error: 'Error al enviar el mensaje. Inténtalo de nuevo o escríbenos directamente al email.',
+      },
+    },
     events: {
       title: 'Eventos',
       subtitle: 'Descubre nuestros eventos y reserva tu plaza.',
@@ -112,6 +201,10 @@ export const translations = {
     footer: {
       rights: 'all rights reserved.',
       language: 'Language',
+      links: {
+        statutes: 'Statutes',
+        contact: 'Contact',
+      },
     },
     nav: {
       openMenu: 'Open menu',
@@ -125,6 +218,7 @@ export const translations = {
       gallery: 'Gallery',
       myTickets: 'My Tickets',
       statutes: 'Statutes',
+      contact: 'Contact',
       profile: 'My Profile',
       adminPanel: 'Admin Panel',
       myPanel: 'My Panel',
@@ -198,6 +292,90 @@ export const translations = {
         emailInfo:
           'Our team will review it and you will receive a response within the next few days.',
         backHome: 'Back to home',
+      },
+    },
+    estatutos: {
+      title: 'Statutes',
+      subtitle: 'Internal regulations governing the operation, rights and duties of association members.',
+      chapters: 'chapters',
+      articles: 'articles',
+      expand_all: 'Expand all',
+      collapse_all: 'Collapse all',
+      footer_note: 'These statutes are registered with the competent body of the Autonomous Community of Galicia. For any queries about their content, please contact the board of directors.',
+      capitulos: [
+        {
+          titulo: 'Chapter I — Name, Purpose and Address',
+          articulos: [
+            { num: 1, titulo: 'Name', texto: 'The association named La Clave 981, of local scope, is constituted under Organic Law 1/2002, of 22 March, regulating the Right of Association, and the regulations of the Autonomous Community of Galicia. It shall have its own legal personality and full capacity to act, being non-profit.' },
+            { num: 2, titulo: 'Purpose', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam vehicula magna at nunc facilisis, nec iaculis turpis gravida. Sed euismod urna vel justo dictum, nec ultrices leo commodo. Proin suscipit mauris sit amet lorem venenatis, at fringilla risus condimentum.' },
+            { num: 3, titulo: 'Address', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque facilisis mauris ut est interdum, vel feugiat nisi eleifend. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.' },
+          ],
+        },
+        {
+          titulo: 'Chapter II — Members of the Association',
+          articulos: [
+            { num: 4, titulo: 'Types of members', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur euismod augue vitae magna lacinia, eu volutpat eros vestibulum. Sed vel libero lacus. Morbi at quam nec nisi tincidunt bibendum.' },
+            { num: 5, titulo: 'Acquisition of membership', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque ornare lorem eget magna dapibus, et aliquet sapien volutpat. Nulla facilisi. Fusce elementum odio vel ligula condimentum, vel suscipit lectus commodo.' },
+            { num: 6, titulo: 'Loss of membership', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Nunc luctus eros sit amet enim tincidunt, vel fringilla nisi aliquet.' },
+            { num: 7, titulo: 'Rights of members', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id eros at felis convallis dictum. Duis efficitur ipsum sit amet purus tincidunt, non venenatis eros aliquet.' },
+            { num: 8, titulo: 'Duties of members', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. In vehicula dui ut ligula posuere laoreet. Ut ultrices sapien at quam facilisis, sed tincidunt lacus efficitur.' },
+          ],
+        },
+        {
+          titulo: 'Chapter III — Governing Bodies',
+          articulos: [
+            { num: 9, titulo: 'Governing and representative bodies', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed malesuada lorem ut felis posuere, nec tincidunt orci efficitur. Curabitur dignissim lorem sit amet arcu rhoncus.' },
+            { num: 10, titulo: 'The General Assembly', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vel urna vitae lorem aliquet dapibus. Morbi id eros nec sapien faucibus pretium. In euismod ligula sit amet urna condimentum.' },
+            { num: 11, titulo: 'The Board of Directors', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum id sapien a eros condimentum pretium. Sed luctus augue vel lorem venenatis, nec aliquet enim feugiat.' },
+          ],
+        },
+        {
+          titulo: 'Chapter IV — Financial Regulations',
+          articulos: [
+            { num: 12, titulo: 'Assets', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent id ligula ut eros efficitur sodales. Sed ornare sapien nec felis aliquet, et condimentum lorem fermentum.' },
+            { num: 13, titulo: 'Fees', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi malesuada nunc vitae urna interdum, vel feugiat augue tincidunt. Quisque condimentum eros nec sapien laoreet.' },
+            { num: 14, titulo: 'Financial year and accounting', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus euismod arcu nec lorem efficitur, vel venenatis enim faucibus. Sed convallis felis ut urna scelerisque.' },
+          ],
+        },
+        {
+          titulo: 'Chapter V — Disciplinary Regulations',
+          articulos: [
+            { num: 15, titulo: 'Infringements', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam efficitur orci vel sapien interdum, nec varius augue tincidunt. Sed convallis nisi nec arcu pretium.' },
+            { num: 16, titulo: 'Sanctions', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque faucibus enim nec eros venenatis, vel ornare sapien tincidunt. Morbi euismod lorem sit amet nisi efficitur.' },
+          ],
+        },
+        {
+          titulo: 'Chapter VI — Dissolution',
+          articulos: [
+            { num: 17, titulo: 'Grounds for dissolution', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed fringilla sapien vel quam interdum, et venenatis eros feugiat. Nunc euismod nisi nec arcu tincidunt.' },
+            { num: 18, titulo: 'Liquidation', texto: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer condimentum augue nec lorem scelerisque, vel feugiat eros interdum. Phasellus luctus enim sit amet sapien efficitur.' },
+          ],
+        },
+      ],
+    },
+    contact: {
+      title: 'Contact',
+      subtitle: 'We are here to answer your questions. Write to us and we will get back to you as soon as possible.',
+      info: {
+        title: 'How to contact us',
+        description: 'You can contact us through the form, by email or through our social media. We try to respond as soon as possible.',
+        email_label: 'Email address',
+        note_label: 'Please note',
+        note: 'The association does not handle membership requests through this channel. To become a member, use the registration form available on the website.',
+      },
+      form: {
+        title: 'Send us a message',
+        name: 'Name',
+        name_placeholder: 'Your full name',
+        email: 'Email',
+        subject: 'Subject',
+        subject_placeholder: 'Reason for your enquiry',
+        message: 'Message',
+        message_placeholder: 'Write your message here...',
+        submit: 'Send message',
+        sending: 'Sending...',
+        success: 'Message sent successfully. We will get back to you soon.',
+        error: 'Error sending the message. Please try again or email us directly.',
       },
     },
     events: {

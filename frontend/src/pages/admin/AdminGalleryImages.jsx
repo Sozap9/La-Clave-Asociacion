@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Image, Plus, Trash2, Edit, ArrowLeft, Users, Upload, Star, Eye, EyeOff, 
-  ImageIcon, Check, X, Filter, FolderUp
+  Image, Plus, Trash2, Edit, ArrowLeft, Upload,
+  ImageIcon, Check, X, FolderUp, Eye, EyeOff, Star
 } from 'lucide-react';
 import * as galleryApi from '../../api/galleryApi';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import Alert from '../../components/common/Alert';
 import ImageEditModal from '../../components/gallery/ImageEditModal';
-import ImageArtistModal from '../../components/gallery/ImageArtistModal';
 import ImageUploadModal from '../../components/gallery/ImageUploadModal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
@@ -29,7 +28,6 @@ const AdminGalleryImages = () => {
   const [filter, setFilter] = useState('all');
   
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [artistModalOpen, setArtistModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -91,6 +89,7 @@ const AdminGalleryImages = () => {
       
       if (result.success) {
         setSuccess('Imagen eliminada correctamente');
+        setEditModalOpen(false);
         fetchData();
       } else {
         setError(result.message || 'Error al eliminar imagen');
@@ -251,7 +250,7 @@ const AdminGalleryImages = () => {
 
       if (result.success) {
         setSuccess('Artistas actualizados correctamente');
-        setArtistModalOpen(false);
+        setEditModalOpen(false);
         fetchData();
       } else {
         setError(result.message || 'Error al actualizar artistas');
@@ -295,22 +294,26 @@ const AdminGalleryImages = () => {
           Volver a Álbumes
         </button>
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-gradient mb-2 text-4xl">
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
               {folder.nombre}
             </h1>
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-400 text-sm md:text-lg">
               {filteredImages.length} {filteredImages.length === 1 ? 'imagen' : 'imágenes'}
               {filter !== 'all' && ` (filtradas)`}
             </p>
           </div>
 
-          {/* Botones - SOLO GRIS Y MORADO */}
+          {/* Botones */}
           <div className="flex gap-3">
             <button
               onClick={toggleSelectionMode}
-              className="flex items-center gap-2 px-4 py-3 rounded-lg transition-colors bg-[#262626] hover:bg-[#333333] text-white"
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+                isSelectionMode
+                  ? 'bg-primary-600 text-white shadow-glow'
+                  : 'bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]'
+              }`}
             >
               {isSelectionMode ? <X size={20} /> : <Check size={20} />}
               {isSelectionMode ? 'Cancelar' : 'Seleccionar'}
@@ -318,7 +321,7 @@ const AdminGalleryImages = () => {
 
             <button
               onClick={() => setUploadModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-6 py-3 bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] rounded-lg font-medium transition-all"
             >
               <Upload size={20} />
               Subir Imágenes
@@ -352,45 +355,44 @@ const AdminGalleryImages = () => {
           )}
         </div>
 
-        {/* Filtros - MÁS ESPACIO (gap-6) */}
-        <div className="flex items-center gap-6">
-          <Filter size={20} className="text-gray-400" />
+        {/* Filtros */}
+        <div className="flex flex-wrap items-center gap-4">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
               filter === 'all'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
+                ? 'bg-primary-600 text-white shadow-glow'
+                : 'bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]'
             }`}
           >
             Todas ({images.length})
           </button>
           <button
             onClick={() => setFilter('visible')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
               filter === 'visible'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
+                ? 'bg-primary-600 text-white shadow-glow'
+                : 'bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]'
             }`}
           >
             Visibles ({images.filter(img => img.visible).length})
           </button>
           <button
             onClick={() => setFilter('hidden')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
               filter === 'hidden'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
+                ? 'bg-primary-600 text-white shadow-glow'
+                : 'bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]'
             }`}
           >
             Ocultas ({images.filter(img => !img.visible).length})
           </button>
           <button
             onClick={() => setFilter('featured')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
               filter === 'featured'
-                ? 'bg-primary-600 text-white'
-                : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333333]'
+                ? 'bg-primary-600 text-white shadow-glow'
+                : 'bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]'
             }`}
           >
             Destacadas ({images.filter(img => img.destacado).length})
@@ -420,7 +422,7 @@ const AdminGalleryImages = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {filteredImages.map((image) => (
               <ImageCard
                 key={image.id}
@@ -428,12 +430,7 @@ const AdminGalleryImages = () => {
                 isSelected={selectedImages.includes(image.id)}
                 isSelectionMode={isSelectionMode}
                 onSelect={toggleSelectImage}
-                onDelete={handleDeleteImage}
-                onToggleVisibility={handleToggleVisibility}
-                onToggleFeatured={handleToggleFeatured}
                 onEdit={handleEditImage}
-                onManageArtists={handleManageArtists}
-                onSetCover={handleSetCover}
                 isCover={folder.imagen_portada_url && folder.imagen_portada_url.includes(image.imagen_url?.split('/').pop())}
               />
             ))}
@@ -447,14 +444,10 @@ const AdminGalleryImages = () => {
           image={selectedImage}
           onClose={() => setEditModalOpen(false)}
           onSave={handleSaveEdit}
-        />
-      )}
-
-      {artistModalOpen && selectedImage && (
-        <ImageArtistModal
-          image={selectedImage}
-          onClose={() => setArtistModalOpen(false)}
-          onSave={handleSaveArtists}
+          onSaveArtists={handleSaveArtists}
+          onDelete={handleDeleteImage}
+          onSetCover={handleSetCover}
+          isCover={folder.imagen_portada_url && folder.imagen_portada_url.includes(selectedImage.imagen_url?.split('/').pop())}
         />
       )}
 
@@ -551,29 +544,24 @@ const BulkActionsBar = ({
 };
 
 /**
- * Card de Imagen - SIN BORDES, SIN HOVER, SOLO MORADO/GRIS
+ * Card de Imagen — imagen + badges + botón Editar
  */
 const ImageCard = ({ 
   image, 
   isSelected,
   isSelectionMode,
   onSelect,
-  onDelete, 
-  onToggleVisibility, 
-  onToggleFeatured, 
-  onEdit, 
-  onManageArtists,
-  onSetCover,
+  onEdit,
   isCover
 }) => {
   const imageUrl = image.thumbnail_url || image.imagen_url;
   const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
 
   return (
-    <div className={`bg-gray-900 rounded-xl overflow-hidden relative ${
-      isSelected ? 'ring-2 ring-primary-600' : ''
+    <div className={`bg-[#1a1a1a] rounded-xl overflow-hidden relative border transition-all ${
+      isSelected ? 'ring-2 ring-primary-600 border-primary-500/50' : 'border-[#262626] hover:border-primary-500/30'
     }`}>
-      {/* Checkbox */}
+      {/* Checkbox selección */}
       {isSelectionMode && (
         <div className="absolute top-2 left-2 z-10">
           <button
@@ -581,110 +569,48 @@ const ImageCard = ({
             className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
               isSelected
                 ? 'bg-primary-600 border-primary-600'
-                : 'bg-gray-900/80 border-gray-600 hover:border-gray-500'
+                : 'bg-[#0a0a0a]/80 border-gray-600 hover:border-gray-400'
             }`}
           >
-            {isSelected && <Check size={16} className="text-white" />}
+            {isSelected && <Check size={14} className="text-white" />}
           </button>
         </div>
       )}
 
-      {/* Imagen - SIN HOVER */}
-      <div className="aspect-square bg-[#262626] relative">
+      {/* Imagen */}
+      <div className="aspect-square bg-[#262626] relative overflow-hidden">
         <img
           src={fullImageUrl}
           alt={image.titulo || 'Imagen'}
           className="w-full h-full object-cover"
           onError={(e) => {
-            e.target.src = 'https://via.placeholder.com/400x400?text=Error+al+cargar';
+            e.target.src = 'https://via.placeholder.com/400x400?text=Error';
           }}
         />
-        
-        {/* Badges - SOLO GRIS Y MORADO */}
+
+        {/* Badges */}
         <div className="absolute top-2 right-2 flex flex-col gap-1">
-          {isCover && (
-            <div className="px-2 py-1 rounded bg-primary-600 text-white text-xs font-semibold">
-              PORTADA
-            </div>
+          {!!isCover && (
+            <div className="px-2 py-0.5 rounded bg-primary-600 text-white text-xs font-semibold">PORTADA</div>
           )}
-          {image.destacado && (
-            <div className="px-2 py-1 rounded bg-primary-600 text-white text-xs font-semibold">
-              DESTACADO
-            </div>
+          {!!image.destacado && (
+            <div className="px-2 py-0.5 rounded bg-primary-600 text-white text-xs font-semibold">DESTACADO</div>
           )}
-          <div className="px-2 py-1 rounded bg-primary-600 text-white text-xs font-semibold">
+          <div className={`px-2 py-0.5 rounded text-white text-xs font-semibold ${image.visible ? 'bg-primary-600' : 'bg-[#333333]'}`}>
             {image.visible ? 'VISIBLE' : 'OCULTO'}
           </div>
         </div>
       </div>
 
-      {/* Acciones - SIN COLORES */}
+      {/* Acción */}
       {!isSelectionMode && (
-        <div className="p-3 space-y-2">
-          {image.titulo && (
-            <h4 className="text-white text-sm font-medium line-clamp-1">
-              {image.titulo}
-            </h4>
-          )}
-          
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onEdit(image)}
-              className="px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
-            >
-              <Edit size={14} />
-              Editar
-            </button>
-
-            <button
-              onClick={() => onManageArtists(image)}
-              className="px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
-            >
-              <Users size={14} />
-              Artistas
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onToggleVisibility(image)}
-              className="px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
-            >
-              {image.visible ? <EyeOff size={14} /> : <Eye size={14} />}
-              {image.visible ? 'Ocultar' : 'Mostrar'}
-            </button>
-
-            <button
-              onClick={() => onToggleFeatured(image)}
-              className={`px-2 py-1.5 rounded text-xs transition-colors flex items-center justify-center gap-1 ${
-                image.destacado
-                  ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                  : 'bg-[#262626] hover:bg-[#333333] text-white'
-              }`}
-            >
-              <Star size={14} />
-              {image.destacado ? 'Destacado' : 'Destacar'}
-            </button>
-          </div>
-
+        <div className="p-3">
           <button
-            onClick={() => onSetCover(image)}
-            className={`w-full px-2 py-1.5 rounded text-xs transition-colors flex items-center justify-center gap-1 ${
-              isCover
-                ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                : 'bg-[#262626] hover:bg-[#333333] text-white'
-            }`}
+            onClick={() => onEdit(image)}
+            className="w-full px-3 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
           >
-            <ImageIcon size={14} />
-            {isCover ? 'Es Portada' : 'Portada'}
-          </button>
-          
-          <button
-            onClick={() => onDelete(image)}
-            className="w-full px-2 py-1.5 bg-[#262626] hover:bg-[#333333] text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
-          >
-            <Trash2 size={14} />
-            Eliminar
+            <Edit size={14} />
+            Editar
           </button>
         </div>
       )}

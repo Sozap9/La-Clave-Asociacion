@@ -95,9 +95,9 @@ const Login = () => {
       </div>
 
       <div className="relative z-20 w-full max-w-md">
-        <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20">
+        <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-5 sm:p-8 shadow-2xl border border-primary-500/20">
 
-          <h2 className="text-3xl font-bold text-white text-center mb-8">{t('login.title')}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-8">{t('login.title')}</h2>
 
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">

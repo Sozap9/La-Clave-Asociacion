@@ -3,73 +3,130 @@ import logger from './logger.js';
 
 /**
  * ================================================================
- * CONFIGURACIÓN DEL SERVICIO DE EMAIL (NODEMAILER)
+ * CONFIGURACIÓN DE TRANSPORTERS — BREVO SMTP
+ * ================================================================
+ *
+ * Tres remitentes con propósito diferente:
+ *
+ *   noreply  → emails automáticos sin necesidad de respuesta
+ *              (confirmaciones, recordatorios, recuperar contraseña)
+ *
+ *   support  → emails donde el usuario puede necesitar responder
+ *              (solicitud recibida, aprobación, rechazo)
+ *
+ *   admin    → notificaciones internas para el equipo admin
+ *              (nueva solicitud pendiente, avisos de contacto)
+ *
+ * En desarrollo / pruebas: los tres usan el mismo correo configurado
+ * en EMAIL_NOREPLY / EMAIL_SUPPORT / EMAIL_ADMIN (pueden ser iguales).
+ * En producción: cada uno apunta a su dirección real del dominio.
+ *
+ * Variables de entorno necesarias:
+ *   BREVO_SMTP_HOST   smtp-relay.brevo.com
+ *   BREVO_SMTP_PORT   587
+ *   BREVO_SMTP_USER   tu email de login en Brevo
+ *   BREVO_SMTP_KEY    xsmtpsib-xxxxxxxxxxxx
+ *   EMAIL_FROM_NAME   La Clave Asociación
+ *   EMAIL_NOREPLY     noreply@tudominio.com  (o tu correo en pruebas)
+ *   EMAIL_SUPPORT     support@tudominio.com
+ *   EMAIL_ADMIN       admin@tudominio.com
  * ================================================================
  */
 
-/**
- * Crear transporter de Nodemailer
- */
-const createTransporter = () => {
-  // Verificar que las variables de entorno estén configuradas
-  if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    logger.warn('⚠️  Configuración de email incompleta. Los emails NO se enviarán.');
-    logger.warn('    Por favor configura EMAIL_HOST, EMAIL_USER y EMAIL_PASS en el archivo .env');
-    
-    // Retornar un transporter "mock" para desarrollo
-    return {
-      sendMail: async (mailOptions) => {
-        logger.info('📧 [MODO DESARROLLO] Email que se enviaría:', {
-          to: mailOptions.to,
-          subject: mailOptions.subject
-        });
-        return { messageId: 'mock-message-id' };
-      },
-      verify: async () => {
-        // ✅ IMPORTANTE: No lanzar error en modo mock
-        return true;
-      }
-    };
-  }
+// ─── Detección de modo mock (sin credenciales configuradas) ──────────────────
+const isConfigured = () =>
+  !!(
+    process.env.BREVO_SMTP_HOST &&
+    process.env.BREVO_SMTP_USER &&
+    process.env.BREVO_SMTP_KEY
+  );
 
-  // Configuración del transporter
-  const config = {
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: process.env.EMAIL_SECURE === 'true',
+// ─── Transporter mock para desarrollo ───────────────────────────────────────
+const createMockTransporter = (label) => ({
+  sendMail: async (mailOptions) => {
+    logger.info(`[MOCK — ${label}] Email que se enviaría:`, {
+      from:    mailOptions.from,
+      to:      mailOptions.to,
+      subject: mailOptions.subject,
+    });
+    return { messageId: `mock-${label}-${Date.now()}` };
+  },
+  verify: async () => true,
+});
+
+// ─── Transporter real Brevo ──────────────────────────────────────────────────
+const createBrevoTransporter = (fromAddress) => {
+  const transporter = nodemailer.createTransport({
+    host:   process.env.BREVO_SMTP_HOST,
+    port:   parseInt(process.env.BREVO_SMTP_PORT || '587'),
+    secure: false, // Brevo usa STARTTLS en puerto 587
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.BREVO_SMTP_USER,
+      pass: process.env.BREVO_SMTP_KEY,
     },
-  };
+    tls: {
+      rejectUnauthorized: true,
+    },
+  });
 
-  // ✅ CORRECTO: createTransport (sin "er")
-  return nodemailer.createTransport(config);
+  return transporter;
 };
 
-const transporter = createTransporter();
-
-/**
- * Verificar conexión con el servidor SMTP al iniciar
- */
-const verifyConnection = async () => {
-  // ✅ Solo verificar si hay configuración real de email
-  if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    // No hacer nada en modo mock
-    return;
-  }
+// ─── Verificar conexión SMTP al arrancar ─────────────────────────────────────
+const verifyTransporter = async (transporter, label) => {
+  if (!isConfigured()) return;
 
   try {
     await transporter.verify();
-    logger.info('✅ Servidor SMTP conectado y listo para enviar correos');
+    logger.info(`SMTP [${label}] conectado — ${process.env.BREVO_SMTP_HOST}`);
   } catch (error) {
-    logger.error('❌ Error al conectar con el servidor SMTP:', error.message);
-    logger.error('   Verifica la configuración de email en el archivo .env');
-    // ✅ NO lanzar error, solo loggearlo
+    // ── Línea modificada: muestra el error completo para diagnóstico ──
+    logger.error(`SMTP [${label}] error de conexión:`, {
+      message: error.message,
+      code:    error.code,
+      command: error.command,
+    });
   }
 };
 
-// Verificar conexión al cargar el módulo
-verifyConnection();
+// ─── Crear los tres transporters ─────────────────────────────────────────────
+let noreplyTransporter;
+let supportTransporter;
+let adminTransporter;
 
-export default transporter;
+if (isConfigured()) {
+  noreplyTransporter = createBrevoTransporter(process.env.EMAIL_NOREPLY);
+  supportTransporter = createBrevoTransporter(process.env.EMAIL_SUPPORT);
+  adminTransporter   = createBrevoTransporter(process.env.EMAIL_ADMIN);
+
+  // Verificar solo el noreply al arrancar (los tres usan las mismas credenciales)
+  verifyTransporter(noreplyTransporter, 'noreply');
+} else {
+  logger.warn(' BREVO_SMTP_KEY no configurada — los emails se mostrarán en consola (modo mock)');
+  logger.warn('   Configura BREVO_SMTP_HOST, BREVO_SMTP_USER y BREVO_SMTP_KEY en el .env');
+
+  noreplyTransporter = createMockTransporter('noreply');
+  supportTransporter = createMockTransporter('support');
+  adminTransporter   = createMockTransporter('admin');
+}
+
+// ─── Helpers para FROM ────────────────────────────────────
+const fromName = () => process.env.EMAIL_FROM_NAME || 'La Clave Asociación';
+
+export const fromNoreply = () =>
+  `"${fromName()}" <${process.env.EMAIL_NOREPLY || 'noreply@laclave.com'}>`;
+
+export const fromSupport = () =>
+  `"${fromName()}" <${process.env.EMAIL_SUPPORT || 'support@laclave.com'}>`;
+
+export const fromAdmin = () =>
+  `"${fromName()} — Admin" <${process.env.EMAIL_ADMIN || 'admin@laclave.com'}>`;
+
+// ─── Exportaciones ────────────────────────────────────────────────────────────
+export {
+  noreplyTransporter,
+  supportTransporter,
+  adminTransporter,
+};
+
+export default noreplyTransporter;

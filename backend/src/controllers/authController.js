@@ -110,6 +110,15 @@ export const registerBasic = async (req, res) => {
       });
     }
 
+    // Verificar si el DNI ya está registrado
+    const dniExists = await User.dniExists(dni);
+    if (dniExists) {
+      return res.status(409).json({
+        success: false,
+        message: 'El DNI ya está registrado en el sistema'
+      });
+    }
+
     // Obtener IP del cliente
     const ip_registro = req.ip || req.connection.remoteAddress;
 
@@ -540,61 +549,60 @@ export const registerAdmin = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
+ 
     if (!email) {
       return res.status(400).json({
         success: false,
         message: 'El email es requerido'
       });
     }
-
+ 
     const user = await User.findByEmail(email);
-
-    // Por seguridad, siempre responder lo mismo
-    const genericMessage = 'Si el email existe, recibirás instrucciones para resetear tu contraseña';
-
+ 
+    // Por seguridad, siempre responder lo mismo independientemente
+    // de si el email existe o no
+    const genericMessage = 'Si el email existe, recibirás instrucciones para recuperar tu contraseña';
+ 
     if (!user) {
       logger.info('Intento de reset para email no existente:', { email });
-      return res.status(200).json({
-        success: true,
-        message: genericMessage
-      });
+      return res.status(200).json({ success: true, message: genericMessage });
     }
-
+ 
     // Generar token aleatorio
     const crypto = await import('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
-
+ 
     // Hashear el token para guardarlo en BD
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-
+ 
     // Expiración en 1 hora
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-
+ 
     // Guardar token hasheado en BD
     await User.savePasswordResetToken(user.id, hashedToken, expiresAt);
-
-    // Enviar email con token SIN hashear
-    const emailResult = await EmailService.sendPasswordReset(user, resetToken);
-
-    if (!emailResult.success) {
-      logger.error('Error enviando email de reset:', { userId: user.id });
-      return res.status(500).json({
-        success: false,
-        message: 'Error al enviar el email de recuperación'
+ 
+    // Intentar enviar email — no bloqueante:
+    // si falla, el token ya está guardado y el usuario puede reintentar
+    try {
+      const emailResult = await EmailService.sendPasswordReset(user, resetToken);
+      if (!emailResult.success) {
+        logger.warn('Email de reset no enviado (mock o error SMTP):', { userId: user.id });
+      } else {
+        logger.info('Email de reset enviado:', { userId: user.id, email: user.email });
+      }
+    } catch (emailError) {
+      logger.error('Error inesperado enviando email de reset:', {
+        userId: user.id,
+        error: emailError.message
       });
+      // No interrumpimos el flujo — el token está guardado
     }
-
-    logger.info('Email de reset enviado:', { userId: user.id, email: user.email });
-
-    res.status(200).json({
-      success: true,
-      message: genericMessage
-    });
-
+ 
+    return res.status(200).json({ success: true, message: genericMessage });
+ 
   } catch (error) {
     logger.error('Error en forgotPassword:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error al procesar la solicitud de recuperación'
     });
@@ -718,6 +726,15 @@ export const crearSolicitud = async (req, res) => {
       return res.status(409).json({
         success: false,
         message: 'El username ya está en uso'
+      });
+    }
+
+    // ── Comprobar que el DNI no está ya registrado en users ──────
+    const dniEnUsers = await User.dniExists(dni);
+    if (dniEnUsers) {
+      return res.status(409).json({
+        success: false,
+        message: 'El DNI ya está registrado en el sistema'
       });
     }
 

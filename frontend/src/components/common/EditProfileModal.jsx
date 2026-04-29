@@ -169,7 +169,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
       {/* Modal FIJO - Sin overflow en contenedor principal */}
       <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-6xl max-h-[90vh] shadow-2xl flex flex-col">
         {/* Header FIJO */}
-        <div className="bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
+        <div className="bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-4 sm:p-6 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-white">Editar Perfil</h2>
           <button
             onClick={onClose}
@@ -182,14 +182,14 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
 
         {/* Contenido con SCROLL INTERNO */}
         <div className="overflow-y-auto flex-1">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
             {/* Avatar */}
             <div className="flex flex-col items-center gap-4 pb-6 border-b border-gray-800">
               <div
                 className="relative cursor-pointer group"
                 onClick={() => avatarInputRef.current?.click()}
               >
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-4xl font-bold overflow-hidden shadow-xl">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-2xl sm:text-4xl font-bold overflow-hidden shadow-xl">
                   {avatarPreview ? (
                     <img
                       src={avatarPreview}
@@ -424,18 +424,18 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
             </p>
 
             {/* Botones */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-colors"
+                className="w-full sm:flex-1 px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-colors"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/20"
+                className="w-full sm:flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/20"
               >
                 {loading ? "Guardando..." : "Guardar Cambios"}
               </button>

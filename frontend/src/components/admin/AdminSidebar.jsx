@@ -106,7 +106,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
 
   const galeriaItems = [
     { path: "/admin/galeria", label: "Gestionar Álbumes", icon: Image },
-    { path: "/admin/stats/galeria", label: "Estadísticas", icon: BarChart3 },
   ];
 
   const exportItems = [
@@ -114,11 +113,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     {
       path: "/admin/export/reservas",
       label: "Exportar reservas",
-      icon: FileDown,
-    },
-    {
-      path: "/admin/export/usuarios",
-      label: "Exportar usuarios",
       icon: FileDown,
     },
     {

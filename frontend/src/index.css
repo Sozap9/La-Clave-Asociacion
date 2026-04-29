@@ -33,16 +33,17 @@
     @apply font-medium;
   }
 
+  /* MOBILE-FIRST */
   h1 {
-    @apply text-5xl md:text-6xl lg:text-7xl;
+    @apply text-3xl sm:text-4xl md:text-6xl lg:text-7xl;
   }
 
   h2 {
-    @apply text-4xl md:text-5xl;
+    @apply text-2xl sm:text-3xl md:text-5xl;
   }
 
   h3 {
-    @apply text-3xl md:text-4xl;
+    @apply text-xl sm:text-2xl md:text-4xl;
   }
 
   /* Tipografías para párrafos y textos generales */
@@ -51,7 +52,7 @@
   span,
   li {
     font-family: "Ubuntu", sans-serif;
-    @apply text-base md:text-lg;
+    @apply text-sm md:text-base;
   }
 
   p,
@@ -62,7 +63,7 @@
   option,
   textarea {
     font-family: "Kodchasan", sans-serif;
-    @apply text-base md:text-lg;
+    @apply text-sm md:text-base;
   }
 
   /* Scrollbar personalizado */
@@ -106,7 +107,7 @@
   }
 
   .btn {
-    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 
+    @apply px-4 py-2 md:px-6 md:py-3 rounded-lg font-semibold transition-all duration-300 
            inline-flex items-center justify-center gap-2 disabled:opacity-50 
            disabled:cursor-not-allowed;
   }
@@ -140,7 +141,7 @@
   }
 
   .input {
-    @apply w-full px-4 py-3 bg-[#1a1a1a] border border-[#333333] rounded-lg 
+    @apply w-full px-3 py-2.5 md:px-4 md:py-3 bg-[#1a1a1a] border border-[#333333] rounded-lg 
         text-white placeholder-gray-500 
         focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
         transition-all duration-200;
@@ -159,7 +160,7 @@
   }
 
   .section {
-    @apply py-16 md:py-24;
+    @apply py-10 md:py-16 lg:py-24;
   }
 
   .text-gradient {
@@ -290,7 +291,7 @@
   }
 }
 
-/* [... React Datepicker styles iguales ...] */
+/* React Datepicker styles */
 .react-datepicker {
   background-color: #1a1a1a !important;
   border: 1px solid #333333 !important;

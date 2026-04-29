@@ -34,17 +34,17 @@ const AdminStatsReservas = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Estadísticas de Reservas</h1>
-        <p className="text-gray-400 text-lg">Análisis de reservas y asistencias</p>
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Estadísticas de Reservas</h1>
+        <p className="text-gray-400 text-sm md:text-lg">Análisis de reservas y asistencias</p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
 
       {stats && (
         <>
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatCard title="Total Reservas" value={stats.general?.total_reservas || 0} icon={Ticket} />
             <StatCard title="Confirmadas" value={stats.general?.confirmadas || 0} icon={CheckCircle} color="green" />
             <StatCard title="Esta Semana" value={stats.general?.esta_semana || 0} icon={Calendar} color="blue" />
@@ -81,10 +81,10 @@ const AdminStatsReservas = () => {
 
 const StatCard = ({ title, value, icon: Icon, color = 'blue' }) => (
   <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
-    <div className="flex items-start justify-between mb-4">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
       <div>
         <p className="text-gray-400 text-sm mb-1">{title}</p>
-        <p className="text-primary-300 text-3xl font-bold">{value}</p>
+        <p className="text-primary-300 text-xl sm:text-3xl font-bold">{value}</p>
       </div>
       <Icon className="w-8 h-8 text-primary-400" />
     </div>

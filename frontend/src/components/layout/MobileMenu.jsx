@@ -24,11 +24,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
   const publicItems = [
     { label: t('menu.home'), href: NAV_ROUTES.HOME },
     { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
+    { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
   const basicItems = [
     { label: t('menu.home'), href: NAV_ROUTES.HOME },
     { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
+    { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
   const socioItems = [
@@ -37,6 +39,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
     { label: t('menu.gallery'), href: NAV_ROUTES.GALLERY },
     { label: t('menu.myTickets'), href: NAV_ROUTES.MY_BOOKINGS },
     { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
+    { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
   const adminItems = [

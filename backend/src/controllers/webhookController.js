@@ -73,16 +73,16 @@ async function handlePaymentSucceeded(invoice) {
     // Registrar pago exitoso en el socio
     await Socio.registrarPagoExitoso(socio.id);
 
-    // Guardar en tabla payments (compatibilidad con esquemas 'amount' y 'monto')
+    // Guardar en tabla payments
     await query(
       `
       INSERT INTO payments (
-        socio_id, tipo, tipo_pago, amount, monto, currency, moneda,
+        socio_id, tipo_pago, amount, currency,
         stripe_payment_intent_id, stripe_invoice_id,
         estado, fecha_pago
-      ) VALUES (?, 'cuota_mensual', 'cuota_mensual', ?, ?, 'EUR', 'EUR', ?, ?, 'exitoso', NOW())
+      ) VALUES (?, 'cuota_mensual', ?, 'EUR', ?, ?, 'exitoso', NOW())
     `,
-      [socio.id, amountPaid, amountPaid, invoice.payment_intent, invoice.id],
+      [socio.id, amountPaid, invoice.payment_intent, invoice.id],
     );
 
     console.log(`✅ Pago exitoso procesado para socio ${socio.numero_socio}`);
@@ -121,11 +121,11 @@ async function handlePaymentFailed(invoice) {
     await query(
       `
       INSERT INTO payments (
-        socio_id, tipo, amount, monto, currency, moneda,
+        socio_id, tipo_pago, amount, currency,
         stripe_invoice_id, estado, error_mensaje, fecha_pago
-      ) VALUES (?, 'cuota_mensual', ?, ?, 'EUR', 'EUR', ?, 'fallido', ?, NOW())
+      ) VALUES (?, 'cuota_mensual', ?, 'EUR', ?, 'fallido', ?, NOW())
     `,
-      [socio.id, amountDue, amountDue, invoice.id, "Pago rechazado"],
+      [socio.id, amountDue, invoice.id, "Pago rechazado"],
     );
 
     // Verificar si debe marcarse como moroso (3 intentos fallidos)
@@ -210,13 +210,13 @@ async function handleSubscriptionUpdated(subscription) {
         "activo",
         socio.id,
       ]);
-      console.log(`✅ Suscripción activa para socio ${socio.numero_socio}`);
+      console.log(`Suscripción activa para socio ${socio.numero_socio}`);
     } else if (status === "past_due") {
       await Socio.marcarComoMoroso(socio.id);
-      console.log(`⚠️ Suscripción vencida para socio ${socio.numero_socio}`);
+      console.log(`Suscripción vencida para socio ${socio.numero_socio}`);
     } else if (status === "canceled" || status === "unpaid") {
       await Socio.darDeBaja(socio.id, `Suscripción ${status}`);
-      console.log(`❌ Suscripción ${status} para socio ${socio.numero_socio}`);
+      console.log(`Suscripción ${status} para socio ${socio.numero_socio}`);
     }
   } catch (error) {
     console.error("Error en handleSubscriptionUpdated:", error);

@@ -231,6 +231,23 @@ class User {
     }
   }
 
+
+  /**
+   * Verificar si un DNI ya existe
+   * @param {String} dni - DNI a verificar (se compara en mayúsculas)
+   * @returns {Boolean} true si existe
+   */
+  static async dniExists(dni) {
+    try {
+      const sql = "SELECT id FROM users WHERE dni = ? LIMIT 1";
+      const results = await query(sql, [dni.toUpperCase()]);
+      return results.length > 0;
+    } catch (error) {
+      console.error("Error en dniExists:", error);
+      throw error;
+    }
+  }
+
   /**
    * Desactivar usuario (soft delete)
    * @param {Number} id - ID del usuario

@@ -68,13 +68,16 @@ export const cancelBookingValidator = [
  * Endpoint: POST /api/bookings/verify-qr
  * 
  * Usado por: Admin (en puerta del evento)
+ * 
+ * NOTA: El generador produce 6 caracteres (Math.random().toString(36).substring(2, 8)),
+ * por lo que el regex acepta entre 4 y 10 caracteres alfanuméricos en mayúsculas.
  */
 export const verifyQRValidator = [
   // CÓDIGO DE RESERVA
   body('codigo_reserva')
     .notEmpty().withMessage('El código de reserva es obligatorio')
     .trim()
-    .matches(/^LCV-[0-9]+-[A-Z0-9]{8}$/).withMessage('El código de reserva no tiene un formato válido (debe ser LCV-XXXXX-XXXXXXXX)')
+    .matches(/^LCV-[0-9]+-[A-Z0-9]{4,10}$/).withMessage('El código de reserva no tiene un formato válido (debe ser LCV-XXXXXX-XXXXXX)')
     .isLength({ min: 10, max: 50 }).withMessage('El código de reserva debe tener entre 10 y 50 caracteres')
 ];
 

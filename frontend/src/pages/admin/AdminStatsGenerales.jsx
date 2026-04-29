@@ -54,11 +54,11 @@ const AdminStatsGenerales = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Estadísticas Generales</h1>
-        <p className="text-gray-400 text-lg">Vista general completa del sistema</p>
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Estadísticas Generales</h1>
+        <p className="text-gray-400 text-sm md:text-lg">Vista general completa del sistema</p>
       </div>
 
       {/* Error */}
@@ -79,7 +79,7 @@ const AdminStatsGenerales = () => {
               Usuarios y Socios
             </h2>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               <StatCard
                 title="Usuarios Básicos"
                 value={stats.usuarios?.basicos || 0}
@@ -243,7 +243,7 @@ const AdminStatsGenerales = () => {
           <section>
             <h2 className="text-2xl font-semibold text-white mb-4">Otros Módulos</h2>
             
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               <StatCard
                 title="Galería"
                 value={`${stats.galeria?.total_imagenes || 0} fotos`}
@@ -279,10 +279,10 @@ const AdminStatsGenerales = () => {
 const StatCard = ({ title, value, icon: Icon, color, subtitle }) => {
   return (
     <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
           <p className="text-gray-400 text-sm mb-1">{title}</p>
-          <p className="text-primary-300 text-3xl font-bold">{value}</p>
+          <p className="text-primary-300 text-xl sm:text-3xl font-bold">{value}</p>
         </div>
         <Icon className="w-8 h-8 text-primary-300" />
       </div>

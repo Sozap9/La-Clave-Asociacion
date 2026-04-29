@@ -75,7 +75,7 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
       
       <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-primary-500/20">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-primary-500/20">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Upload size={24} className="text-primary-400" />
             Subir Imagen Rápida
@@ -91,7 +91,7 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {error && (
             <Alert 
               type="error" 
@@ -107,15 +107,22 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
             </label>
             
             {!previewUrl ? (
-              <label className="block cursor-pointer">
-                <div className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors">
-                  <ImageIcon size={48} className="text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400 mb-2">
-                    Haz clic para seleccionar una imagen
-                  </p>
-                  <p className="text-gray-500 text-sm">
-                    PNG, JPG, WEBP (máx. 10MB)
-                  </p>
+              <label className="block cursor-pointer group">
+                <div className="w-full flex flex-col items-center justify-center gap-3 py-10 bg-[#1a1a1a] border-2 border-dashed border-[#262626] group-hover:border-primary-500/50 group-hover:bg-[#1a1a1a]/80 rounded-xl transition-all">
+                  <div className="w-14 h-14 rounded-full bg-[#262626] group-hover:bg-primary-600/20 flex items-center justify-center transition-colors">
+                    <Upload size={24} className="text-gray-400 group-hover:text-primary-400 transition-colors" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white font-medium mb-1">
+                      Haz clic para seleccionar una imagen
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      PNG, JPG, WEBP · máx. 10MB
+                    </p>
+                  </div>
+                  <span className="px-5 py-2 bg-[#262626] group-hover:bg-primary-600/30 border border-[#333333] group-hover:border-primary-500/40 text-gray-300 group-hover:text-white rounded-lg text-sm font-medium transition-all">
+                    Examinar archivos
+                  </span>
                 </div>
                 <input
                   type="file"
@@ -137,13 +144,14 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
                     setSelectedFile(null);
                     setPreviewUrl(null);
                   }}
-                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors"
+                  className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
                   disabled={uploading}
                   type="button"
                 >
                   <X size={16} />
                 </button>
-                <div className="mt-2 text-sm text-gray-400">
+                <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
+                  <ImageIcon size={14} />
                   {selectedFile.name}
                 </div>
               </div>
@@ -184,7 +192,7 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-primary-500/20">
+        <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-primary-500/20">
           <button
             onClick={onClose}
             disabled={uploading}

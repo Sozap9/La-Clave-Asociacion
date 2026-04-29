@@ -290,14 +290,14 @@ const MisEntradas = () => {
       <div className="container-custom max-w-6xl">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-gradient mb-2 text-4xl">Mis Entradas</h1>
-          <p className="text-gray-400 text-lg">
+          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Mis Entradas</h1>
+          <p className="text-gray-400 text-sm md:text-lg">
             Gestiona tus reservas y entradas
           </p>
         </div>
 
         {/* Filtros y Búsqueda */}
-        <div className="flex items-center gap-4 mb-8 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-8">
           <FilterBar
             customFilters={entradaFilters}
             activeFilter={filter}
@@ -305,7 +305,7 @@ const MisEntradas = () => {
             showCounts={true}
           />
 
-          <div className="flex-1 max-w-md ml-auto">
+          <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
             <SearchInput
               value={searchTerm}
               onChange={setSearchTerm}

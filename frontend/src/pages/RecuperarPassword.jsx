@@ -43,7 +43,7 @@ const ForgotStep = ({ onSuccess }) => {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-500/20 border border-primary-500/30 mb-4">
           <Mail size={28} className="text-primary-400" />
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">Recuperar contraseña</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Recuperar contraseña</h2>
         <p className="text-gray-400 text-sm leading-relaxed">
           Introduce tu email y te enviaremos un enlace para restablecer tu contraseña.
         </p>
@@ -91,7 +91,7 @@ const EmailSentStep = ({ email }) => (
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-4">
         <CheckCircle size={28} className="text-green-400" />
       </div>
-      <h2 className="text-3xl font-bold text-white mb-2">Email enviado</h2>
+      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Email enviado</h2>
       <p className="text-gray-400 text-sm leading-relaxed">
         Si <span className="text-white font-medium">{email}</span> está registrado,
         recibirás un enlace para restablecer tu contraseña en los próximos minutos.
@@ -172,7 +172,7 @@ const ResetStep = ({ token }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 mb-4">
             <CheckCircle size={28} className="text-green-400" />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2">Contraseña actualizada</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Contraseña actualizada</h2>
           <p className="text-gray-400 text-sm">
             Tu contraseña se ha cambiado correctamente. Ya puedes iniciar sesión.
           </p>
@@ -190,7 +190,7 @@ const ResetStep = ({ token }) => {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-500/20 border border-primary-500/30 mb-4">
           <KeyRound size={28} className="text-primary-400" />
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">Nueva contraseña</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Nueva contraseña</h2>
         <p className="text-gray-400 text-sm">Elige una contraseña segura para tu cuenta.</p>
       </div>
 
@@ -281,7 +281,7 @@ const InvalidToken = () => (
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 border border-red-500/30 mb-4">
         <Lock size={28} className="text-red-400" />
       </div>
-      <h2 className="text-3xl font-bold text-white mb-2">Enlace inválido</h2>
+      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Enlace inválido</h2>
       <p className="text-gray-400 text-sm leading-relaxed">
         Este enlace de recuperación no es válido o ha expirado. Los enlaces tienen una validez de 1 hora.
       </p>
@@ -338,7 +338,7 @@ const RecuperarPassword = () => {
       </div>
 
       <div className="relative z-20 w-full max-w-md">
-        <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20">
+        <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-lg rounded-2xl p-5 sm:p-8 shadow-2xl border border-primary-500/20">
           {step === 'forgot'  && <ForgotStep onSuccess={handleForgotSuccess} />}
           {step === 'sent'    && <EmailSentStep email={sentEmail} />}
           {step === 'reset'   && <ResetStep token={token} />}

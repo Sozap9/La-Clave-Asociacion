@@ -1,4 +1,11 @@
-import transporter from '../config/mailer.js';
+import {
+  noreplyTransporter,
+  supportTransporter,
+  adminTransporter,
+  fromNoreply,
+  fromSupport,
+  fromAdmin,
+} from '../config/mailer.js';
 import logger from '../config/logger.js';
 import fs from 'fs';
 import path from 'path';
@@ -10,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 /**
  * ================================================================
- * SERVICIO DE EMAIL - LA CLAVE ASOCIACIÓN 981
+ * SERVICIO DE EMAIL - LA CLAVE 981
  * ================================================================
  */
 class EmailService {
@@ -21,7 +28,7 @@ class EmailService {
   static async sendWelcomeEmail(user) {
     try {
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación 981" <noreply@laclave.com>',
+        from: fromNoreply(),
         to: user.email,
         subject: '¡Bienvenido a La Clave 981!',
         html: `
@@ -93,7 +100,7 @@ class EmailService {
         `,
       };
 
-      const info = await transporter.sendMail(mailOptions);
+      const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de bienvenida enviado', {
         to: user.email,
         messageId: info.messageId
@@ -145,11 +152,11 @@ class EmailService {
         }
       }
 
-      // ===== GENERAR QR CODE =====
+      // ===== GENERAR QR CODE BASE64 PARA INLINE =====
+      let qrDataURL = null;
       let qrBuffer = null;
       try {
-        const qrDataURL = await generateQRCodeBase64(booking.codigo_reserva, booking.id);
-        // Convertir data URL a buffer
+        qrDataURL = await generateQRCodeBase64(booking.codigo_reserva, booking.id);
         const base64Data = qrDataURL.replace(/^data:image\/png;base64,/, '');
         qrBuffer = Buffer.from(base64Data, 'base64');
       } catch (qrError) {
@@ -158,24 +165,25 @@ class EmailService {
 
       // ===== PREPARAR ATTACHMENTS =====
       const attachments = [];
-      
       if (cartelAttachment) {
         attachments.push(cartelAttachment);
       }
-      
+      // QR embebido inline con CID
+      const qrCid = 'qr-' + booking.id;
       if (qrBuffer) {
         attachments.push({
-          filename: `entrada-${booking.codigo_reserva}.png`,
+          filename: `qr-${booking.codigo_reserva}.png`,
           content: qrBuffer,
-          contentType: 'image/png'
+          contentType: 'image/png',
+          cid: qrCid
         });
       }
 
       // ===== CONSTRUIR HTML DEL EMAIL =====
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación" <noreply@laclave.com>',
+        from: fromNoreply(),
         to: user.email,
-        subject: `Confirmación de Reserva - ${event.titulo}`,
+                subject: `✅ Entrada confirmada — ${event.titulo}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -183,133 +191,122 @@ class EmailService {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #0a0a0a;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a;">
+          <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#0a0a0a;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
               <tr>
-                <td align="center" style="padding: 40px 20px;">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-radius: 12px; overflow: hidden;">
-                    
-                    <!-- HEADER -->
-                    <tr>
-                      <td style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); padding: 40px 30px; text-align: center;">
-                        <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">
-                          Reserva Confirmada
-                        </h1>
-                      </td>
-                    </tr>
-                    
-                    <!-- CONTENIDO -->
-                    <tr>
-                      <td style="padding: 40px 30px; color: #e5e5e5;">
-                        <p style="line-height: 1.6; margin: 0 0 30px 0; font-size: 16px;">
-                          ¡Hola <strong>${user.nombre}</strong>! Tu reserva ha sido confirmada exitosamente.
-                        </p>
-                        
-                        <!-- INFORMACIÓN DEL EVENTO -->
-                        <div style="background-color: #2a2a2a; padding: 25px; border-radius: 8px; margin: 30px 0;">
-                          <h2 style="color: #10b981; margin: 0 0 20px 0; font-size: 24px;">
-                            ${event.titulo}
-                          </h2>
-                          
-                          <div style="margin: 12px 0;">
-                            <span style="color: #10b981;"></span>
-                            <strong style="color: #10b981; margin-right: 8px;">Fecha:</strong>
-                            <span style="font-size: 15px;">${fechaEvento}</span>
-                          </div>
-                          
-                          <div style="margin: 12px 0;">
-                            <span style="color: #10b981;"></span>
-                            <strong style="color: #10b981; margin-right: 8px;">Hora:</strong>
-                            <span style="font-size: 15px;">${event.hora_evento}</span>
-                          </div>
-                          
-                          <div style="margin: 12px 0;">
-                            <span style="color: #10b981;"></span>
-                            <strong style="color: #10b981; margin-right: 8px;">Ubicación:</strong>
-                            <span style="font-size: 15px;">${event.ubicacion}</span>
-                          </div>
-                        </div>
+                <td align="center" style="padding:40px 20px;">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color:#111;border-radius:16px;overflow:hidden;border:1px solid #222;">
 
-                        ${cartelCid ? `
-                        <!-- IMAGEN DEL CARTEL (INLINE) -->
-                        <div style="text-align: center; margin: 30px 0;">
-                          <img src="cid:${cartelCid}" alt="Cartel del evento" 
-                              style="max-width: 100%; height: auto; border-radius: 8px; border: 2px solid #2a2a2a;">
-                        </div>
-                        ` : ''}
-                        
-                        <!-- CÓDIGO DE RESERVA -->
-                        <div style="background: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%); padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
-                          <p style="color: #ffffff; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                            Tu código de reserva
-                          </p>
-                          <p style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 3px; font-family: monospace;">
-                            ${booking.codigo_reserva}
-                          </p>
-                        </div>
-                        
-                        <!-- INSTRUCCIONES QR -->
-                        <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 20px; margin: 30px 0; border-radius: 4px;">
-                          <p style="margin: 0 0 10px 0; color: #92400E; font-weight: bold;">
-                            Tu código QR de entrada
-                          </p>
-                          <p style="margin: 0; color: #92400E; font-size: 14px; line-height: 1.6;">
-                            Descarga el archivo adjunto <strong>"entrada-${booking.codigo_reserva}.png"</strong> 
-                            y muéstralo en la entrada del evento. También puedes encontrarlo en tu perfil.
-                          </p>
-                        </div>
-                        
-                        <!-- DETALLES DE LA RESERVA -->
-                        <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin: 30px 0;">
-                          <h3 style="color: #10b981; margin: 0 0 15px 0; font-size: 18px;">
-                            📋 Detalles de tu Reserva
-                          </h3>
-                          <div style="color: #e5e5e5; font-size: 14px;">
-                            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #3a3a3a;">
-                              <span>Número de entradas:</span>
-                              <strong>${booking.numero_entradas}</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #3a3a3a;">
-                              <span>Tipo de entrada:</span>
-                              <strong>Socio</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                              <span>Estado:</span>
-                              <strong style="color: #10b981;">Confirmada</strong>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <!-- NOTAS IMPORTANTES -->
-                        <div style="background-color: #1e293b; border-left: 4px solid #8B5CF6; padding: 20px; margin: 30px 0; border-radius: 4px;">
-                          <p style="margin: 0 0 10px 0; color: #a78bfa; font-weight: bold;">
-                            Información importante
-                          </p>
-                          <ul style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.8;">
-                            <li>Presenta tu código QR a la entrada</li>
-                            <li>Si necesitas cancelar, hazlo con al menos 24h de antelación</li>
-                            <li>Puedes ver tus entradas en cualquier momento desde tu perfil</li>
-                          </ul>
-                        </div>
-                        
-                        <p style="text-align: center; margin: 30px 0 0 0; color: #10b981; font-size: 18px; font-weight: bold;">
-                          ¡Nos vemos en el evento! 
-                        </p>
+                    <!-- HEADER VERDE -->
+                    <tr>
+                      <td style="background:linear-gradient(135deg,#7c3aed 0%,#a855f7 100%);padding:28px 30px;text-align:center;">
+                        <p style="color:#e9d5ff;margin:0 0 4px 0;font-size:12px;text-transform:uppercase;letter-spacing:2px;">La Clave 981</p>
+                        <h1 style="color:#ffffff;margin:0;font-size:26px;font-weight:bold;letter-spacing:1px;">ENTRADA CONFIRMADA</h1>
                       </td>
                     </tr>
-                    
+
+                    <!-- BLOQUE PRINCIPAL: cartel + datos -->
+                    <tr>
+                      <td style="padding:0;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <!-- Cartel evento -->
+                            ${cartelCid ? `
+                            <td width="160" style="padding:24px 0 24px 24px;vertical-align:top;">
+                              <img src="cid:${cartelCid}" alt="${event.titulo}"
+                                style="width:140px;height:140px;object-fit:cover;border-radius:10px;border:2px solid #2a2a2a;display:block;">
+                            </td>
+                            ` : ''}
+                            <!-- Datos evento -->
+                            <td style="padding:24px;vertical-align:top;color:#e5e5e5;">
+                              <p style="margin:0 0 4px 0;color:#a855f7;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Evento</p>
+                              <h2 style="margin:0 0 16px 0;font-size:20px;color:#ffffff;font-weight:bold;">${event.titulo}</h2>
+                              <p style="margin:0 0 8px 0;font-size:14px;color:#aaa;">
+                                📅 <strong style="color:#fff;">${fechaEvento}</strong>
+                              </p>
+                              <p style="margin:0 0 8px 0;font-size:14px;color:#aaa;">
+                                🕐 <strong style="color:#fff;">${event.hora_evento}</strong>
+                              </p>
+                              <p style="margin:0 0 16px 0;font-size:14px;color:#aaa;">
+                                📍 <strong style="color:#fff;">${event.ubicacion || 'La Clave 981'}</strong>
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                    <!-- SEPARADOR DENTADO -->
+                    <tr>
+                      <td style="padding:0;background-color:#111;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td style="border-top:2px dashed #2a2a2a;padding:0;"></td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                    <!-- SECCIÓN QR -->
+                    <tr>
+                      <td style="padding:28px 30px;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <!-- QR code inline -->
+                            <td width="230" style="vertical-align:middle;text-align:center;">
+                              ${qrDataURL ? `
+                              <div style="background:#fff;padding:10px;border-radius:10px;display:inline-block;border:3px solid #7c3aed;">
+                                <img src="cid:${qrCid}" alt="QR Code" width="200" height="200"
+                                  style="display:block;border-radius:4px;">
+                              </div>
+                              <p style="margin:8px 0 0 0;color:#666;font-size:11px;">Escanea en la entrada</p>
+                              ` : '<p style="color:#666;font-size:12px;">QR no disponible</p>'}
+                            </td>
+                            <!-- Datos titular -->
+                            <td style="padding-left:24px;vertical-align:middle;color:#e5e5e5;">
+                              <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Titular</p>
+                              <p style="margin:0 0 16px 0;font-size:18px;font-weight:bold;color:#fff;">
+                                ${user.nombre} ${user.apellidos || ''}
+                              </p>
+                              <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Código de reserva</p>
+                              <p style="margin:0 0 16px 0;font-size:16px;font-weight:bold;color:#a855f7;font-family:monospace;letter-spacing:2px;">
+                                ${booking.codigo_reserva}
+                              </p>
+                              <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Tipo</p>
+                              <p style="margin:0;font-size:14px;color:#fff;">
+                                ${booking.tipo_entrada === 'socio' ? '🎟️ Entrada Socio' : '🎟️ Entrada General'}
+                                ${booking.precio_pagado > 0 ? `— <strong style="color:#a855f7;">${booking.precio_pagado}€</strong>` : '— <strong style="color:#10b981;">Gratuita</strong>'}
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                    <!-- AVISO IMPORTANTE -->
+                    <tr>
+                      <td style="padding:0 30px 24px 30px;">
+                        <div style="background:#1a1a2e;border-left:3px solid #7c3aed;border-radius:6px;padding:14px 16px;">
+                          <p style="margin:0 0 6px 0;color:#a855f7;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Información importante</p>
+                          <p style="margin:0;color:#9ca3af;font-size:13px;line-height:1.7;">
+                            • Presenta este QR en la entrada del evento.<br>
+                            • Si necesitas cancelar, hazlo con al menos 24h de antelación.<br>
+                            • Acceso permitido solo a mayores de 18 años.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+
                     <!-- FOOTER -->
                     <tr>
-                      <td style="background-color: #0a0a0a; padding: 30px; text-align: center; border-top: 1px solid #2a2a2a;">
-                        <p style="margin: 0 0 10px 0; color: #666; font-size: 12px;">
-                          Este es un correo automático, por favor no respondas a este mensaje.
-                        </p>
-                        <p style="margin: 0; color: #666; font-size: 12px;">
+                      <td style="background-color:#0a0a0a;padding:20px 30px;text-align:center;border-top:1px solid #1a1a1a;">
+                        <p style="margin:0 0 4px 0;color:#444;font-size:11px;">La Clave 981</p>
+                        <p style="margin:0;color:#444;font-size:11px;">
                           © ${new Date().getFullYear()} La Clave Asociación. Todos los derechos reservados.
                         </p>
                       </td>
                     </tr>
-                    
+
                   </table>
                 </td>
               </tr>
@@ -320,7 +317,7 @@ class EmailService {
         attachments: attachments
       };
 
-      const info = await transporter.sendMail(mailOptions);
+      const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de confirmación enviado con QR y cartel', {
         to: user.email,
         bookingId: booking.id,
@@ -354,7 +351,7 @@ class EmailService {
       });
 
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación" <noreply@laclave.com>',
+        from: fromNoreply(),
         to: user.email,
         subject: `Recordatorio: ${event.titulo} - Mañana`,
         html: `
@@ -449,7 +446,7 @@ class EmailService {
         `,
       };
 
-      const info = await transporter.sendMail(mailOptions);
+      const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de recordatorio enviado', {
         to: user.email,
         bookingId: booking.id,
@@ -481,7 +478,7 @@ class EmailService {
       });
 
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación" <noreply@laclave.com>',
+        from: fromNoreply(),
         to: user.email,
         subject: `Nuevo Evento: ${event.titulo}`,
         html: `
@@ -579,7 +576,7 @@ class EmailService {
         `,
       };
 
-      const info = await transporter.sendMail(mailOptions);
+      const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de nuevo evento enviado', {
         to: user.email,
         eventId: event.id,
@@ -629,7 +626,7 @@ class EmailService {
       });
 
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación" <noreply@laclave.com>',
+        from: fromNoreply(),
         to: user.email,
         subject: `Agenda de ${monthName} ${year}`,
         html: `
@@ -689,7 +686,7 @@ class EmailService {
         `,
       };
 
-      const info = await transporter.sendMail(mailOptions);
+      const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de agenda mensual enviado', {
         to: user.email,
         month,
@@ -715,10 +712,10 @@ class EmailService {
   static async sendPasswordReset(user, resetToken) {
     try {
       // URL del frontend para resetear contraseña
-      const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+      const resetUrl = `${process.env.FRONTEND_URL}/recuperar-password?token=${resetToken}`;
       
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación" <noreply@laclave.com>',
+        from: fromNoreply(),
         to: user.email,
         subject: 'Recuperación de contraseña - La Clave',
         html: `
@@ -814,7 +811,7 @@ class EmailService {
         `
       };
       
-      const info = await transporter.sendMail(mailOptions);
+      const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info(' Email de password reset enviado:', {
         to: user.email,
         userId: user.id,
@@ -845,7 +842,7 @@ class EmailService {
   static async sendSolicitudRecibida(solicitud) {
     try {
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación" <noreply@laclave.com>',
+        from: fromSupport(),
         to: solicitud.email,
         subject: 'Solicitud de socio recibida - La Clave Asociación 981',
         html: `
@@ -892,7 +889,7 @@ class EmailService {
           </html>
         `
       };
-      const info = await transporter.sendMail(mailOptions);
+      const info = await supportTransporter.sendMail(mailOptions);
       logger.info('Email solicitud recibida enviado', { to: solicitud.email, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
@@ -919,7 +916,7 @@ class EmailService {
       const adminUrl = `${process.env.FRONTEND_URL}/admin/solicitudes`;
 
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación" <noreply@laclave.com>',
+        from: fromAdmin(),
         to: adminEmails.join(', '),
         subject: 'Nueva solicitud de socio pendiente',
         html: `
@@ -966,7 +963,7 @@ class EmailService {
           </html>
         `
       };
-      const info = await transporter.sendMail(mailOptions);
+      const info = await adminTransporter.sendMail(mailOptions);
       logger.info('Aviso nueva solicitud enviado', { to: adminEmails, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
@@ -982,7 +979,7 @@ class EmailService {
     try {
       const loginUrl = `${process.env.FRONTEND_URL}/login`;
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación 981" <noreply@laclave.com>',
+        from: fromSupport(),
         to: user.email,
         subject: '¡Solicitud aprobada! Bienvenido a La Clave 981',
         html: `
@@ -1031,7 +1028,7 @@ class EmailService {
           </html>
         `
       };
-      const info = await transporter.sendMail(mailOptions);
+      const info = await supportTransporter.sendMail(mailOptions);
       logger.info('Email solicitud aprobada enviado', { to: user.email, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
@@ -1046,7 +1043,7 @@ class EmailService {
   static async sendSolicitudRechazada(solicitud, motivoRechazo) {
     try {
       const mailOptions = {
-        from: process.env.EMAIL_FROM || '"La Clave Asociación 981 " <noreply@laclave.com>',
+        from: fromSupport(),
         to: solicitud.email,
         subject: 'Solicitud de socio no aprobada - La Clave Asociación 981',
         html: `
@@ -1091,7 +1088,7 @@ class EmailService {
           </html>
         `
       };
-      const info = await transporter.sendMail(mailOptions);
+      const info = await supportTransporter.sendMail(mailOptions);
       logger.info('Email solicitud rechazada enviado', { to: solicitud.email, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
@@ -1147,6 +1144,80 @@ class EmailService {
     });
 
     return results;
+  }
+
+  /**
+   * ================================================================
+   * NOTIFICACIÓN DE NUEVO MENSAJE DE CONTACTO (A ADMINS)
+   * ================================================================
+   * Se envía cuando alguien rellena el formulario público /contacto.
+   * El mensaje ya está guardado en BD; este email es solo un aviso.
+   */
+  static async sendContactNotificationAdmin(contactData, adminEmails) {
+    try {
+      const adminUrl = `${process.env.FRONTEND_URL}/admin`;
+
+      const mailOptions = {
+        from: fromAdmin(),
+        to: adminEmails.join(', '),
+        subject: `Nuevo mensaje de contacto: ${contactData.asunto}`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+          <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#0a0a0a;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;">
+              <tr><td align="center" style="padding:40px 20px;">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#1a1a1a;border-radius:12px;overflow:hidden;">
+                  <tr>
+                    <td style="background:linear-gradient(135deg,#8B5CF6 0%,#a78bfa 100%);padding:30px;text-align:center;">
+                      <h1 style="color:#fff;margin:0;font-size:22px;">📩 Nuevo Mensaje de Contacto</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:30px;color:#e5e5e5;">
+                      <p style="font-size:15px;margin:0 0 20px 0;">
+                        Se ha recibido un nuevo mensaje a través del formulario de contacto.
+                      </p>
+                      <div style="background-color:#2a2a2a;padding:20px;border-radius:8px;margin:20px 0;">
+                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#8B5CF6;">Nombre:</strong> ${contactData.nombre}</p>
+                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#8B5CF6;">Email:</strong> ${contactData.email}</p>
+                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#8B5CF6;">Asunto:</strong> ${contactData.asunto}</p>
+                      </div>
+                      <div style="background-color:#1e1e1e;border-left:4px solid #8B5CF6;padding:20px;border-radius:4px;margin:20px 0;">
+                        <p style="margin:0 0 8px 0;color:#a78bfa;font-weight:bold;font-size:13px;text-transform:uppercase;letter-spacing:1px;">Mensaje:</p>
+                        <p style="margin:0;font-size:14px;line-height:1.7;color:#d1d5db;">${contactData.mensaje.replace(/\n/g, '<br>')}</p>
+                      </div>
+                      <p style="font-size:13px;color:#9ca3af;margin:20px 0 0 0;">
+                        Para responder, escribe directamente a: <a href="mailto:${contactData.email}" style="color:#8B5CF6;">${contactData.email}</a>
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="background-color:#0a0a0a;padding:20px;text-align:center;border-top:1px solid #2a2a2a;">
+                      <p style="margin:0;color:#666;font-size:12px;">Notificación automática — La Clave Admin</p>
+                    </td>
+                  </tr>
+                </table>
+              </td></tr>
+            </table>
+          </body>
+          </html>
+        `,
+      };
+
+      const info = await adminTransporter.sendMail(mailOptions);
+      logger.info('Notificación de contacto enviada a admins', {
+        contactId: contactData.id,
+        to: adminEmails,
+        messageId: info.messageId,
+      });
+      return { success: true, messageId: info.messageId };
+
+    } catch (error) {
+      logger.error('Error sendContactNotificationAdmin:', { error: error.message });
+      return { success: false, error: error.message };
+    }
   }
 }
 

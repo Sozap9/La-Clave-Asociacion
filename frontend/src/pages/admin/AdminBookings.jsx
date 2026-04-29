@@ -159,10 +159,10 @@ const AdminBookings = () => {
 
   if (!selectedEvent) {
     return (
-      <div className="p-8 bg-black min-h-screen">
+      <div className="p-4 md:p-8 bg-black min-h-screen">
         <div className="mb-8">
-          <h1 className="text-gradient mb-2 text-4xl">Gestión de Reservas</h1>
-          <p className="text-gray-400 text-lg">Selecciona un evento para ver sus reservas</p>
+          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Reservas</h1>
+          <p className="text-gray-400 text-sm md:text-lg">Selecciona un evento para ver sus reservas</p>
         </div>
 
         {error && (
@@ -170,12 +170,12 @@ const AdminBookings = () => {
         )}
 
         <div className="mb-6">
-          <div className="flex items-center gap-4 mb-6 flex-wrap bg-transparent">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
             <FilterBar
               filters={{ status: eventStatusFilter, featured: undefined }}
               onFilterChange={(f) => setEventStatusFilter(f.status || 'all')}
             />
-            <div className="flex-1 max-w-md ml-auto">
+            <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
               <SearchInput
                 value={eventSearchTerm}
                 onChange={(val) => setEventSearchTerm(val)}
@@ -194,7 +194,7 @@ const AdminBookings = () => {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredEvents.map((event) => {
               const isPast = new Date(event.fecha_evento) < new Date();
               return (
@@ -230,7 +230,7 @@ const AdminBookings = () => {
   }
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       <div className="mb-8">
         <button
           onClick={() => { setSelectedEvent(null); setBookings([]); setSearch(''); setFilter('all'); }}
@@ -240,9 +240,9 @@ const AdminBookings = () => {
           <span>Volver a eventos</span>
         </button>
 
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="flex-1">
-            <h1 className="text-gradient mb-2 text-4xl">{selectedEvent.titulo}</h1>
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">{selectedEvent.titulo}</h1>
             <div className="flex items-center gap-4 text-gray-400">
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-primary-300" />
@@ -281,7 +281,7 @@ const AdminBookings = () => {
             onFilterChange={(value) => setFilter(value)}
             showCounts={true}
           />
-          <div className="flex-1 max-w-md ml-auto">
+          <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
             <SearchInput
               value={search}
               onChange={(val) => setSearch(val)}
@@ -364,7 +364,7 @@ const AdminBookings = () => {
       {showEventSelector && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowEventSelector(false)}>
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <h2 className="text-2xl font-bold text-white">Seleccionar Evento</h2>
               <button onClick={() => setShowEventSelector(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
             </div>
@@ -407,7 +407,7 @@ const AdminBookings = () => {
       {selectedBooking && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBooking(null)}>
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <h2 className="text-2xl font-bold text-white">Detalles de Reserva</h2>
               <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-white text-2xl">×</button>
             </div>

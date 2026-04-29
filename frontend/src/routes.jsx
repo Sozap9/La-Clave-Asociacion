@@ -1,4 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
+import Estatutos from "./pages/Estatutos";
+import Contacto from "./pages/Contacto";
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -30,14 +32,12 @@ import AdminStatsGenerales from "./pages/admin/AdminStatsGenerales";
 import AdminStatsEventos from "./pages/admin/AdminStatsEventos";
 import AdminStatsReservas from "./pages/admin/AdminStatsReservas";
 import AdminStatsPagos from "./pages/admin/AdminStatsPagos";
-import AdminStatsGaleria from "./pages/admin/AdminStatsGaleria";
 import AdminGallery from "./pages/admin/AdminGallery";
 import AdminGalleryImages from "./pages/admin/AdminGalleryImages";
 import AdminSolicitudes from "./pages/admin/AdminSolicitudes";
 
 // Exports individuales
 import AdminExportSocios from "./pages/admin/AdminExportSocios";
-import AdminExportUsuarios from "./pages/admin/AdminExportUsuarios";
 import AdminExportEventos from "./pages/admin/AdminExportEventos";
 import AdminExportReservas from "./pages/admin/AdminExportReservas";
 
@@ -83,15 +83,15 @@ export const router = createBrowserRouter([
     path: "/estatutos",
     element: (
       <Layout>
-        <ComingSoon title="Estatutos" />
+        <Estatutos />
       </Layout>
     ),
   },
   {
-    path: "/ubicacion",
+    path: "/contacto",
     element: (
       <Layout>
-        <ComingSoon title="Ubicación" />
+        <Contacto />
       </Layout>
     ),
   },
@@ -367,17 +367,6 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: "/admin/stats/galeria",
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminStatsGaleria />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-
   // Actividad
   {
     path: "/admin/actividad",
@@ -419,16 +408,6 @@ export const router = createBrowserRouter([
       <ProtectedRoute requireAdmin>
         <AdminLayout>
           <AdminExportSocios />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/export/usuarios",
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminExportUsuarios />
         </AdminLayout>
       </ProtectedRoute>
     ),

@@ -98,7 +98,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-700">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Users size={24} className="text-primary-400" />
             Gestionar Artistas
@@ -117,7 +117,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
           onSubmit={handleSubmit}
           className="flex-1 flex flex-col overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             {error && (
               <Alert
                 type="error"
@@ -258,7 +258,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
           </div>
 
           {/* Footer */}
-          <div className="flex gap-3 p-6 border-t border-gray-700">
+          <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-gray-700">
             <Button
               type="button"
               variant="secondary"

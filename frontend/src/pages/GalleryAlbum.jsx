@@ -111,13 +111,13 @@ const GalleryAlbum = () => {
 
         {/* Header del álbum */}
         <div className="mb-8">
-          <div className="flex items-start justify-between mb-4 flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
             <div className="flex-1">
-              <h1 className="text-gradient text-4xl mb-2">
+              <h1 className="text-gradient text-2xl md:text-4xl mb-2">
                 {folder.nombre}
               </h1>
               {folder.descripcion && (
-                <p className="text-gray-400 text-lg max-w-3xl">
+                <p className="text-gray-400 text-sm md:text-lg max-w-3xl">
                   {folder.descripcion}
                 </p>
               )}
@@ -192,7 +192,7 @@ const GalleryAlbum = () => {
             </h3>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {images.map((image, index) => {
               // Construir URL completa
               const imageUrl = image.thumbnail_url || image.imagen_url;
@@ -247,7 +247,7 @@ const GalleryAlbum = () => {
           )}
 
           {/* Imagen y detalles */}
-          <div className="max-w-5xl w-full">
+          <div className="max-w-6xl w-full">
             {(() => {
               // Construir URL completa para modal
               const modalImageUrl = selectedImage.imagen_url.startsWith('http') 
@@ -258,7 +258,7 @@ const GalleryAlbum = () => {
                 <img
                   src={modalImageUrl}
                   alt={selectedImage.titulo || 'Imagen'}
-                  className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                  className="w-full h-auto max-h-[92vh] object-contain rounded-lg"
                   onError={(e) => {
                     console.error('Error loading modal image:', modalImageUrl);
                     e.target.src = 'https://via.placeholder.com/800x600?text=Error+al+cargar+imagen';
@@ -266,35 +266,6 @@ const GalleryAlbum = () => {
                 />
               );
             })()}
-
-            {/* Info de la imagen */}
-            <div className="mt-4 bg-[#1a1a1a]/90 backdrop-blur-sm rounded-lg p-4">
-              {selectedImage.titulo && (
-                <h3 className="text-white text-xl font-bold mb-2">
-                  {selectedImage.titulo}
-                </h3>
-              )}
-              {selectedImage.descripcion && (
-                <p className="text-gray-300 mb-4">
-                  {selectedImage.descripcion}
-                </p>
-              )}
-              
-              {/* Artistas de la imagen */}
-              {imageArtists.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-gray-400 text-sm">Artistas:</span>
-                  {imageArtists.map(artist => (
-                    <span
-                      key={artist.id}
-                      className="px-3 py-1 bg-primary-600/20 border border-primary-500/50 text-primary-400 text-sm rounded-full"
-                    >
-                      {artist.nombre}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Botón siguiente */}

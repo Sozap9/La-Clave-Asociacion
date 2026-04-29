@@ -667,6 +667,22 @@ export const eliminarSolicitud = async (id) => {
 };
 
 /**
+ * Obtener lista de eventos para el selector del export de reservas
+ * Devuelve todos los eventos sin cap de paginación
+ */
+export const getEventsForExport = async () => {
+  try {
+    const response = await fetch(`${API_URL}/admin/export/events-selector`, {
+      headers: getAuthHeaders(),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching events for export:", error);
+    throw error;
+  }
+};
+
+/**
  * ========================================
  * EXPORTACIONES - PDF
  * ========================================
@@ -699,12 +715,6 @@ export const exportSocios = () =>
     `socios_${new Date().toISOString().split("T")[0]}.pdf`,
   );
 
-export const exportUsuarios = () =>
-  downloadPDF(
-    `${API_URL}/admin/export/usuarios`,
-    `usuarios_${new Date().toISOString().split("T")[0]}.pdf`,
-  );
-
 export const exportEventos = () =>
   downloadPDF(
     `${API_URL}/admin/export/eventos`,
@@ -713,8 +723,6 @@ export const exportEventos = () =>
 
 export const exportReservas = async (params = {}) => {
   const queryParams = new URLSearchParams();
-  if (params.fecha_desde) queryParams.append("fecha_desde", params.fecha_desde);
-  if (params.fecha_hasta) queryParams.append("fecha_hasta", params.fecha_hasta);
   if (params.event_id) queryParams.append("event_id", params.event_id);
   const qs = queryParams.toString();
   return downloadPDF(

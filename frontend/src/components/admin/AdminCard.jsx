@@ -125,8 +125,8 @@ const AdminCard = ({
                   md:items-end
                 "
               >
-                {/* Botones de acción */}
-                <div className="flex gap-2 justify-start md:justify-end flex-wrap">
+                {/* Botones de acción + selector de rol en la misma fila */}
+                <div className="flex items-center gap-2 justify-start md:justify-end flex-wrap">
                   {actions
                     .filter((a) => a.type !== "role")
                     .map((action, i) => (
@@ -147,23 +147,14 @@ const AdminCard = ({
                         {action.icon}
                       </button>
                     ))}
-                </div>
 
-                {/* Selector de rol */}
-                {actions.filter((a) => a.type === "role").length > 0 && (
-                  <div
-                    className="w-full md:w-auto flex justify-start md:justify-end"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {actions
-                      .filter((a) => a.type === "role")
-                      .map((action, i) => (
-                        <div key={i} className="w-full md:w-auto">
-                          {action.element}
-                        </div>
-                      ))}
-                  </div>
-                )}
+                  {/* Selector de rol — inline con los iconos */}
+                  {actions.filter((a) => a.type === "role").map((action, i) => (
+                    <div key={i} onClick={(e) => e.stopPropagation()}>
+                      {action.element}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

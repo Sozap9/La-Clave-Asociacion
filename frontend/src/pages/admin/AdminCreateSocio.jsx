@@ -101,12 +101,12 @@ const AdminCreateSocio = () => {
 
   if (success) {
     return (
-      <div className="p-8 bg-black min-h-screen flex items-center justify-center">
+      <div className="p-4 md:p-8 bg-black min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block p-6 bg-green-500/20 rounded-full mb-6">
             <CheckCircle size={64} className="text-green-400" />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-3">
+          <h2 className="text-xl sm:text-3xl font-bold text-white mb-3">
             ¡Socio Creado Exitosamente!
           </h2>
           <p className="text-gray-400 mb-6">
@@ -118,7 +118,7 @@ const AdminCreateSocio = () => {
   }
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
@@ -126,10 +126,10 @@ const AdminCreateSocio = () => {
             <UserPlus size={32} className="text-primary-400" />
           </div>
           <div>
-            <h1 className="text-gradient mb-2 text-4xl">
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
               Crear Socio Manual
             </h1>
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-400 text-sm md:text-lg">
               Registra un socio sin necesidad de pago previo
             </p>
           </div>

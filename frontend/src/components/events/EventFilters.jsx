@@ -9,10 +9,10 @@ const EventFilters = ({ filters, onFilterChange }) => {
   return (
     <div className="mb-12">
       {/* Filtros a la izquierda, búsqueda a la derecha */}
-      <div className="flex items-center gap-4 mb-8 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-8">
         <FilterBar filters={filters} onFilterChange={onFilterChange} />
 
-        <div className="flex-1 max-w-md ml-auto">
+        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
           <SearchInput
             value={filters.search || ""}
             onChange={handleSearchChange}

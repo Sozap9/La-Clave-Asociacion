@@ -202,12 +202,12 @@ const AdminSocios = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Gestión de Socios</h1>
-        <p className="text-gray-200 text-lg">Administra tu lista de socios</p>
-        <p className="text-gray-400 text-lg">
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Socios</h1>
+        <p className="text-gray-200 text-sm md:text-lg">Administra tu lista de socios</p>
+        <p className="text-gray-400 text-sm md:text-lg">
           {socios.length} socio{socios.length !== 1 ? "s" : ""} registrado
           {socios.length !== 1 ? "s" : ""}
         </p>
@@ -230,7 +230,7 @@ const AdminSocios = () => {
         />
 
         {/* Búsqueda a la derecha */}
-        <div className="flex-1 max-w-md ml-auto">
+        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
           <SearchInput
             value={search}
             onChange={setSearch}
@@ -312,7 +312,7 @@ const AdminSocios = () => {
                 {
                   type: "role",
                   element: (
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2">
                       <select
                         className="bg-[#101010] border border-gray-700 text-white px-2 py-1 rounded-lg focus:outline-none focus:border-violet-500"
                         value={
@@ -352,10 +352,10 @@ const AdminSocios = () => {
           onClick={() => setSelectedSocio(null)}
         >
           <div
-            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <h2 className="text-2xl font-bold text-white">
                 Detalles del Socio
               </h2>

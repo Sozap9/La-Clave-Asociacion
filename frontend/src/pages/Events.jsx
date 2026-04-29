@@ -77,21 +77,21 @@ const Events = () => {
       <div className="container-custom">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-gradient mb-2 text-4xl">{t('events.title')}</h1>
-          <p className="text-gray-400 text-lg">
+          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">{t('events.title')}</h1>
+          <p className="text-gray-400 text-sm md:text-lg">
             {t('events.subtitle')}
           </p>
         </div>
 
         {/* Filtros */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
             <FilterBar
               filters={{ status: filters.status, featured: filters.featured }}
               onFilterChange={(f) => setFilters(f)}
             />
 
-            <div className="flex-1 max-w-md ml-auto">
+            <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
               <SearchInput
                 value={filters.search}
                 onChange={(val) => setFilters({ ...filters, search: val })}
@@ -118,7 +118,7 @@ const Events = () => {
 
         {/* Grid de eventos */}
         {!loading && events.length > 0 && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {events.map((event) => (
               <EventCard
                 key={event.id}

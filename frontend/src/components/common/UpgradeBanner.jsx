@@ -20,8 +20,8 @@ const UpgradeBanner = () => {
       {/* Efecto de brillo animado */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
       
-      <div className="relative p-8 md:p-12">
-        <div className="flex flex-col md:flex-row items-center gap-8">
+      <div className="relative p-5 sm:p-8 md:p-12">
+        <div className="flex flex-col md:flex-row items-center gap-5 sm:gap-8">
           
           {/* Contenido */}
           <div className="flex-1 text-center md:text-left">
@@ -30,11 +30,11 @@ const UpgradeBanner = () => {
               <span>OFERTA ESPECIAL</span>
             </div>
             
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-bold text-white mb-3">
               ¡Desbloquea Todo el Contenido!
             </h2>
             
-            <p className="text-gray-300 text-lg mb-6">
+            <p className="text-gray-300 text-sm sm:text-lg mb-6">
               Conviértete en socio y disfruta de ventajas exclusivas por solo{' '}
               <span className="text-primary-400 font-bold text-2xl">10€/mes</span>
             </p>

@@ -127,10 +127,10 @@ const Register = () => {
               <CheckCircle size={48} className="text-green-400" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4">
             {t("register.success.title")}
           </h1>
-          <p className="text-gray-300 text-lg mb-3">
+          <p className="text-gray-300 text-sm sm:text-lg mb-3">
             {t("register.success.text")}
           </p>
           <p className="text-gray-400 mb-8">
@@ -167,7 +167,7 @@ const Register = () => {
       <div className="relative z-20 container-custom max-w-2xl">
         {/* Cabecera */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-display text-white mb-3">
+          <h1 className="text-2xl sm:text-4xl font-display text-white mb-3">
             {t("register.title")}
           </h1>
           <p className="text-gray-300 leading-relaxed">

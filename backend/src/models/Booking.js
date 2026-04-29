@@ -169,7 +169,7 @@ class Booking {
     try {
       const sql = `
         UPDATE bookings 
-        SET estado = 'asistida', fecha_asistencia = NOW()
+        SET estado = 'asistida', fecha_asistencia = NOW(), asistencia = 1
         WHERE id = ?
       `;
       await query(sql, [id]);

@@ -145,11 +145,11 @@ const AdminDashboard = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Dashboard Admin</h1>
-        <p className="text-gray-400 text-lg">Resumen general del sistema</p>
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Dashboard Admin</h1>
+        <p className="text-gray-400 text-sm md:text-lg">Resumen general del sistema</p>
       </div>
 
       {/* Alerts */}
@@ -182,7 +182,7 @@ const AdminDashboard = () => {
       {/* Eventos Recientes */}
       {recentEvents.length > 0 && (
         <div className="mt-8">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-white">
                 Eventos Recientes

@@ -52,10 +52,10 @@ const FeaturedEventsCarousel = () => {
 
   return (
     <section className="py-24 bg-[#0a0a0a] border-t border-[#262626]">
-      <div className="container-custom px-6">
+      <div className="container-custom px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-light text-white mb-4 uppercase tracking-wider">
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-light text-white mb-4 uppercase tracking-wider">
             Eventos Destacados
           </h2>
           <div className="w-24 h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent mx-auto mb-6" />

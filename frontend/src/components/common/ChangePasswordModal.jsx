@@ -81,7 +81,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 
       <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
         
-        <div className="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-6 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-4 sm:p-6 flex items-center justify-between z-10">
           <h2 className="text-2xl font-bold text-white">Cambiar Contraseña</h2>
           <button
             onClick={onClose}
@@ -92,7 +92,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
           
           <div className="flex flex-col items-center gap-4 pb-6 border-b border-gray-800">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-xl">
@@ -172,14 +172,14 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-colors"
+              className="w-full sm:flex-1 px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg font-medium transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/20"
+              className="w-full sm:flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/20"
             >
               {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
             </button>

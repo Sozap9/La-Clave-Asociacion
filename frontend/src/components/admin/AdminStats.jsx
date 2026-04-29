@@ -25,13 +25,13 @@ const AdminStats = ({ stats }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
       {statsData.map((stat, index) => {
         const Icon = stat.icon;
         return (
           <div
             key={index}
-            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all"
+            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-3 sm:p-6 hover:border-primary-500/50 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="bg-primary-500/20 p-3 rounded-lg">
@@ -39,7 +39,7 @@ const AdminStats = ({ stats }) => {
               </div>
             </div>
             <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-            <p className="text-3xl font-bold text-primary-300">{stat.value}</p>
+            <p className="text-xl sm:text-3xl font-bold text-primary-300">{stat.value}</p>
           </div>
         );
       })}

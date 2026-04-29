@@ -95,10 +95,10 @@ const AdminPaymentsMonthly = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Ingresos Mensuales</h1>
-        <p className="text-gray-400 text-lg">Analisis de ingresos de los ultimos 12 meses</p>
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Ingresos Mensuales</h1>
+        <p className="text-gray-400 text-sm md:text-lg">Analisis de ingresos de los ultimos 12 meses</p>
       </div>
 
       {error && (
@@ -109,13 +109,13 @@ const AdminPaymentsMonthly = () => {
 
       {data && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-2">
                 <DollarSign className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Mes Actual</p>
               </div>
-              <p className="text-primary-300 text-3xl font-bold">
+              <p className="text-primary-300 text-xl sm:text-3xl font-bold">
                 {formatCurrency(data.current_month?.total_ingresos)}
               </p>
               <p className="text-gray-500 text-sm mt-1">
@@ -128,7 +128,7 @@ const AdminPaymentsMonthly = () => {
                 <Calendar className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Mes Anterior</p>
               </div>
-              <p className="text-primary-300 text-3xl font-bold">
+              <p className="text-primary-300 text-xl sm:text-3xl font-bold">
                 {formatCurrency(data.previous_month?.total_ingresos)}
               </p>
               <p className="text-gray-500 text-sm mt-1">
@@ -141,7 +141,7 @@ const AdminPaymentsMonthly = () => {
                 <TrendingUp className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Variacion</p>
               </div>
-              <p className="text-primary-300 text-3xl font-bold">
+              <p className="text-primary-300 text-xl sm:text-3xl font-bold">
                 {calculateChange() >= 0 ? '+' : ''}{calculateChange()}%
               </p>
               <p className="text-gray-500 text-sm mt-1">vs mes anterior</p>
@@ -152,7 +152,7 @@ const AdminPaymentsMonthly = () => {
                 <DollarSign className="text-primary-300" size={24} />
                 <p className="text-gray-400 text-sm">Total 12 Meses</p>
               </div>
-              <p className="text-primary-300 text-3xl font-bold">
+              <p className="text-primary-300 text-xl sm:text-3xl font-bold">
                 {formatCurrency(data.monthly_data?.reduce((sum, m) => sum + (m.total_ingresos || 0), 0))}
               </p>
               <p className="text-gray-500 text-sm mt-1">Ultimo año</p>
@@ -160,7 +160,7 @@ const AdminPaymentsMonthly = () => {
           </div>
 
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-8 hover:border-primary-500/50 transition-all">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <h2 className="text-xl font-bold text-white">Evolucion Mensual</h2>
               <button
                 onClick={exportCSV}

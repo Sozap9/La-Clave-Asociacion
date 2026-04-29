@@ -22,15 +22,17 @@ const optionalEnvVars = [
   'JWT_REFRESH_EXPIRE',
   'STRIPE_PUBLISHABLE_KEY',
   'STRIPE_WEBHOOK_SECRET',
-  // ── Email ────────────────────────────────
-  'EMAIL_HOST',
-  'EMAIL_PORT',
-  'EMAIL_SECURE',
-  'EMAIL_USER',
-  'EMAIL_PASS',
-  'EMAIL_FROM',
+  // ── Brevo SMTP ───────────────────────────────────────────
+  'BREVO_SMTP_HOST',
+  'BREVO_SMTP_PORT',
+  'BREVO_SMTP_USER',
+  'BREVO_SMTP_KEY',
+  'EMAIL_FROM_NAME',
+  'EMAIL_NOREPLY',
+  'EMAIL_SUPPORT',
+  'EMAIL_ADMIN',
   'ADMIN_NOTIFICATION_EMAILS',
-  // ── App ──────────────────────────────────
+  // ── App ──────────────────────────────────────────────────
   'MAX_FILE_SIZE',
   'UPLOAD_PATH',
   'MAX_SOCIOS',
@@ -53,24 +55,24 @@ export const validateEnv = () => {
   });
 
   if (missingVars.length > 0) {
-    console.error('\n❌ ERROR: Faltan variables de entorno obligatorias:\n');
+    console.error('\nERROR: Faltan variables de entorno obligatorias:\n');
     missingVars.forEach(varName => {
       console.error(`   - ${varName}`);
     });
-    console.error('\n📋 Copia .env.example a .env y configura los valores\n');
+    console.error('\n Copia .env.example a .env y configura los valores\n');
     process.exit(1);
   }
 
   // Advertencias sobre variables opcionales pero recomendadas
   const warnings = [];
 
-  // ── Email: avisar si falta alguna de las variables del bloque ──
-  const emailVars = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'EMAIL_FROM'];
-  const missingEmailVars = emailVars.filter(v => !process.env[v]);
+  // ── Brevo SMTP: avisar si falta la clave ─────────────────────
+  const brevoVars = ['BREVO_SMTP_HOST', 'BREVO_SMTP_USER', 'BREVO_SMTP_KEY'];
+  const missingBrevoVars = brevoVars.filter(v => !process.env[v]);
 
-  if (missingEmailVars.length > 0) {
+  if (missingBrevoVars.length > 0) {
     warnings.push(
-      `Email (modo mock activo) — faltan: ${missingEmailVars.join(', ')} — los emails se loguearán en consola pero NO se enviarán`
+      `Brevo SMTP (modo mock activo) — faltan: ${missingBrevoVars.join(', ')} — los emails se loguearán en consola pero NO se enviarán`
     );
   }
 
@@ -81,7 +83,7 @@ export const validateEnv = () => {
   }
 
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    warnings.push('STRIPE_WEBHOOK_SECRET - Los webhooks de Stripe no se procesarán');
+    warnings.push('STRIPE_WEBHOOK_SECRET — los webhooks de Stripe no se procesarán');
   }
 
   if (warnings.length > 0 && process.env.NODE_ENV !== 'test') {

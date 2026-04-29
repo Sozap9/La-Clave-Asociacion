@@ -28,7 +28,7 @@ const Navbar = () => {
 
             {/* Título */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <span className="text-2xl font-display text-white">
+              <span className="text-lg sm:text-2xl font-display text-white whitespace-nowrap">
                 La Clave 981
               </span>
             </div>

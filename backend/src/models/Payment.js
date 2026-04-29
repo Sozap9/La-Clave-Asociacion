@@ -13,22 +13,21 @@ class Payment {
     try {
       const {
         socio_id,
-        stripe_payment_id,
+        stripe_payment_intent_id,
         stripe_invoice_id,
         amount,
         currency = "EUR",
         estado = "pendiente",
-        tipo = "cuota_mensual",
+        tipo_pago = "cuota_mensual",
         descripcion,
-        fecha_vencimiento,
         metadata = {},
       } = paymentData;
 
       const sql = `
         INSERT INTO payments (
-          socio_id, stripe_payment_id, stripe_invoice_id, amount, currency,
-          estado, tipo, descripcion, fecha_vencimiento, metadata
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          socio_id, stripe_payment_intent_id, stripe_invoice_id, amount, currency,
+          estado, tipo_pago, descripcion, metadata
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const metadataJson =
@@ -36,14 +35,13 @@ class Payment {
 
       const results = await query(sql, [
         socio_id,
-        stripe_payment_id,
+        stripe_payment_intent_id,
         stripe_invoice_id,
         amount,
         currency,
         estado,
-        tipo,
+        tipo_pago,
         descripcion,
-        fecha_vencimiento,
         metadataJson,
       ]);
 
@@ -83,7 +81,7 @@ class Payment {
   static async findByStripePaymentId(stripePaymentId) {
     try {
       const sql = `
-        SELECT * FROM payments WHERE stripe_payment_id = ? LIMIT 1
+        SELECT * FROM payments WHERE stripe_payment_intent_id = ? LIMIT 1
       `;
       const results = await query(sql, [stripePaymentId]);
       return results.length > 0 ? results[0] : null;
@@ -120,8 +118,8 @@ class Payment {
       }
 
       if (tipo_pago) {
-        sql += " AND (tipo_pago = ? OR tipo = ?)";
-        params.push(tipo_pago, tipo_pago);
+        sql += " AND tipo_pago = ?";
+        params.push(tipo_pago);
       }
 
       sql += ` ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
@@ -139,8 +137,8 @@ class Payment {
         countParams.push(estado);
       }
       if (tipo_pago) {
-        countSql += " AND (tipo_pago = ? OR tipo = ?)";
-        countParams.push(tipo_pago, tipo_pago);
+        countSql += " AND tipo_pago = ?";
+        countParams.push(tipo_pago);
       }
 
       const countResult = await query(countSql, countParams);
@@ -235,10 +233,10 @@ class Payment {
         SELECT
           DATE_FORMAT(fecha_pago, '%Y-%m') as mes,
           COUNT(*) as total_transacciones,
-          SUM(COALESCE(amount, monto, 0)) as total_ingresos,
+          SUM(COALESCE(amount, 0)) as total_ingresos,
           COUNT(DISTINCT socio_id) as socios_pagaron
         FROM payments
-        WHERE estado IN ('exitoso', 'completado')
+        WHERE estado = 'exitoso'
         AND fecha_pago >= DATE_SUB(NOW(), INTERVAL ? MONTH)
         GROUP BY DATE_FORMAT(fecha_pago, '%Y-%m')
         ORDER BY mes DESC
@@ -381,7 +379,7 @@ class Payment {
       const sql = `
         SELECT * FROM payments
         WHERE socio_id = ?
-        AND estado IN ('exitoso', 'completado')
+        AND estado = 'exitoso'
         AND fecha_pago BETWEEN ? AND ?
         ORDER BY fecha_pago DESC
       `;

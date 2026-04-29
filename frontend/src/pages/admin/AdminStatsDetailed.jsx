@@ -66,13 +66,13 @@ const AdminStatsDetailed = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
           Estadísticas Detalladas
         </h1>
-        <p className="text-gray-400 text-lg">
+        <p className="text-gray-400 text-sm md:text-lg">
           Vista completa del rendimiento del sistema
         </p>
       </div>
@@ -93,13 +93,13 @@ const AdminStatsDetailed = () => {
       {stats && (
         <>
           {/* Stats principales - Grid 3x2 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-8">
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-3">
                 <Users className="text-primary-300" size={28} />
                 <p className="text-gray-400 text-sm">Total Usuarios</p>
               </div>
-              <p className="text-primary-300 text-4xl font-bold mb-2">
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
                 {stats.total_usuarios || 0}
               </p>
               <div className="flex gap-4 text-sm">
@@ -117,7 +117,7 @@ const AdminStatsDetailed = () => {
                 <Users className="text-primary-300" size={28} />
                 <p className="text-gray-400 text-sm">Total Socios</p>
               </div>
-              <p className="text-primary-300 text-4xl font-bold mb-2">
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
                 {stats.total_socios || 0}
               </p>
               <div className="flex gap-4 text-sm">
@@ -135,7 +135,7 @@ const AdminStatsDetailed = () => {
                 <Calendar className="text-primary-300" size={28} />
                 <p className="text-gray-400 text-sm">Total Eventos</p>
               </div>
-              <p className="text-primary-300 text-4xl font-bold mb-2">
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
                 {stats.total_eventos || 0}
               </p>
               <div className="flex gap-4 text-sm">
@@ -153,7 +153,7 @@ const AdminStatsDetailed = () => {
                 <Ticket className="text-primary-300" size={28} />
                 <p className="text-gray-400 text-sm">Total Reservas</p>
               </div>
-              <p className="text-primary-300 text-4xl font-bold mb-2">
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
                 {stats.total_reservas || 0}
               </p>
               <div className="flex gap-4 text-sm">
@@ -171,7 +171,7 @@ const AdminStatsDetailed = () => {
                 <DollarSign className="text-primary-300" size={28} />
                 <p className="text-gray-400 text-sm">Ingresos Totales</p>
               </div>
-              <p className="text-primary-300 text-4xl font-bold mb-2">
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
                 {formatCurrency(stats.ingresos_totales)}
               </p>
               <div className="flex gap-4 text-sm">
@@ -187,7 +187,7 @@ const AdminStatsDetailed = () => {
                 <TrendingUp className="text-primary-300" size={28} />
                 <p className="text-gray-400 text-sm">Tasa Ocupación</p>
               </div>
-              <p className="text-primary-300 text-4xl font-bold mb-2">
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
                 {stats.tasa_ocupacion_promedio || 0}%
               </p>
               <p className="text-gray-500 text-sm">promedio eventos</p>

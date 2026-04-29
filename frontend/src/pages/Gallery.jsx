@@ -188,20 +188,20 @@ const Gallery = () => {
       <div className="container-custom">
         
         {/* Header con botones a la derecha */}
-        <div className="mb-10 flex items-start justify-between">
+        <div className="mb-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-gradient mb-2 text-4xl">Galería</h1>
-            <p className="text-gray-400 text-lg">
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Galería</h1>
+            <p className="text-gray-400 text-sm md:text-lg">
               Explora nuestros álbumes de fotos de eventos y conciertos
             </p>
           </div>
 
           {/* Botones Admin - Estilo filtros (negros) */}
           {isAdmin && (
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 onClick={handleUploadClick}
-                className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
                   activeAdminAction === 'upload'
                     ? "bg-primary-600 text-white shadow-glow"
                     : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
@@ -212,7 +212,7 @@ const Gallery = () => {
               </button>
               <button
                 onClick={handleCreateClick}
-                className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
                   activeAdminAction === 'create'
                     ? "bg-primary-600 text-white shadow-glow"
                     : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
@@ -240,44 +240,57 @@ const Gallery = () => {
 
         {/* Filtros y Búsqueda */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
             
-            {/* Filtros */}
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => setSortOrder("all")}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  sortOrder === "all"
-                    ? "bg-primary-600 text-white shadow-glow"
-                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                }`}
+            {/* Filtros: select en mobile, botones en desktop */}
+            <div className="w-full sm:w-auto">
+              {/* Mobile */}
+              <select
+                className="sm:hidden w-full px-4 py-2.5 bg-[#1a1a1a] text-white text-sm rounded-lg border border-[#262626] focus:outline-none focus:border-primary-500 appearance-none cursor-pointer"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
               >
-                Todos
-              </button>
-              <button
-                onClick={() => setSortOrder("desc")}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  sortOrder === "desc"
-                    ? "bg-primary-600 text-white shadow-glow"
-                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                }`}
-              >
-                Más Recientes
-              </button>
-              <button
-                onClick={() => setSortOrder("asc")}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  sortOrder === "asc"
-                    ? "bg-primary-600 text-white shadow-glow"
-                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                }`}
-              >
-                Más Antiguos
-              </button>
+                <option value="all">Todos</option>
+                <option value="desc">Más Recientes</option>
+                <option value="asc">Más Antiguos</option>
+              </select>
+              {/* Desktop */}
+              <div className="hidden sm:flex flex-wrap gap-3">
+                <button
+                  onClick={() => setSortOrder("all")}
+                  className={`px-5 py-3 rounded-lg font-medium transition-all ${
+                    sortOrder === "all"
+                      ? "bg-primary-600 text-white shadow-glow"
+                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setSortOrder("desc")}
+                  className={`px-5 py-3 rounded-lg font-medium transition-all ${
+                    sortOrder === "desc"
+                      ? "bg-primary-600 text-white shadow-glow"
+                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  Más Recientes
+                </button>
+                <button
+                  onClick={() => setSortOrder("asc")}
+                  className={`px-5 py-3 rounded-lg font-medium transition-all ${
+                    sortOrder === "asc"
+                      ? "bg-primary-600 text-white shadow-glow"
+                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  Más Antiguos
+                </button>
+              </div>
             </div>
 
             {/* Barra de búsqueda a la derecha */}
-            <div className="flex-1 max-w-md ml-auto">
+            <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
               <div className="relative">
                 <input
                   type="text"
@@ -330,7 +343,7 @@ const Gallery = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {filteredFolders.map((folder) => (
               <AlbumCard key={folder.id} folder={folder} />
             ))}
@@ -406,12 +419,6 @@ const AlbumCard = ({ folder }) => {
           </div>
         )}
 
-        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-2">
-          <span className="text-white text-sm font-medium">
-            {folder.total_imagenes || 0} fotos
-          </span>
-        </div>
-
         {folder.destacado === 1 && (
           <div className="absolute top-3 left-3 bg-primary-600/90 backdrop-blur-sm px-3 py-1 rounded-full">
             <span className="text-white text-xs font-semibold">DESTACADO</span>
@@ -431,8 +438,8 @@ const AlbumCard = ({ folder }) => {
         )}
 
         {folder.fecha_evento && (
-          <div className="flex items-center gap-2 text-gray-500 text-sm mb-3">
-            <Calendar size={14} />
+          <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-3">
+            <Calendar size={12} />
             <span>
               {new Date(folder.fecha_evento).toLocaleDateString("es-ES")}
             </span>

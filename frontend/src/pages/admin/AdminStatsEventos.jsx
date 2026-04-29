@@ -48,9 +48,9 @@ const AdminStatsEventos = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
           Estadísticas de Eventos
         </h1>
         <p className="text-gray-400">
@@ -66,7 +66,7 @@ const AdminStatsEventos = () => {
       {stats && (
         <>
           {/* KPIs */}
-          <div className="grid md:grid-cols-4 gap-6 mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
             <StatCard
               title="Total Eventos"
               value={stats.total_eventos || 0}
@@ -179,10 +179,10 @@ const AdminStatsEventos = () => {
 
 const StatCard = ({ title, value, icon: Icon }) => (
   <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
-    <div className="flex items-start justify-between mb-4">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
       <div>
         <p className="text-gray-400 text-sm mb-1">{title}</p>
-        <p className="text-primary-300 text-3xl font-bold">{value}</p>
+        <p className="text-primary-300 text-xl sm:text-3xl font-bold">{value}</p>
       </div>
       <Icon className="w-8 h-8 text-primary-400" />
     </div>

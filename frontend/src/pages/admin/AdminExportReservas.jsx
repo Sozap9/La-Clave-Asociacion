@@ -1,35 +1,62 @@
 import { useState, useEffect } from "react";
 import Alert from "../../components/common/Alert";
 import DatePickerInput from "../../components/common/DatePickerInput";
-import { exportReservas, getAllEventsAdmin } from "../../api/adminApi";
-import { Download, Ticket, Info, Calendar } from "lucide-react";
+import { exportReservas, getEventsForExport } from "../../api/adminApi";
+import { Download, Ticket, Calendar, Search } from "lucide-react";
 
 const AdminExportReservas = () => {
   const [loading, setLoading] = useState(false);
   const [eventsLoading, setEventsLoading] = useState(true);
-  const [events, setEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
+  const [visibleEvents, setVisibleEvents] = useState([]);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [dateFilter, setDateFilter] = useState(null);
 
-  const [filters, setFilters] = useState({
-    fecha_desde: "",
-    fecha_hasta: "",
-    event_id: "",
-  });
+  const [filters, setFilters] = useState({ event_id: "" });
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
+  // Recalcula el dropdown cuando cambia el filtro de fecha
+  useEffect(() => {
+    if (!allEvents.length) return;
+
+    if (dateFilter) {
+      const selected = new Date(dateFilter);
+      selected.setHours(0, 0, 0, 0);
+
+      const matched = allEvents.filter((e) => {
+        const evDate = new Date(e.fecha_evento);
+        evDate.setHours(0, 0, 0, 0);
+        return evDate.getTime() === selected.getTime();
+      });
+
+      setVisibleEvents(matched);
+
+      // Si solo hay un resultado, seleccionarlo automáticamente
+      if (matched.length === 1) {
+        setFilters((prev) => ({ ...prev, event_id: String(matched[0].id) }));
+      } else {
+        setFilters((prev) => ({ ...prev, event_id: "" }));
+      }
+    } else {
+      // Sin filtro: top 10 más recientes (el array ya viene ORDER BY fecha_evento DESC)
+      setVisibleEvents(allEvents.slice(0, 10));
+    }
+  }, [dateFilter, allEvents]);
+
   const fetchEvents = async () => {
     setEventsLoading(true);
     try {
-      const result = await getAllEventsAdmin({
-        limit: 1000,
-        estado: "publicado",
-      });
+      const result = await getEventsForExport();
       if (result.success) {
-        setEvents(result.data.items || []);
+        const events = result.data || [];
+        setAllEvents(events);
+        setVisibleEvents(events.slice(0, 10));
+      } else {
+        console.error("Error al cargar eventos:", result.message);
       }
     } catch (err) {
       console.error("Error cargando eventos:", err);
@@ -61,16 +88,24 @@ const AdminExportReservas = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ fecha_desde: "", fecha_hasta: "", event_id: "" });
+    setFilters({ event_id: "" });
+    setDateFilter(null);
   };
 
+  const totalEvents = allEvents.length;
+  const showingCount = visibleEvents.length;
+  const isDateFiltering = dateFilter !== null;
+
+  // Nombre del evento seleccionado para mostrarlo como info al usuario
+  const selectedEventName =
+    filters.event_id
+      ? allEvents.find((e) => String(e.id) === filters.event_id)?.titulo || ""
+      : "";
+
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Exportar Reservas PDF</h1>
-        <p className="text-gray-400 text-lg">
-          Descarga reservas filtradas por fecha o evento
-        </p>
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Exportar Reservas </h1>
       </div>
 
       {success && (
@@ -105,19 +140,21 @@ const AdminExportReservas = () => {
         </div>
 
         {/* Filtros */}
-        <div className="mb-6 space-y-4 bg-[#0d0d0d] p-6 rounded-lg border border-[#1a1a1a]">
-          <h4 className="text-white font-semibold text-lg mb-3">
+        <div className="mb-6 space-y-5 bg-[#0d0d0d] p-6 rounded-lg border border-[#1a1a1a]">
+          <h4 className="text-white font-semibold text-lg">
             Filtros (opcional)
           </h4>
 
-          {/* Filtro por Evento */}
+          {/* Dropdown top 10 más recientes */}
           <div>
             <label className="block text-white font-medium mb-2">
               <Calendar className="w-4 h-4 inline mr-2 text-primary-300" />
-              Filtrar por Evento Publicado:
+              Filtrar por Evento:
             </label>
             {eventsLoading ? (
-              <div className="text-gray-400 text-sm">Cargando eventos...</div>
+              <div className="text-gray-400 text-sm py-3">
+                Cargando eventos...
+              </div>
             ) : (
               <select
                 value={filters.event_id}
@@ -127,111 +164,52 @@ const AdminExportReservas = () => {
                 className="w-full bg-[#262626] border border-[#333333] rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary-500 transition-colors"
               >
                 <option value="">Todos los eventos</option>
-                {events.map((event) => (
+                {visibleEvents.map((event) => (
                   <option key={event.id} value={event.id}>
-                    {event.titulo} -{" "}
-                    {new Date(event.fecha_evento).toLocaleDateString("es-ES")}
+                    {event.titulo}
                   </option>
                 ))}
               </select>
             )}
-            <p className="text-gray-400 text-sm mt-1">
-              Selecciona un evento para ver todas las entradas compradas
+            {!eventsLoading && (
+              <p className="text-gray-500 text-xs mt-1">
+                {isDateFiltering
+                  ? showingCount === 0
+                    ? "No hay eventos en esa fecha."
+                    : `${showingCount} evento${showingCount > 1 ? "s" : ""} encontrado${showingCount > 1 ? "s" : ""}.`
+                  : `Mostrando los ${showingCount} eventos más recientes de ${totalEvents} total. Usa el calendario para buscar eventos más antiguos.`}
+              </p>
+            )}
+          </div>
+
+          {/* DatePicker para buscar por fecha de evento */}
+          <div className="border-t border-[#262626] pt-5">
+            <label className="block text-white font-medium mb-2">
+              <Search className="w-4 h-4 inline mr-2 text-primary-300" />
+              Buscar evento por fecha:
+            </label>
+            <DatePickerInput
+              selected={dateFilter}
+              onChange={(date) => setDateFilter(date || null)}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Seleccionar fecha del evento"
+            />
+            <p className="text-gray-500 text-xs mt-1">
+              Filtra el listado de arriba para localizar eventos más antiguos.
             </p>
           </div>
 
-          {/* Filtro por Fechas */}
-          <div className="border-t border-[#262626] pt-4">
-            <label className="block text-white font-medium mb-4">
-              Filtrar por Fecha de Reserva:
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-400 text-sm mb-1">
-                  Desde:
-                </label>
-                <DatePickerInput
-                  selected={
-                    filters.fecha_desde ? new Date(filters.fecha_desde) : null
-                  }
-                  onChange={(date) => {
-                    if (date) {
-                      const year = date.getFullYear();
-                      const month = String(date.getMonth() + 1).padStart(
-                        2,
-                        "0",
-                      );
-                      const day = String(date.getDate()).padStart(2, "0");
-                      setFilters({
-                        ...filters,
-                        fecha_desde: `${year}-${month}-${day}`,
-                      });
-                    }
-                  }}
-                  dateFormat="dd/MM/yyyy"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-400 text-sm mb-1">
-                  Hasta:
-                </label>
-                <DatePickerInput
-                  selected={
-                    filters.fecha_hasta ? new Date(filters.fecha_hasta) : null
-                  }
-                  onChange={(date) => {
-                    if (date) {
-                      const year = date.getFullYear();
-                      const month = String(date.getMonth() + 1).padStart(
-                        2,
-                        "0",
-                      );
-                      const day = String(date.getDate()).padStart(2, "0");
-                      setFilters({
-                        ...filters,
-                        fecha_hasta: `${year}-${month}-${day}`,
-                      });
-                    }
-                  }}
-                  dateFormat="dd/MM/yyyy"
-                />
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={clearFilters}
-            className="text-primary-300 text-sm hover:text-primary-400 transition-colors font-medium"
-          >
-            Limpiar todos los filtros
-          </button>
+          {(filters.event_id || isDateFiltering) && (
+            <button
+              onClick={clearFilters}
+              className="text-primary-300 text-sm hover:text-primary-400 transition-colors font-medium"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
-        {/* Campos incluidos */}
-        <div className="mb-6">
-          <p className="text-white font-medium mb-3">Campos incluidos:</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              "Código reserva",
-              "Evento",
-              "Socio",
-              "Fecha evento",
-              "Hora",
-              "Acompañantes",
-              "Estado",
-              "Fecha reserva",
-            ].map((field) => (
-              <span
-                key={field}
-                className="bg-[#262626] text-gray-300 px-3 py-1 rounded-full text-sm border border-[#333333]"
-              >
-                {field}
-              </span>
-            ))}
-          </div>
-        </div>
-
+        
         <button
           onClick={handleExport}
           disabled={loading}

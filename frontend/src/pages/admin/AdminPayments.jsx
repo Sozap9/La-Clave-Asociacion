@@ -243,14 +243,14 @@ const AdminPayments = () => {
   if (loadingEvents) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
           Gestión de Pagos por Evento
         </h1>
-        <p className="text-gray-200 text-lg">
+        <p className="text-gray-200 text-sm md:text-lg">
           Visualiza pagos e ingresos organizados por evento
         </p>
       </div>
@@ -263,14 +263,14 @@ const AdminPayments = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
 
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <div className="lg:col-span-1">
-          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 sticky top-8">
+          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 sm:p-6 lg:sticky lg:top-8">
 
             {/* Título + botón calendario */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Calendar size={20} className="text-primary-300" />
                 Eventos
@@ -389,7 +389,7 @@ const AdminPayments = () => {
               <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-6">
 
                 {/* Título + botón export */}
-                <div className="flex items-start justify-between gap-4 mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-1">
                   <h3 className="text-2xl font-bold text-white">
                     {getEventName(selectedEvent)}
                   </h3>
@@ -413,7 +413,7 @@ const AdminPayments = () => {
 
                 {/* Stats: solo Total + Confirmadas */}
                 {eventStats && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="bg-[#0a0a0a] rounded-lg p-4">
                       <p className="text-gray-500 text-sm">Total Entradas</p>
                       <p className="text-primary-300 text-2xl font-bold mt-1">
@@ -437,7 +437,7 @@ const AdminPayments = () => {
                   activeFilter={estadoFilter}
                   onFilterChange={handleFilterChange}
                 />
-                <div className="flex-1 max-w-md ml-auto">
+                <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
                   <SearchInput
                     value={search}
                     onChange={handleSearchChange}
@@ -460,7 +460,7 @@ const AdminPayments = () => {
               {!loadingEntries && entries.length === 0 ? (
                 <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
                   <CreditCard className="mx-auto mb-4 text-gray-600" size={48} />
-                  <p className="text-gray-400 text-lg">
+                  <p className="text-gray-400 text-sm md:text-lg">
                     {search || estadoFilter !== "all"
                       ? "No se encontraron entradas"
                       : "No hay entradas en este evento"}

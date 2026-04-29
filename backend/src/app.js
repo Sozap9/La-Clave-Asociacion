@@ -117,6 +117,7 @@ import venueRoutes from "./routes/venueRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 import pushRoutes from "./routes/pushRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 // Gallery routes (handles both JSON and FormData via multer)
 app.use("/api/gallery", galleryRoutes);
@@ -131,6 +132,7 @@ app.use("/api/venues", venueRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/push", pushRoutes);
+app.use("/api/contact", contactRoutes);
 
 // Root route
 app.get("/", (req, res) => {

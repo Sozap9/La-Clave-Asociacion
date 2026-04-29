@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { APP_NAME } from '../../utils/constants';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -28,33 +29,28 @@ const Footer = () => {
 
   return (
     <footer className="bg-[#0a0a0a] border-t border-[#262626] mt-auto">
-      <div className="container-custom py-4">
+      <div className="container-custom px-6">
 
-        <div className="mt-6 pt-6 border-t border-[#262626] flex flex-col sm:flex-row items-center justify-between gap-3">
+        {/* ── Fila superior: idioma (izquierda) + links (derecha) ── */}
+        <div className="flex flex-row items-center justify-between gap-3 py-4">
 
-          {/* Derechos */}
-          <p className="text-gray-500 text-sm text-center sm:text-left">
-            © {currentYear} {APP_NAME} {t('footer.rights')}
-          </p>
-
-          {/* Selector de idioma — mismo tamaño que los derechos */}
+          {/* Selector de idioma */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setOpen((prev) => !prev)}
-              className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-400 transition-colors duration-200"
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
             >
-              <Globe size={12} />
+              <Globe size={11} />
               <span>{t('footer.language')}:</span>
-              <span className="text-gray-400">{currentLang?.label}</span>
+              <span className="text-gray-300">{currentLang?.label}</span>
               <ChevronDown
-                size={12}
+                size={11}
                 className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
               />
             </button>
 
-            {/* Desplegable */}
             {open && (
-              <div className="absolute bottom-full right-0 mb-2 w-32 bg-[#111111] border border-[#262626] rounded-md shadow-lg overflow-hidden z-50">
+              <div className="absolute bottom-full left-0 mb-2 w-32 bg-[#111111] border border-[#262626] rounded-md shadow-lg overflow-hidden z-50">
                 {LANGUAGES.map((lang) => (
                   <button
                     key={lang.code}
@@ -75,7 +71,34 @@ const Footer = () => {
             )}
           </div>
 
+          {/* Links de navegación */}
+          <nav className="flex items-center gap-4">
+            <Link
+              to="/estatutos"
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
+            >
+              {t('footer.links.statutes')}
+            </Link>
+            <span className="text-gray-700 text-xs">·</span>
+            <Link
+              to="/contacto"
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
+            >
+              {t('footer.links.contact')}
+            </Link>
+          </nav>
         </div>
+
+        {/* ── Separador ── */}
+        <div className="border-t border-[#262626]" />
+
+        {/* ── Fila inferior: copyright ── */}
+        <div className="py-4 flex items-center justify-center">
+          <p className="text-gray-600 text-xs">
+            © {currentYear} {APP_NAME} — {t('footer.rights')}
+          </p>
+        </div>
+
       </div>
     </footer>
   );

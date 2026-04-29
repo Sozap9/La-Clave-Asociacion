@@ -29,10 +29,9 @@ const AdminExportSocios = () => {
   };
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">Exportar Socios PDF</h1>
-        <p className="text-gray-400 text-lg">Descarga la lista completa de socios en formato PDF</p>
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Exportar Socios</h1>
       </div>
 
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
@@ -51,16 +50,6 @@ const AdminExportSocios = () => {
           </div>
         </div>
 
-        <div className="mb-6">
-          <p className="text-white font-medium mb-3">Campos incluidos:</p>
-          <div className="flex flex-wrap gap-2">
-            {['Número socio', 'Nombre', 'Email', 'Teléfono', 'Cuota mensual', 'Estado', 'Fecha alta'].map(field => (
-              <span key={field} className="bg-[#262626] text-gray-300 px-3 py-1 rounded-full text-sm border border-[#333333]">
-                {field}
-              </span>
-            ))}
-          </div>
-        </div>
 
         <button
           onClick={handleExport}
@@ -75,7 +64,7 @@ const AdminExportSocios = () => {
           ) : (
             <>
               <Download className="w-6 h-6" />
-              Descargar PDF de Socios
+              Descargar PDF de socios
             </>
           )}
         </button>

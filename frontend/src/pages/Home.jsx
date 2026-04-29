@@ -25,19 +25,19 @@ const Home = () => {
         </div>
 
         {/* Contenido principal */}
-        <div className="relative z-20 container-custom text-center px-6 py-20">
+        <div className="relative z-20 container-custom text-center px-4 sm:px-6 py-16 md:py-20">
 
           {/* Nombre del club */}
-          <div className="mb-8">
-            <h1 className="text-white mb-4 animate-fade-in uppercase tracking-[0.3em] font-light text-5xl md:text-7xl lg:text-8xl">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-white mb-4 animate-fade-in uppercase tracking-[0.2em] sm:tracking-[0.3em] font-light text-2xl md:text-4xl sm:text-5xl md:text-7xl lg:text-8xl">
               La Clave 981
             </h1>
-            <div className="w-24 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto" />
+            <div className="w-16 md:w-24 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto" />
           </div>
 
           {/* Descripción */}
           <div className="max-w-3xl mx-auto space-y-8">
-            <p className="text-gray-300 text-base md:text-lg leading-relaxed animate-slide-up font-light px-4">
+            <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed animate-slide-up font-light px-2 sm:px-4 md:px-0">
               {t('home.description')}
             </p>
           </div>
@@ -45,24 +45,24 @@ const Home = () => {
       </section>
 
       {/* ==== Normativa ==== */}
-
-      <section className="py-24 bg-black">
-        <div className="container-custom px-6">
+      <section className="py-12 md:py-16 lg:py-24 bg-black">
+        <div className="container-custom px-4 sm:px-6">
           <div className="max-w-5xl mx-auto">
 
             {/* Imagen */}
-            <div className="group mb-12">
+            <div className="group mb-8 md:mb-12">
               <div className="relative overflow-hidden">
                 <img
                   src={registro}
                   alt="Nuestra Comunidad"
-                  className="w-full h-[450px] md:h-[550px] object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
+                  className="w-full h-[200px] sm:h-[300px] md:h-[450px] lg:h-[550px] object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                />
               </div>
             </div>
 
             {/* Texto descriptivo */}
-            <div className="text-center space-y-6 mb-10">
-              <p className="text-gray-300 text-base md:text-lg leading-relaxed font-light max-w-4xl mx-auto">
+            <div className="text-center space-y-4 md:space-y-6 mb-8 md:mb-10">
+              <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed font-light max-w-4xl mx-auto">
                 {t('home.normativa.text')}
               </p>
             </div>
@@ -72,7 +72,7 @@ const Home = () => {
               <Button
                 variant="primary"
                 to="/estatutos"
-                className="rounded-full px-12 py-4 text-base"
+                className="rounded-full px-8 py-3 md:px-12 md:py-4 text-sm md:text-base"
               >
                 {t('home.normativa.button')}
               </Button>
@@ -83,23 +83,24 @@ const Home = () => {
 
       {/* ==== Socios ==== */}
 
-      <section className="py-24 bg-black">
-        <div className="container-custom px-6">
+      <section className="py-12 md:py-16 lg:py-24 bg-black">
+        <div className="container-custom px-4 sm:px-6">
           <div className="max-w-5xl mx-auto">
 
             {/* Imagen */}
-            <div className="group mb-12">
+            <div className="group mb-8 md:mb-12">
               <div className="relative overflow-hidden">
                 <img
                   src={socios}
                   alt="Eventos Exclusivos"
-                  className="w-full h-[450px] md:h-[550px] object-cover grayscale group-hover:grayscale-0 transition-all duration-700" />
+                  className="w-full h-[200px] sm:h-[300px] md:h-[450px] lg:h-[550px] object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                />
               </div>
             </div>
 
             {/* Texto descriptivo */}
-            <div className="text-center space-y-6 mb-10">
-              <p className="text-gray-300 text-base md:text-lg leading-relaxed font-light max-w-4xl mx-auto">
+            <div className="text-center space-y-4 md:space-y-6 mb-8 md:mb-10">
+              <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed font-light max-w-4xl mx-auto">
                 {t('home.socios.text')}
               </p>
             </div>
@@ -109,7 +110,7 @@ const Home = () => {
               <Button
                 variant="primary"
                 to="/registro"
-                className="rounded-full px-12 py-4 text-base"
+                className="rounded-full px-8 py-3 md:px-12 md:py-4 text-sm md:text-base"
               >
                 {t('home.socios.button')}
               </Button>
@@ -120,7 +121,7 @@ const Home = () => {
 
       {/* ==== CARRUSEL DE EVENTOS DESTACADOS ==== 
 
-      <section className="py-24 bg-black">
+      <section className="py-12 md:py-24 bg-black">
         <div className="container-custom">
           <FeaturedEventsCarousel />
         </div>

@@ -1,21 +1,13 @@
 // Constantes de la aplicación
 export const APP_NAME = 'La Clave';
 
-// URLs de redes sociales (temporales - actualizar luego)
-export const SOCIAL_LINKS = {
-  whatsapp: '',
-  soundcloud: 'https://soundcloud.com/hochspannung12',
-  youtube: '',
-  facebook: '',
-  instagram: 'https://www.instagram.com/essenzclub/'
-};
 
 // Links del footer
 export const FOOTER_LINKS = {
   privacy: '/privacidad',
   terms: '/terminos',
   statutes: '/estatutos',
-  location: 'https://maps.app.goo.gl/XK1mSxFxQnQvSMod6'
+  contact: '/contacto'
 };
 
 // Rutas de navegación
@@ -30,6 +22,7 @@ export const NAV_ROUTES = {
   PROFILE: '/perfil',
   MY_BOOKINGS: '/mis-entradas',
   ADMIN: '/admin',
+  CONTACT: '/contacto',
   ADMIN_SOLICITUDES: '/admin/solicitudes',
 };
 

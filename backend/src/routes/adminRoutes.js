@@ -42,6 +42,7 @@ import {
   getRecentActivity,
 
   // Exportaciones
+  getEventsForExportSelector,
   exportSocios,
   exportReservas,
   exportUsuarios,
@@ -362,6 +363,10 @@ router.get("/activity", getRecentActivity);
  * EXPORTACIONES
  * ========================================
  */
+
+// Obtener eventos para el selector del export de reservas
+// GET /api/admin/export/events-selector
+router.get("/export/events-selector", getEventsForExportSelector);
 
 // Exportar lista completa de socios en formato PDF
 // GET /api/admin/export/socios

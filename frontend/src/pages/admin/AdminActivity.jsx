@@ -105,13 +105,13 @@ const AdminActivity = () => {
   if (loading) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-gradient mb-2 text-4xl">Actividad Reciente</h1>
-            <p className="text-gray-400 text-lg">
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Actividad Reciente</h1>
+            <p className="text-gray-400 text-sm md:text-lg">
               {Array.isArray(activities) ? `${activities.length} evento${activities.length !== 1 ? 's' : ''} registrado${activities.length !== 1 ? 's' : ''}` : 'Monitorea acciones del sistema'}
             </p>
           </div>

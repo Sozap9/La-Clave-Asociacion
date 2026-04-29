@@ -382,18 +382,18 @@ const AdminSolicitudes = () => {
   };
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-gradient mb-2 text-4xl">
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
               Solicitudes de Socio
             </h1>
-            <p className="text-gray-200 text-lg">
+            <p className="text-gray-200 text-sm md:text-lg">
               Gestiona las solicitudes de membresía
             </p>
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-400 text-sm md:text-lg">
               {pagination.total} solicitud
               {pagination.total !== 1 ? "es" : ""} en total
             </p>
@@ -422,7 +422,7 @@ const AdminSolicitudes = () => {
           activeFilter={filters.estado}
           onFilterChange={handleEstado}
         />
-        <div className="flex-1 max-w-md ml-auto">
+        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
           <SearchInput
             value={searchInput}
             onChange={(v) => setSearchInput(v)}

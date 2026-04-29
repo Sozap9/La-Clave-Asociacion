@@ -184,13 +184,13 @@ const AdminEventForm = () => {
   if (loadingData) return <Loader fullScreen />;
 
   return (
-    <div className="p-8 bg-black min-h-screen">
+    <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-4xl">
+        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
           {isEditMode ? "Editar Evento" : "Crear Evento"}
         </h1>
-        <p className="text-gray-400 text-lg">
+        <p className="text-gray-400 text-sm md:text-lg">
           {isEditMode
             ? "Actualiza la información del evento."
             : "Completa los datos del nuevo evento."}
@@ -213,7 +213,7 @@ const AdminEventForm = () => {
       {/* Formulario */}
       <form
         onSubmit={handleSubmit}
-        className="card p-8 space-y-6 max-w-4xl mx-auto"
+        className="card p-4 sm:p-8 space-y-6 max-w-4xl mx-auto"
       >
         {/* Nombre */}
         <div>
@@ -241,7 +241,7 @@ const AdminEventForm = () => {
         </div>
 
         {/* Fecha y Horarios */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div>
             <label className="label"> Fecha </label>
             <DatePickerInput
@@ -280,7 +280,7 @@ const AdminEventForm = () => {
         </div>
 
         {/* Ubicación y Aforo */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <div>
             <label className="label"> Ubicación </label>
             <input
