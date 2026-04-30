@@ -326,10 +326,10 @@ const AdminCreateSocio = () => {
               {/* Advertencia */}
               <div className="bg-primary-500/20 border border-primary-500/50 rounded-lg p-4">
                 <p className="text-primary-200 text-sm">
-                  ⚠️ <strong>Importante:</strong> Este usuario se convertirá en
+                  <strong>Importante:</strong> Este usuario se convertirá en
                   socio inmediatamente sin necesidad de pago. Se le asignará
                   automáticamente un número de socio y su rol cambiará de
-                  "básico" a "socio".
+                  a "socio".
                 </p>
               </div>
             </div>
