@@ -36,8 +36,8 @@ export const getGeneralStats = async (req, res) => {
     // Contar eventos
     const eventosSql = `
       SELECT 
-        CCOUNT(CASE WHEN fecha_evento >= CURDATE() THEN 1 END) as eventos_proximos,
-        COUNT(CASE WHEN fecha_evento < CURDATE() THEN 1 END) as eventos_realizados
+        CCOUNT(CASE WHEN fecha >= CURDATE() THEN 1 END) as eventos_proximos,
+        COUNT(CASE WHEN fecha < CURDATE() THEN 1 END) as eventos_realizados
       FROM events
     `;
     const eventosResult = await query(eventosSql);
