@@ -107,9 +107,9 @@ class User {
         password,
         nombre,
         apellidos,
-        telefono,
-        fecha_nacimiento,
-        dni,
+        telefono = null,
+        fecha_nacimiento = null,
+        dni = null,
         dni_front_url = null,
         dni_back_url = null,
         firma_url = null,
@@ -118,18 +118,26 @@ class User {
         ip_registro = null,
       } = userData;
 
+      // El esquema exige username NOT NULL UNIQUE, pero la app no pide
+      // username en ningún flujo de registro. Se genera automáticamente
+      // a partir del email (parte antes de la @) si no se proporciona uno.
+      const username =
+        userData.username ||
+        `${email.split("@")[0]}_${Date.now().toString(36)}`;
+
       // Hash de la contraseña
       const password_hash = await bcrypt.hash(password, 10);
 
       const sql = `
         INSERT INTO users (
-          email, password_hash, nombre, apellidos, 
+          username, email, password_hash, nombre, apellidos, 
           telefono, fecha_nacimiento, dni, dni_front_url, 
           dni_back_url, firma_url, role, idioma_preferido, ip_registro
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const values = [
+        username,
         email,
         password_hash,
         nombre,
