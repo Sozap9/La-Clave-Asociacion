@@ -36,14 +36,16 @@ app.use(helmet({
 /**
  * 2. CORS - Permitir múltiples orígenes
  */
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3006",
-  "http://localhost:3000",
-  "https://www.laclave981.com",
-  "https://laclave981.com",
-  process.env.FRONTEND_URL
-].filter(Boolean);
+const corsOptions = {
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "http://localhost:3006",
+      "http://localhost:3000",
+      "https://www.laclave981.com",
+      "https://laclave981.com",
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
 
     // Permitir sin origin (ej: Postman, curl), orígenes permitidos, y subdominios de
     // pages.dev / workers.dev (incluye previews con prefijo, ej: preview-nombre.workers.dev)
