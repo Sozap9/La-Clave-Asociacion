@@ -45,8 +45,14 @@ const corsOptions = {
       process.env.FRONTEND_URL
     ].filter(Boolean);
 
-    // Permitir sin origin (ej: Postman, curl), orígenes permitidos, y subdominios de pages.dev
-    if (!origin || allowedOrigins.includes(origin) || /\.pages\.dev$/.test(origin)) {
+    // Permitir sin origin (ej: Postman, curl), orígenes permitidos, y subdominios de
+    // pages.dev / workers.dev (incluye previews con prefijo, ej: preview-nombre.workers.dev)
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      /\.pages\.dev$/.test(origin) ||
+      /\.workers\.dev$/.test(origin)
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
