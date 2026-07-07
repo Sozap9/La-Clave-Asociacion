@@ -17,7 +17,6 @@ export const generateAccessToken = (payload) => {
   // Asegurarse de que el role está incluido
   const tokenPayload = {
     id: payload.id,
-    username: payload.username,
     email: payload.email,
     role: payload.role // IMPORTANTE: Incluir el role
   };
@@ -86,7 +85,6 @@ export const verifyRefreshToken = (token) => {
 export const generateTokens = (user) => {
   const payload = {
     id: user.id,
-    username: user.username,
     email: user.email,
     role: user.role
   };

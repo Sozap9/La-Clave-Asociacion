@@ -1,6 +1,12 @@
 import { verifyWebhook } from "../config/payment.js";
 import { query } from "../config/database.js";
 import Socio from "../models/Socio.js";
+import Booking from "../models/Booking.js";
+import Event from "../models/Event.js";
+import User from "../models/User.js";
+import EmailService from "../services/emailService.js";
+import { generateQRCode } from "../utils/qrCodeGenerator.js";
+import logger from "../config/logger.js";
 
 /**
  * Webhook de Stripe
@@ -22,6 +28,14 @@ export const handleStripeWebhook = async (req, res) => {
   // Manejar diferentes tipos de eventos
   try {
     switch (event.type) {
+      case "checkout.session.completed":
+        await handleCheckoutSessionCompleted(event.data.object);
+        break;
+
+      case "checkout.session.expired":
+        await handleCheckoutSessionExpired(event.data.object);
+        break;
+
       case "invoice.payment_succeeded":
         await handlePaymentSucceeded(event.data.object);
         break;
@@ -48,6 +62,136 @@ export const handleStripeWebhook = async (req, res) => {
     return res.status(500).json({ error: "Error procesando webhook" });
   }
 };
+
+/**
+ * Pago de entrada a evento completado con éxito (Stripe Checkout)
+ * Esto es lo que de verdad confirma una reserva de pago — hasta que
+ * esto no llega, la reserva se queda en 'esperando_pago'.
+ *
+ * Idempotente: Stripe puede reintentar el envío del webhook, así que
+ * si la reserva ya está 'confirmada' no se vuelve a procesar.
+ */
+async function handleCheckoutSessionCompleted(session) {
+  try {
+    const bookingId = session.metadata?.booking_id;
+    if (!bookingId) {
+      logger.warn(
+        "checkout.session.completed sin booking_id en metadata — se ignora (probablemente de otro flujo de Stripe)",
+        { sessionId: session.id },
+      );
+      return;
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      logger.error("checkout.session.completed: booking no encontrada", {
+        bookingId,
+      });
+      return;
+    }
+
+    // Idempotencia: si ya está confirmada, no hacer nada más
+    if (booking.estado === "confirmada") {
+      logger.info("Booking ya estaba confirmada, se ignora reintento de webhook", {
+        bookingId,
+      });
+      return;
+    }
+
+    // Confirmar la reserva y guardar el importe realmente pagado
+    // (antes se quedaba siempre en 0 — el email de confirmación lo
+    // necesita para mostrar el coste real, no solo si fue gratis)
+    await query(
+      `UPDATE bookings SET estado = 'confirmada', precio_pagado = ? WHERE id = ?`,
+      [(session.amount_total || 0) / 100, bookingId],
+    );
+
+    // Registrar el pago REAL (payment_intent de verdad, no inventado)
+    await query(
+      `INSERT INTO payments (
+        socio_id, stripe_payment_intent_id, amount, currency, tipo_pago,
+        descripcion, estado, fecha_pago, metadata, created_at
+      ) VALUES (?, ?, ?, 'EUR', 'entrada_evento', ?, 'exitoso', NOW(), ?, NOW())`,
+      [
+        booking.socio_id,
+        session.payment_intent,
+        (session.amount_total || 0) / 100,
+        `Entrada a evento (booking ${bookingId})`,
+        JSON.stringify({
+          event_id: session.metadata?.event_id,
+          booking_id: bookingId,
+          checkout_session_id: session.id,
+        }),
+      ],
+    );
+
+    // Generar QR y enviar confirmación — ahora sí, con el pago ya real
+    const event = await Event.findById(session.metadata?.event_id);
+    const bookingWithQR = await Booking.findById(bookingId);
+
+    try {
+      const qrData = `LACLAVE-${bookingId}-${bookingWithQR.codigo_acceso}`;
+      const qrCode = await generateQRCode(qrData, bookingId);
+      await Booking.saveQRCode(bookingId, qrCode);
+    } catch (qrError) {
+      logger.error("❌ Error generando QR tras pago confirmado:", qrError);
+    }
+
+    try {
+      const socio = await Socio.findById(booking.socio_id);
+      const user = socio ? await User.findById(socio.user_id) : null;
+      const finalBooking = await Booking.findById(bookingId);
+      if (user && event) {
+        await EmailService.sendBookingConfirmation(finalBooking, event, user);
+      }
+    } catch (emailError) {
+      logger.error("❌ Error enviando email de confirmación tras pago:", emailError);
+    }
+
+    logger.info("✅ Pago de entrada confirmado vía Stripe Checkout:", {
+      bookingId,
+      sessionId: session.id,
+      paymentIntent: session.payment_intent,
+    });
+  } catch (error) {
+    logger.error("Error en handleCheckoutSessionCompleted:", error);
+    throw error;
+  }
+}
+
+/**
+ * La sesión de Checkout expiró sin completarse (el usuario no pagó a
+ * tiempo). Cancelamos la reserva y liberamos el aforo que tenía
+ * bloqueado.
+ */
+async function handleCheckoutSessionExpired(session) {
+  try {
+    const bookingId = session.metadata?.booking_id;
+    if (!bookingId) return;
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking || booking.estado !== "esperando_pago") {
+      // Ya se confirmó, ya se canceló, o no existe — no hay nada que hacer
+      return;
+    }
+
+    await Booking.cancel(bookingId, "Pago no completado a tiempo");
+
+    // Liberar el aforo que esta reserva pendiente tenía bloqueado
+    await query(
+      `UPDATE events SET entradas_disponibles = entradas_disponibles + ? WHERE id = ?`,
+      [booking.numero_entradas, booking.event_id],
+    );
+
+    logger.info("⏱️ Reserva cancelada por Checkout Session expirada:", {
+      bookingId,
+      sessionId: session.id,
+    });
+  } catch (error) {
+    logger.error("Error en handleCheckoutSessionExpired:", error);
+    throw error;
+  }
+}
 
 /**
  * Manejar pago exitoso

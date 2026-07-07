@@ -23,13 +23,13 @@ const MobileMenu = ({ isOpen, onClose }) => {
 
   const publicItems = [
     { label: t('menu.home'), href: NAV_ROUTES.HOME },
-    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
+    { label: t('menu.normativa'), href: NAV_ROUTES.NORMATIVA },
     { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
   const basicItems = [
     { label: t('menu.home'), href: NAV_ROUTES.HOME },
-    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
+    { label: t('menu.normativa'), href: NAV_ROUTES.NORMATIVA },
     { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
@@ -38,7 +38,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
     { label: t('menu.events'), href: NAV_ROUTES.EVENTS },
     { label: t('menu.gallery'), href: NAV_ROUTES.GALLERY },
     { label: t('menu.myTickets'), href: NAV_ROUTES.MY_BOOKINGS },
-    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
+    { label: t('menu.normativa'), href: NAV_ROUTES.NORMATIVA },
     { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
@@ -46,7 +46,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
     { label: t('menu.home'), href: NAV_ROUTES.HOME },
     { label: t('menu.events'), href: NAV_ROUTES.EVENTS },
     { label: t('menu.gallery'), href: NAV_ROUTES.GALLERY },
-    { label: t('menu.statutes'), href: NAV_ROUTES.STATUTES },
+    { label: t('menu.normativa'), href: NAV_ROUTES.NORMATIVA },
   ];
 
   const getNavItems = () => {

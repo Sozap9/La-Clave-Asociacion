@@ -99,12 +99,11 @@ class ExportService {
   
   /**
    * Exportar usuarios a CSV
-   * Incluye: ID, username, email, nombre, rol, estado
+   * Incluye: ID, email, nombre, rol, estado
    */
   static async exportUsersCSV(users) {
     const fields = [
       { label: 'ID', value: 'id' },
-      { label: 'Username', value: 'username' },
       { label: 'Email', value: 'email' },
       { label: 'Nombre', value: 'nombre' },
       { label: 'Apellidos', value: 'apellidos' },

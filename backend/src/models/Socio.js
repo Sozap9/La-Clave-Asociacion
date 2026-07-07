@@ -12,7 +12,7 @@ class Socio {
   static async findById(id) {
     try {
       const sql = `
-        SELECT s.*, u.username, u.email, u.nombre, u.apellidos, u.role
+        SELECT s.*, u.email, u.nombre, u.apellidos, u.role
         FROM socios s
         INNER JOIN users u ON s.user_id = u.id
         WHERE s.id = ?
@@ -34,7 +34,7 @@ class Socio {
   static async findByUserId(userId) {
     try {
       const sql = `
-        SELECT s.*, u.username, u.email, u.nombre, u.apellidos, u.role
+        SELECT s.*, u.email, u.nombre, u.apellidos, u.role
         FROM socios s
         INNER JOIN users u ON s.user_id = u.id
         WHERE s.user_id = ?
@@ -283,32 +283,51 @@ class Socio {
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const offset = (pageNum - 1) * limitNum;
 
+      // Arranca desde `users` (LEFT JOIN socios), no desde `socios`.
+      // Así un admin SIN fila de socio (ej. la cuenta raíz de gestión)
+      // también aparece en el listado — solo que con todos los campos
+      // de socio a NULL, lo que el frontend usa para no mostrarle el
+      // badge de nº de socio ni las acciones que requieren un socio real.
+      // Un admin CON fila de socio (socio promocionado) sale con todos
+      // sus datos reales, igual que cualquier socio normal.
       let sql = `
         SELECT 
-          s.*, 
-          u.username, u.email, u.nombre, u.apellidos, u.telefono, u.role, u.activo
-        FROM socios s
-        INNER JOIN users u ON s.user_id = u.id
+          u.id AS user_id, u.email, u.nombre, u.apellidos,
+          u.telefono, u.role, u.activo,
+          s.id, s.numero_socio, s.estado, s.cuota_mensual, s.fecha_alta,
+          s.fecha_baja, s.dias_morosidad, s.notas_admin,
+          s.created_at, s.updated_at
+        FROM users u
+        LEFT JOIN socios s ON s.user_id = u.id
+        WHERE u.role IN ('socio', 'admin')
       `;
 
       const params = [];
 
       if (estado) {
-        sql += " WHERE s.estado = ?";
+        // Si se filtra por estado (ej. 'activo'), un admin sin fila de
+        // socio (s.estado = NULL) queda excluido automáticamente —
+        // justo el comportamiento que se busca para "Socios Activos".
+        sql += " AND s.estado = ?";
         params.push(estado);
       }
 
-      // Usar interpolación directa en lugar de placeholders
-      sql += ` ORDER BY s.fecha_alta DESC LIMIT ${limitNum} OFFSET ${offset}`;
+      sql += ` ORDER BY COALESCE(s.fecha_alta, u.created_at) DESC LIMIT ${limitNum} OFFSET ${offset}`;
 
       const socios = await query(sql, params);
 
-      // Contar total
-      let countSql = "SELECT COUNT(*) as total FROM socios";
+      // Contar total con el mismo criterio
+      let countSql = `
+        SELECT COUNT(*) as total
+        FROM users u
+        LEFT JOIN socios s ON s.user_id = u.id
+        WHERE u.role IN ('socio', 'admin')
+      `;
+      const countParams = [];
       if (estado) {
-        countSql += " WHERE estado = ?";
+        countSql += " AND s.estado = ?";
+        countParams.push(estado);
       }
-      const countParams = estado ? [estado] : [];
       const countResult = await query(countSql, countParams);
       const total = countResult[0].total;
 
@@ -325,7 +344,7 @@ class Socio {
   }
 
   /**
-   * Buscar socios
+   * Buscar socios (y admins sin fila de socio, mismo criterio que list())
    * Incluye el campo 'role' del usuario
    * @param {String} searchTerm - Término de búsqueda
    * @returns {Array} Socios encontrados
@@ -334,23 +353,26 @@ class Socio {
     try {
       const sql = `
         SELECT 
-          s.*, 
-          u.username, u.email, u.nombre, u.apellidos, u.telefono, u.role, u.activo
-        FROM socios s
-        INNER JOIN users u ON s.user_id = u.id
+          u.id AS user_id, u.email, u.nombre, u.apellidos,
+          u.telefono, u.role, u.activo,
+          s.id, s.numero_socio, s.estado, s.cuota_mensual, s.fecha_alta,
+          s.fecha_baja, s.dias_morosidad, s.notas_admin,
+          s.created_at, s.updated_at
+        FROM users u
+        LEFT JOIN socios s ON s.user_id = u.id
         WHERE 
-          u.username LIKE ? OR 
-          u.email LIKE ? OR 
-          u.nombre LIKE ? OR 
-          u.apellidos LIKE ? OR
-          s.numero_socio LIKE ?
-        ORDER BY s.fecha_alta DESC
+          u.role IN ('socio', 'admin') AND (
+            u.email LIKE ? OR 
+            u.nombre LIKE ? OR 
+            u.apellidos LIKE ? OR
+            s.numero_socio LIKE ?
+          )
+        ORDER BY COALESCE(s.fecha_alta, u.created_at) DESC
         LIMIT 50
       `;
 
       const searchPattern = `%${searchTerm}%`;
       const results = await query(sql, [
-        searchPattern,
         searchPattern,
         searchPattern,
         searchPattern,
@@ -374,7 +396,7 @@ class Socio {
       const sql = `
         SELECT 
           s.*, 
-          u.username, u.email, u.nombre, u.apellidos, u.telefono, u.role, u.activo
+          u.email, u.nombre, u.apellidos, u.telefono, u.role, u.activo
         FROM socios s
         INNER JOIN users u ON s.user_id = u.id
         WHERE s.estado = 'moroso' OR s.dias_morosidad > 0

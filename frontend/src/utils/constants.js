@@ -6,7 +6,7 @@ export const APP_NAME = 'La Clave';
 export const FOOTER_LINKS = {
   privacy: '/privacidad',
   terms: '/terminos',
-  statutes: '/estatutos',
+  normativa: '/normativa',
   contact: '/contacto'
 };
 
@@ -15,7 +15,7 @@ export const NAV_ROUTES = {
   HOME: '/',
   EVENTS: '/eventos',
   GALLERY: '/galeria',
-  STATUTES: '/estatutos',
+  NORMATIVA: '/normativa',
   LOGIN: '/login',
   REGISTER: '/registro',       // Única ruta de registro (solicitud de socio)
   DASHBOARD: '/',

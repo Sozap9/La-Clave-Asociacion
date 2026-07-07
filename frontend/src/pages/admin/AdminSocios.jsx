@@ -21,6 +21,8 @@ import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
 import AdminCard from "../../components/admin/AdminCard";
 
+const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
+
 // Filtros disponibles para socios
 const socioFilters = [
   { value: "all", label: "Todos" },
@@ -61,11 +63,12 @@ const AdminSocios = () => {
         let sociosData = result.data?.socios || result.data || [];
 
         if (activeFilter === "socio") {
-          sociosData = sociosData.filter((s) => s.role === "socio");
+          // Un socio-admin (role='admin' pero con fila activa en `socios`)
+          // debe seguir contando aquí — por eso ya no se filtra por role,
+          // el backend ya filtró por estado='activo' al pedir los datos.
+          sociosData = sociosData;
         } else if (activeFilter === "inactivo") {
-          sociosData = sociosData.filter(
-            (s) => s.role === "socio" && !s.activo,
-          );
+          sociosData = sociosData.filter((s) => !s.activo);
         } else if (activeFilter === "admin") {
           sociosData = sociosData.filter((s) => s.role === "admin");
         }
@@ -73,7 +76,7 @@ const AdminSocios = () => {
         setSocios(Array.isArray(sociosData) ? sociosData : []);
         const initialRoles = {};
         (Array.isArray(sociosData) ? sociosData : []).forEach((s) => {
-          initialRoles[s.id] = s.role || "socio";
+          initialRoles[s.user_id] = s.role || "socio";
         });
         setRoleSelections(initialRoles);
       } else {
@@ -253,12 +256,12 @@ const AdminSocios = () => {
         <div className="space-y-4">
           {socios.map((socio) => (
             <AdminCard
-              key={socio.id}
+              key={socio.user_id}
               avatar={
                 <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-lg">
                     {socio.nombre?.charAt(0).toUpperCase() ||
-                      socio.username?.charAt(0).toUpperCase() ||
+                      socio.email?.charAt(0).toUpperCase() ||
                       "?"}
                   </span>
                 </div>
@@ -266,7 +269,7 @@ const AdminSocios = () => {
               title={
                 socio.nombre && socio.apellidos
                   ? `${socio.nombre} ${socio.apellidos}`
-                  : socio.username
+                  : socio.email
               }
               subtitle={
                 socio.telefono
@@ -284,31 +287,39 @@ const AdminSocios = () => {
                   : []
               }
               actions={[
-                {
-                  icon: <Eye size={20} />,
-                  onClick: () => handleOpenDetails(socio.id),
-                  color: "primary",
-                  title: "Ver detalles",
-                },
-                socio.activo
-                  ? {
-                      icon: <UserMinus size={20} />,
-                      onClick: () => handleDeactivateSocio(socio.id),
-                      color: "primary",
-                      title: "Dar de baja",
-                    }
-                  : {
-                      icon: <RotateCcw size={20} />,
-                      onClick: () => handleReactivateSocio(socio.id),
-                      color: "primary",
-                      title: "Reactivar socio",
-                    },
-                {
-                  icon: <Trash2 size={20} />,
-                  onClick: () => handleDeleteSocio(socio.id),
-                  color: "primary",
-                  title: "Eliminar usuario",
-                },
+                // Estas 3 acciones requieren una fila real en `socios`
+                // (ver/dar de baja/reactivar/eliminar operan sobre
+                // socios.id). Un admin sin membresía (ej. la cuenta raíz
+                // de gestión) no la tiene, así que no se muestran.
+                ...(socio.id
+                  ? [
+                      {
+                        icon: <Eye size={20} />,
+                        onClick: () => handleOpenDetails(socio.id),
+                        color: "primary",
+                        title: "Ver detalles",
+                      },
+                      socio.activo
+                        ? {
+                            icon: <UserMinus size={20} />,
+                            onClick: () => handleDeactivateSocio(socio.id),
+                            color: "primary",
+                            title: "Dar de baja",
+                          }
+                        : {
+                            icon: <RotateCcw size={20} />,
+                            onClick: () => handleReactivateSocio(socio.id),
+                            color: "primary",
+                            title: "Reactivar socio",
+                          },
+                      {
+                        icon: <Trash2 size={20} />,
+                        onClick: () => handleDeleteSocio(socio.id),
+                        color: "primary",
+                        title: "Eliminar usuario",
+                      },
+                    ]
+                  : []),
                 {
                   type: "role",
                   element: (
@@ -316,16 +327,18 @@ const AdminSocios = () => {
                       <select
                         className="bg-[#101010] border border-gray-700 text-white px-2 py-1 rounded-lg focus:outline-none focus:border-violet-500"
                         value={
-                          roleSelections[socio.id] || socio.role || "socio"
+                          roleSelections[socio.user_id] ||
+                          socio.role ||
+                          "socio"
                         }
                         onChange={(e) => {
                           const newRole = e.target.value;
                           setRoleSelections((prev) => ({
                             ...prev,
-                            [socio.id]: newRole,
+                            [socio.user_id]: newRole,
                           }));
                           handleChangeRole(
-                            socio.user_id || socio.id,
+                            socio.user_id,
                             newRole,
                             socio.role,
                           );
@@ -374,14 +387,14 @@ const AdminSocios = () => {
                   <p className="text-white text-lg">
                     {selectedSocio.user?.nombre && selectedSocio.user?.apellidos
                       ? `${selectedSocio.user.nombre} ${selectedSocio.user.apellidos}`
-                      : selectedSocio.user?.username || ""}
+                      : selectedSocio.user?.email || ""}
                   </p>
                 </div>
 
               <div>
                 <p className="text-gray-500 text-sm">DNI</p>
                 <p className="text-white">
-                  {selectedSocio.user?.telefono || "—"}
+                  {selectedSocio.user?.dni || "—"}
                 </p>
               </div>
             </div>
@@ -461,6 +474,39 @@ const AdminSocios = () => {
                         ).toLocaleDateString("es-ES")
                       : "—"}
                   </p>
+                </div>
+              </div>
+
+              {/* Documento de identidad */}
+              <div>
+                <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
+                  Documento de identidad
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    ["Cara delantera", selectedSocio.user?.dni_front_url],
+                    ["Cara trasera", selectedSocio.user?.dni_back_url],
+                  ].map(([label, path]) => {
+                    const url = path ? `${BACKEND_URL}/${path}` : null;
+                    return (
+                      <div key={label}>
+                        <p className="text-gray-500 text-xs mb-2">{label}</p>
+                        {url ? (
+                          <a href={url} target="_blank" rel="noreferrer">
+                            <img
+                              src={url}
+                              alt={label}
+                              className="w-full h-36 object-cover rounded-xl border border-[#262626] hover:border-primary-500/50 transition-colors"
+                            />
+                          </a>
+                        ) : (
+                          <div className="w-full h-36 bg-[#111] rounded-xl border border-[#262626] flex items-center justify-center text-gray-600 text-sm">
+                            Sin imagen
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

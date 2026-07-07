@@ -24,7 +24,7 @@ const AdminCreateSocio = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/admin/users`, {
+      const response = await fetch(`${API_URL}/admin/users?role=basico`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -42,7 +42,8 @@ const AdminCreateSocio = () => {
           usersData = result.data.items;
         }
 
-        // Filtrar solo usuarios básicos que no sean socios
+        // El backend ya filtra por role=basico; este filtro extra
+        // se mantiene como red de seguridad por si acaso.
         setUsers(usersData.filter((u) => u.role === "basico"));
       }
     } catch (err) {
@@ -94,8 +95,7 @@ const AdminCreateSocio = () => {
     return (
       user.nombre?.toLowerCase().includes(searchLower) ||
       user.apellidos?.toLowerCase().includes(searchLower) ||
-      user.email?.toLowerCase().includes(searchLower) ||
-      user.username?.toLowerCase().includes(searchLower)
+      user.email?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -220,7 +220,7 @@ const AdminCreateSocio = () => {
                       <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-lg">
                           {user.nombre?.charAt(0).toUpperCase() ||
-                            user.username?.charAt(0).toUpperCase() ||
+                            user.email?.charAt(0).toUpperCase() ||
                             "?"}
                         </span>
                       </div>
@@ -228,7 +228,7 @@ const AdminCreateSocio = () => {
                         <h3 className="text-white font-semibold">
                           {user.nombre && user.apellidos
                             ? `${user.nombre} ${user.apellidos}`
-                            : user.username}
+                            : user.email}
                         </h3>
                         <p className="text-gray-400 text-sm">{user.email}</p>
                       </div>
@@ -269,7 +269,7 @@ const AdminCreateSocio = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-2xl">
                     {selectedUser.nombre?.charAt(0).toUpperCase() ||
-                      selectedUser.username?.charAt(0).toUpperCase() ||
+                      selectedUser.email?.charAt(0).toUpperCase() ||
                       "?"}
                   </span>
                 </div>
@@ -277,7 +277,7 @@ const AdminCreateSocio = () => {
                   <h3 className="text-xl font-bold text-white">
                     {selectedUser.nombre && selectedUser.apellidos
                       ? `${selectedUser.nombre} ${selectedUser.apellidos}`
-                      : selectedUser.username}
+                      : selectedUser.email}
                   </h3>
                   <p className="text-gray-400">{selectedUser.email}</p>
                 </div>
@@ -329,7 +329,7 @@ const AdminCreateSocio = () => {
                   <strong>Importante:</strong> Este usuario se convertirá en
                   socio inmediatamente sin necesidad de pago. Se le asignará
                   automáticamente un número de socio y su rol cambiará de
-                  a "socio".
+                  "básico" a "socio".
                 </p>
               </div>
             </div>

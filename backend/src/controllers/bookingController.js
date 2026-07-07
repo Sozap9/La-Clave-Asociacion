@@ -4,12 +4,21 @@ import Socio from "../models/Socio.js";
 import User from "../models/User.js";
 import EmailService from "../services/emailService.js";
 import { generateQRCode } from "../utils/qrCodeGenerator.js";
+import { createCheckoutSession } from "../config/payment.js";
 import { query, transaction, pool } from "../config/database.js";
 import logger from "../config/logger.js";
 
 /**
  * Crear reserva de entrada
  * POST /api/bookings
+ *
+ * IMPORTANTE: esto ya NO confirma la reserva ni cobra nada directamente.
+ * Crea la reserva en estado 'esperando_pago' (cuenta para el aforo, ver
+ * Event.js) y una Stripe Checkout Session real. El frontend debe
+ * redirigir al usuario a `data.checkout_url`. La reserva solo pasa a
+ * 'confirmada' cuando Stripe confirma el pago vía webhook
+ * (webhookController.js → handleCheckoutSessionCompleted), que es
+ * también donde se genera el QR y se envía el email de confirmación.
  */
 export const createBooking = async (req, res) => {
   try {
@@ -100,7 +109,9 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar disponibilidad
+    // Verificar disponibilidad (ya cuenta también las reservas en
+    // esperando_pago — ver Event.js — para no vender de más mientras
+    // alguien más está pagando)
     const available = await Event.checkAvailability(event_id, numero_entradas);
 
     if (!available) {
@@ -133,32 +144,32 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    // Evento gratuito (precio 0): se confirma directamente, sin pasar
+    // por Stripe — no tiene sentido abrir un Checkout para cobrar 0€
+    const esGratuito = !event.precio_socio || event.precio_socio <= 0;
+
     // Crear reserva con campos correctos de la tabla bookings
-     const booking = await transaction(async (conn) => {
-      // Calcular precio total
-      const monto_total = event.precio_socio * numero_entradas;
- 
-      // codigo_acceso — referencia interna corta (ACC-XXXXX)
+    const booking = await transaction(async (conn) => {
       const codigo_acceso = `ACC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
- 
-      // codigo_reserva — código visible para el socio (LCV-YYYYMM-XXXX)
-      // Mismo formato que Booking.js para consistencia
+
       const now = new Date();
-      const year  = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
       const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
       const codigo_reserva = `LCV-${year}${month}-${randomPart}`;
- 
+
+      const estadoInicial = esGratuito ? "confirmada" : "esperando_pago";
+
       const [result] = await conn.execute(
         `INSERT INTO bookings (
           socio_id, event_id, numero_entradas, estado,
-          codigo_reserva, codigo_acceso, created_at
-        ) VALUES (?, ?, ?, 'confirmada', ?, ?, NOW())`,
-        [socio.id, event_id, numero_entradas, codigo_reserva, codigo_acceso],
+          codigo_reserva, codigo_acceso, precio_pagado, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 0.00, NOW())`,
+        [socio.id, event_id, numero_entradas, estadoInicial, codigo_reserva, codigo_acceso],
       );
- 
+
       const bookingId = result.insertId;
- 
+
       // Actualizar entradas disponibles del evento (si la columna existe)
       try {
         await conn.execute(
@@ -174,89 +185,107 @@ export const createBooking = async (req, res) => {
         );
         // No fallar si la columna no existe
       }
- 
-      // Obtener la reserva creada
+
       const [rows] = await conn.execute(`SELECT * FROM bookings WHERE id = ?`, [
         bookingId,
       ]);
       return rows[0];
     });
 
-    // Generar QR code asociado a la reserva
-    let qrCode = null;
-    try {
-      const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
-      qrCode = await generateQRCode(qrData, booking.id);
+    // ── Caso evento gratuito: confirmar ya mismo, sin Stripe ──────────
+    if (esGratuito) {
+      let qrCode = null;
+      try {
+        const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
+        qrCode = await generateQRCode(qrData, booking.id);
+        await query(`UPDATE bookings SET qr_code_url = ? WHERE id = ?`, [
+          qrCode,
+          booking.id,
+        ]);
+      } catch (qrError) {
+        logger.error("❌ Error generando QR:", qrError);
+      }
 
-      // Guardar QR en la booking
-      await query(`UPDATE bookings SET qr_code_url = ? WHERE id = ?`, [
-        qrCode,
-        booking.id,
-      ]);
-      logger.info(" QR Code generado para booking:", {
-        bookingId: booking.id,
+      // Registrar como pago de 0€ para que las estadísticas cuadren
+      try {
+        await query(
+          `INSERT INTO payments (
+            socio_id, stripe_payment_intent_id, amount, currency, tipo_pago,
+            descripcion, estado, fecha_pago, metadata, created_at
+          ) VALUES (?, ?, 0.00, 'EUR', 'entrada_evento', ?, 'exitoso', NOW(), ?, NOW())`,
+          [
+            socio.id,
+            `free-${booking.id}-${Date.now()}`,
+            `Entrada gratuita a ${event.titulo}`,
+            JSON.stringify({ event_id, booking_id: booking.id }),
+          ],
+        );
+      } catch (paymentErr) {
+        logger.error("Error al registrar entrada gratuita:", paymentErr);
+      }
+
+      const bookingWithQR = await Booking.findById(booking.id);
+
+      try {
+        const user = await User.findById(userId);
+        if (user) {
+          await EmailService.sendBookingConfirmation(bookingWithQR, event, user);
+        }
+      } catch (emailError) {
+        logger.error("❌ Error enviando email de confirmación:", emailError);
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Reserva confirmada (entrada gratuita)",
+        data: bookingWithQR,
       });
-    } catch (qrError) {
-      logger.error("❌ Error generando QR:", qrError);
-      // No falla la reserva si el QR falla
     }
 
-    // Recargar booking con QR actualizado
-    const bookingWithQR = await Booking.findById(booking.id);
-
-    // Registrar pago por la entrada al evento
+    // ── Caso evento de pago: crear Checkout Session real de Stripe ────
     try {
-      const monto_total = event.precio_socio * numero_entradas;
-      const paymentDescription = `Entrada a ${event.titulo} (${numero_entradas} entrada${numero_entradas !== 1 ? "s" : ""})`;
+      const user = await User.findById(userId);
+      const session = await createCheckoutSession({
+        booking,
+        event,
+        user,
+        numeroEntradas: numero_entradas,
+      });
+
+      logger.info("💳 Checkout Session creada:", {
+        bookingId: booking.id,
+        sessionId: session.id,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Reserva creada, pendiente de pago",
+        data: {
+          booking,
+          checkout_url: session.url,
+        },
+      });
+    } catch (stripeError) {
+      // Si falla la creación del Checkout, deshacemos la reserva y
+      // liberamos el aforo — no dejamos una reserva fantasma sin forma
+      // de pagarla
+      logger.error("Error creando Checkout Session, revirtiendo reserva:", stripeError);
 
       await query(
-        `INSERT INTO payments (
-          socio_id, stripe_payment_intent_id, amount, currency, tipo_pago, descripcion, 
-          estado, fecha_pago, metadata, created_at
-        ) VALUES (?, ?, ?, 'EUR', 'entrada_evento', ?, 'exitoso', NOW(), ?, NOW())`,
-        [
-          socio.id,
-          `booking-${booking.id}-${Date.now()}`,
-          monto_total,
-          paymentDescription,
-          JSON.stringify({ event_id, booking_id: booking.id }),
-        ],
+        `UPDATE bookings SET estado = 'cancelada', motivo_cancelacion = ? WHERE id = ?`,
+        ["Error al iniciar el pago", booking.id],
       );
-      logger.info("✅ Pago registrado para booking:", {
-        bookingId: booking.id,
-        monto: monto_total,
+      await query(
+        `UPDATE events SET entradas_disponibles = entradas_disponibles + ? WHERE id = ?`,
+        [numero_entradas, event_id],
+      );
+
+      return res.status(502).json({
+        success: false,
+        message:
+          "No se pudo iniciar el pago en este momento. Inténtalo de nuevo en unos minutos.",
       });
-    } catch (paymentErr) {
-      logger.error("Error al registrar pago de la reserva:", paymentErr);
-      // No interrumpir la reserva, pero reportar
     }
-
-    // ========== ENVIAR EMAIL DE CONFIRMACIÓN ==========
-    try {
-      // Obtener datos del usuario
-      const user = await User.findById(userId);
-
-      if (user) {
-        // Enviar email de confirmación con QR
-        await EmailService.sendBookingConfirmation(bookingWithQR, event, user);
-        logger.info("✅ Email de confirmación enviado:", {
-          userId: user.id,
-          bookingId: bookingWithQR.id,
-          eventId: event.id,
-          hasQR: !!bookingWithQR.qr_code_url,
-        });
-      }
-    } catch (emailError) {
-      // No fallar la reserva si el email falla
-      logger.error("❌ Error enviando email de confirmación:", emailError);
-    }
-    // ==================================================
-
-    return res.status(201).json({
-      success: true,
-      message: "Reserva creada exitosamente",
-      data: bookingWithQR,
-    });
   } catch (error) {
     logger.error("Error en createBooking:", error);
     return res.status(500).json({
@@ -368,22 +397,27 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
-    // Verificar que la reserva está confirmada
-    if (booking.estado !== "confirmada") {
+    // Se puede cancelar una reserva confirmada, o una pendiente de pago
+    // (para poder reintentar sin esperar a que expire sola en 30 min)
+    if (!["confirmada", "esperando_pago"].includes(booking.estado)) {
       return res.status(400).json({
         success: false,
         message: "Esta reserva no puede ser cancelada",
       });
     }
 
-    // Verificar que el evento no ha pasado
-    const event = await Event.findById(booking.event_id);
-    const fechaEvento = new Date(event.fecha_evento);
-    if (fechaEvento < new Date()) {
-      return res.status(400).json({
-        success: false,
-        message: "No puedes cancelar una reserva de un evento que ya pasó",
-      });
+    // Verificar que el evento no ha pasado (no aplica si solo estaba
+    // pendiente de pago — cancelar una reserva sin pagar nunca depende
+    // de la fecha del evento)
+    if (booking.estado === "confirmada") {
+      const event = await Event.findById(booking.event_id);
+      const fechaEvento = new Date(event.fecha_evento);
+      if (fechaEvento < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "No puedes cancelar una reserva de un evento que ya pasó",
+        });
+      }
     }
 
     // Cancelar en transacción

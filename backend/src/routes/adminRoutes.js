@@ -8,6 +8,7 @@ import {
   // Usuarios
   getUserDetails,
   updateUserRole,
+  listUsers,
 
   // Socios
   listSocios,
@@ -17,6 +18,7 @@ import {
   deleteSocioPermanent,
   reactivateSocio,
   listMorosos,
+  createSocioManual,
 
   // Eventos
   listAllEvents,
@@ -47,6 +49,7 @@ import {
   exportReservas,
   exportUsuarios,
   exportEventos,
+  exportIngresosMensuales,
 
   // Solicitudes ✨ NUEVO
   listSolicitudes,
@@ -79,6 +82,7 @@ import { handleValidationErrors } from "../middleware/validationMiddleware.js";
 // Validators
 import { verifyQRValidator } from "../validators/bookingValidator.js";
 import {
+  createSocioValidator,
   updateSocioValidator,
   deleteSocioValidator,
   paginationValidator,
@@ -114,6 +118,19 @@ router.get("/stats", getGeneralStats);
 /**
  * MÓDULO: GESTIÓN DE SOCIOS
  */
+
+// Listar usuarios básicos (selector para "Crear Socio Manual")
+// GET /api/admin/users?role=basico&search=&page=1&limit=20
+router.get("/users", listUsers);
+
+// Crear socio manualmente a partir de un usuario básico existente
+// POST /api/admin/socios
+router.post(
+  "/socios",
+  createSocioValidator,
+  handleValidationErrors,
+  createSocioManual,
+);
 
 // Listar socios con filtros
 router.get(
@@ -383,6 +400,10 @@ router.get("/export/usuarios", exportUsuarios);
 // Exportar lista completa de eventos en formato PDF
 // GET /api/admin/export/eventos
 router.get("/export/eventos", exportEventos);
+
+// Exportar informe de ingresos mensuales en formato PDF
+// GET /api/admin/export/ingresos-mensuales?year=2026&month=4
+router.get("/export/ingresos-mensuales", exportIngresosMensuales);
 
 /**
  * ========================================

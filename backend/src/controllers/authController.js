@@ -6,7 +6,6 @@ import {
   isValidPhone,
   isOldEnough,
   isStrongPassword,
-  isValidUsername,
   sanitizeString
 } from '../utils/validators.js';
 import logger from '../config/logger.js';
@@ -25,7 +24,6 @@ import SolicitudSocio from '../models/SolicitudSocio.js';
 export const registerBasic = async (req, res) => {
   try {
     const {
-      username,
       email,
       password,
       nombre,
@@ -36,18 +34,10 @@ export const registerBasic = async (req, res) => {
     } = req.body;
 
     // Validaciones
-    if (!username || !email || !password || !nombre || !apellidos || !telefono || !fecha_nacimiento || !dni) {
+    if (!email || !password || !nombre || !apellidos || !telefono || !fecha_nacimiento || !dni) {
       return res.status(400).json({
         success: false,
         message: 'Todos los campos son obligatorios'
-      });
-    }
-
-    // Validar username
-    if (!isValidUsername(username)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username inválido. Debe tener entre 3-30 caracteres alfanuméricos, guiones o guiones bajos'
       });
     }
 
@@ -101,15 +91,6 @@ export const registerBasic = async (req, res) => {
       });
     }
 
-    // Verificar si el username ya existe
-    const usernameExists = await User.usernameExists(username);
-    if (usernameExists) {
-      return res.status(409).json({
-        success: false,
-        message: 'El username ya está en uso'
-      });
-    }
-
     // Verificar si el DNI ya está registrado
     const dniExists = await User.dniExists(dni);
     if (dniExists) {
@@ -124,7 +105,6 @@ export const registerBasic = async (req, res) => {
 
     // Crear usuario
     const userData = {
-      username: sanitizeString(username),
       email: email.toLowerCase().trim(),
       password,
       nombre: sanitizeString(nombre),
@@ -154,7 +134,6 @@ export const registerBasic = async (req, res) => {
 
     logger.info('Usuario básico registrado', {
       userId: user.id,
-      username: user.username,
       email: user.email
     });
 
@@ -249,7 +228,7 @@ export const login = async (req, res) => {
 
     logger.info('Login exitoso', {
       userId: user.id,
-      username: user.username
+      email: user.email
     });
 
     return res.status(200).json({
@@ -385,40 +364,6 @@ export const checkEmail = async (req, res) => {
 };
 
 /**
- * Verificar si un username existe
- * GET /api/auth/check-username/:username
- */
-export const checkUsername = async (req, res) => {
-  try {
-    const { username } = req.params;
-
-    if (!isValidUsername(username)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username inválido'
-      });
-    }
-
-    const exists = await User.usernameExists(username);
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        exists,
-        available: !exists
-      }
-    });
-
-  } catch (error) {
-    logger.error('Error en checkUsername:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error al verificar username'
-    });
-  }
-};
-
-/**
  * ================================================================
  * REGISTRO DE ADMINISTRADOR (PROTEGIDO CON adminSecret)
  * ================================================================
@@ -430,7 +375,6 @@ export const checkUsername = async (req, res) => {
 export const registerAdmin = async (req, res) => {
   try {
     const { 
-      username, 
       email, 
       password, 
       nombre, 
@@ -441,10 +385,10 @@ export const registerAdmin = async (req, res) => {
     } = req.body;
 
     // Validaciones básicas - solo campos obligatorios
-    if (!username || !email || !password || !nombre || !apellidos) {
+    if (!email || !password || !nombre || !apellidos) {
       return res.status(400).json({
         success: false,
-        message: 'Faltan campos obligatorios: username, email, password, nombre, apellidos'
+        message: 'Faltan campos obligatorios: email, password, nombre, apellidos'
       });
     }
 
@@ -453,14 +397,6 @@ export const registerAdmin = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Email inválido'
-      });
-    }
-
-    // Validar username
-    if (!isValidUsername(username)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username inválido. Debe tener entre 3-30 caracteres alfanuméricos, guiones o guiones bajos'
       });
     }
 
@@ -481,22 +417,12 @@ export const registerAdmin = async (req, res) => {
       });
     }
 
-    // Verificar que el username no exista
-    const usernameExists = await User.usernameExists(username);
-    if (usernameExists) {
-      return res.status(409).json({
-        success: false,
-        message: 'El username ya está en uso'
-      });
-    }
-
     // Obtener IP del cliente
     const ip_registro = req.ip || req.connection.remoteAddress;
 
     // Crear usuario admin
     // ✅ IMPORTANTE: Convertir undefined a null para MySQL
     const userData = {
-      username: sanitizeString(username),
       email: email.toLowerCase().trim(),
       password,
       nombre: sanitizeString(nombre),
@@ -516,7 +442,6 @@ export const registerAdmin = async (req, res) => {
 
     logger.info('Administrador registrado exitosamente', {
       userId: user.id,
-      username: user.username,
       email: user.email,
       ip: req.ip
     });
@@ -692,7 +617,6 @@ export const resetPassword = async (req, res) => {
 export const crearSolicitud = async (req, res) => {
   try {
     const {
-      username,
       nombre,
       apellidos,
       email,
@@ -717,15 +641,6 @@ export const crearSolicitud = async (req, res) => {
       return res.status(409).json({
         success: false,
         message: 'El email ya está registrado'
-      });
-    }
-
-    // ── Comprobar que el username no está en users ────────────────
-    const usernameEnUsers = await User.usernameExists(username);
-    if (usernameEnUsers) {
-      return res.status(409).json({
-        success: false,
-        message: 'El username ya está en uso'
       });
     }
 
@@ -757,7 +672,6 @@ export const crearSolicitud = async (req, res) => {
 
     // ── Crear la solicitud ────────────────────────────────────────
     const solicitud = await SolicitudSocio.create({
-      username:        sanitizeString(username),
       nombre:          sanitizeString(nombre),
       apellidos:       sanitizeString(apellidos),
       email:           email.toLowerCase().trim(),
@@ -819,7 +733,6 @@ export default {
   refreshToken,
   logout,
   checkEmail,
-  checkUsername,
   registerAdmin,
   forgotPassword,
   resetPassword

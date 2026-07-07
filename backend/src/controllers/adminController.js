@@ -1,14 +1,14 @@
 import { query } from "../config/database.js";
 import User from "../models/User.js";
 import Socio from "../models/Socio.js";
-import SolicitudSocio from "../models/SolicitudSocio.js"; // ✨ NUEVO
+import SolicitudSocio from "../models/SolicitudSocio.js"; 
 import Event from "../models/Event.js";
 import Booking from "../models/Booking.js";
 import Payment from "../models/Payment.js";
 import Gallery from "../models/Gallery.js";
 import PDFDocument from "pdfkit";
-import EmailService from "../services/emailService.js"; // ✨ NUEVO
-import logger from "../config/logger.js"; // ✨ NUEVO
+import EmailService from "../services/emailService.js"; 
+import logger from "../config/logger.js"; 
 
 /**
  * ========================================
@@ -22,22 +22,23 @@ import logger from "../config/logger.js"; // ✨ NUEVO
  */
 export const getGeneralStats = async (req, res) => {
   try {
-    // Contar usuarios
+    // Contar usuarios (SIN el admin — totalUsuarios solo cuenta básicos + socios)
     const usersSql = `
       SELECT 
         COUNT(CASE WHEN role = 'basico' THEN 1 END) as total_usuarios_basicos,
-        COUNT(CASE WHEN role = 'socio' THEN 1 END) as total_socios,
-        COUNT(CASE WHEN role = 'admin' THEN 1 END) as total_admins
+        COUNT(CASE WHEN role = 'socio' THEN 1 END) as total_socios_role
       FROM users
       WHERE activo = true
     `;
     const usersResult = await query(usersSql);
 
     // Contar eventos
+    // ── Arreglado: CCOUNT (typo) → COUNT, y fecha → fecha_evento
+    //    (la columna real en la tabla events se llama fecha_evento)
     const eventosSql = `
       SELECT 
-        CCOUNT(CASE WHEN fecha >= CURDATE() THEN 1 END) as eventos_proximos,
-        COUNT(CASE WHEN fecha < CURDATE() THEN 1 END) as eventos_realizados
+        COUNT(CASE WHEN fecha_evento >= CURDATE() THEN 1 END) as eventos_proximos,
+        COUNT(CASE WHEN fecha_evento < CURDATE() THEN 1 END) as eventos_realizados
       FROM events
     `;
     const eventosResult = await query(eventosSql);
@@ -50,14 +51,20 @@ export const getGeneralStats = async (req, res) => {
     `;
     const reservasResult = await query(reservasSql);
 
-    // Contar socios activos
-    const sociosActivosSql = `
+    // Total de socios y socios activos — se leen de la tabla `socios`,
+    // que es la fuente de verdad de la membresía, INDEPENDIENTEMENTE
+    // del role actual del usuario. En La Clave un admin puede seguir
+    // siendo socio a la vez (jerarquía de permisos, no exclusión de
+    // membresía) — por eso NO se filtra por role aquí. Ver updateUserRole:
+    // al promocionar a alguien a admin, se garantiza que conserve (o se
+    // le cree) su fila en `socios`, así nunca deja de contar como socio.
+    const sociosSql = `
       SELECT 
-        COUNT(*) as socios_activos
-      FROM users
-      WHERE role = 'socio' AND activo = true
+        COUNT(*) as total_socios,
+        COUNT(CASE WHEN estado = 'activo' THEN 1 END) as socios_activos
+      FROM socios
     `;
-    const sociosActivosResult = await query(sociosActivosSql);
+    const sociosResult = await query(sociosSql);
 
     return res.status(200).json({
       success: true,
@@ -65,12 +72,13 @@ export const getGeneralStats = async (req, res) => {
         totalEventos:
           eventosResult[0].eventos_proximos +
           eventosResult[0].eventos_realizados,
+        // Excluye admins a propósito — solo cuenta usuarios básicos y socios
         totalUsuarios:
           usersResult[0].total_usuarios_basicos +
-          usersResult[0].total_socios +
-          usersResult[0].total_admins,
+          usersResult[0].total_socios_role,
         totalReservas: reservasResult[0].reservas_activas || 0,
-        sociosActivos: sociosActivosResult[0].socios_activos || 0,
+        totalSocios: sociosResult[0].total_socios || 0,
+        sociosActivos: sociosResult[0].socios_activos || 0,
       },
     });
   } catch (error) {
@@ -273,7 +281,7 @@ export const getDashboardStats = async (req, res) => {
       const actividadSql = `
         SELECT 
           a.accion, a.entidad, a.descripcion, a.created_at,
-          u.username
+          u.nombre
         FROM audit_log a
         LEFT JOIN users u ON a.user_id = u.id
         ORDER BY a.created_at DESC
@@ -704,7 +712,7 @@ export const getUserDetails = async (req, res) => {
 
     const userSql = `
       SELECT 
-        u.id, u.username, u.email, u.nombre, u.apellidos, u.telefono,
+        u.id, u.email, u.nombre, u.apellidos, u.telefono,
         u.fecha_nacimiento, u.role, u.activo, u.email_verified, 
         u.created_at, u.updated_at,
         s.id as socio_id, s.numero_socio, s.estado as socio_estado,
@@ -815,6 +823,131 @@ export const listSocios = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al listar socios",
+    });
+  }
+};
+
+/**
+ * Listar usuarios (selector de "Crear Socio Manual" y gestión general)
+ * GET /api/admin/users?role=basico&search=&page=1&limit=20
+ */
+export const listUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, role, search } = req.query;
+
+    const result = await User.list({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      role: role || null,
+      search: search || null,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        users: result.users,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          pages: result.pages,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error en listUsers:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al listar usuarios",
+    });
+  }
+};
+
+/**
+ * Crear socio manualmente a partir de un usuario básico existente
+ * Sin pago previo — pensado para altas administrativas (invitados,
+ * casos especiales, etc.)
+ *
+ * numero_socio y fecha_alta los rellena automáticamente el trigger
+ * before_socio_insert de la tabla `socios` — aquí NO se generan a mano
+ * para no duplicar esa lógica ni arriesgarnos a que choquen.
+ *
+ * POST /api/admin/socios
+ * Body: { user_id, cuota_mensual?, notas_admin? }
+ */
+export const createSocioManual = async (req, res) => {
+  try {
+    const { user_id, cuota_mensual = 10.0, notas_admin } = req.body;
+
+    // El usuario debe existir y ser 'basico' — no tiene sentido
+    // "convertir en socio" a alguien que ya es socio o admin
+    const user = await User.findById(user_id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Usuario no encontrado",
+      });
+    }
+    if (user.role !== "basico") {
+      return res.status(409).json({
+        success: false,
+        message: `Este usuario ya tiene rol '${user.role}', no se puede convertir en socio`,
+      });
+    }
+
+    // user_id es UNIQUE en socios — comprobar antes para dar un mensaje
+    // claro en vez de un error crudo de MySQL
+    const socioExistente = await Socio.findByUserId(user_id);
+    if (socioExistente) {
+      return res.status(409).json({
+        success: false,
+        message: "Este usuario ya tiene un registro de socio",
+      });
+    }
+
+    // Crear el registro de socio. numero_socio y fecha_alta quedan
+    // en NULL a propósito — el trigger before_socio_insert los rellena.
+    // stripe_customer_id no se manda: es nullable (migración 003) porque
+    // un alta manual/gratuita no tiene cliente de Stripe.
+    const insertResult = await query(
+      `INSERT INTO socios (user_id, cuota_mensual, estado, notas_admin)
+       VALUES (?, ?, 'activo', ?)`,
+      [user_id, parseFloat(cuota_mensual), notas_admin || null],
+    );
+
+    // Cambiar el rol del usuario a 'socio'
+    await query("UPDATE users SET role = 'socio' WHERE id = ?", [user_id]);
+
+    const nuevoSocio = await Socio.findById(insertResult.insertId);
+
+    // Email de bienvenida (no bloquea la respuesta si falla)
+    try {
+      const updatedUser = await User.findById(user_id);
+      await EmailService.sendSolicitudAprobada(updatedUser);
+    } catch (emailError) {
+      logger.error(
+        "Error al enviar email de bienvenida (socio manual):",
+        emailError,
+      );
+    }
+
+    logger.info("Socio creado manualmente por admin", {
+      userId: user_id,
+      socioId: nuevoSocio.id,
+      numeroSocio: nuevoSocio.numero_socio,
+      adminId: req.user.id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `${user.nombre} ya es socio (${nuevoSocio.numero_socio}).`,
+      data: nuevoSocio,
+    });
+  } catch (error) {
+    console.error("Error en createSocioManual:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al crear socio",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -1118,8 +1251,7 @@ export const listMorosos = async (req, res) => {
         u.email, 
         u.nombre, 
         u.apellidos, 
-        u.telefono,
-        u.username
+        u.telefono
       FROM socios s
       JOIN users u ON s.user_id = u.id
       ${whereClause}
@@ -1445,7 +1577,7 @@ export const getBookingDetails = async (req, res) => {
     const bookingSql = `
       SELECT 
         b.*,
-        u.id as user_id, u.username, u.email, u.nombre, u.apellidos, u.telefono,
+        u.id as user_id, u.email, u.nombre, u.apellidos, u.telefono,
         s.numero_socio, s.estado as socio_estado,
         e.titulo as evento_titulo, e.fecha_evento, e.hora_evento, e.descripcion as evento_descripcion
       FROM bookings b
@@ -1980,7 +2112,7 @@ export const getRecentActivity = async (req, res) => {
         a.descripcion, 
         a.ip_address, 
         a.created_at,
-        u.username as usuario
+        CONCAT(u.nombre, ' ', u.apellidos) as usuario
       FROM audit_log a
       LEFT JOIN users u ON a.user_id = u.id
       ORDER BY a.created_at DESC
@@ -3025,13 +3157,12 @@ export const aprobarSolicitud = async (req, res) => {
     // Crear usuario directamente con el password_hash ya generado
     const createUserSql = `
       INSERT INTO users (
-        username, email, password_hash, nombre, apellidos,
+        email, password_hash, nombre, apellidos,
         telefono, fecha_nacimiento, dni, dni_front_url, dni_back_url,
         role, activo, ip_registro, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'socio', TRUE, ?, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'socio', TRUE, ?, NOW())
     `;
     const userResult = await query(createUserSql, [
-      solicitud.username,
       solicitud.email,
       solicitud.password_hash,
       solicitud.nombre,
@@ -3219,6 +3350,27 @@ export const updateUserRole = async (req, res) => {
       });
     }
 
+    // En La Clave, un admin siempre es también socio — la jerarquía de
+    // roles (basico < socio < admin) da permisos crecientes, pero no debe
+    // hacer perder la membresía. Si se promociona a 'admin' y todavía no
+    // tiene fila en `socios`, se la creamos aquí (numero_socio y fecha_alta
+    // los rellena el trigger before_socio_insert). Si ya la tenía, no se
+    // toca — se conserva tal cual (cuota, numero_socio, historial...).
+    if (role === "admin") {
+      const socioExistente = await Socio.findByUserId(id);
+      if (!socioExistente) {
+        await query(
+          `INSERT INTO socios (user_id, cuota_mensual, estado)
+           VALUES (?, 0.00, 'activo')`,
+          [id],
+        );
+        logger.info(
+          "Fila de socio creada automáticamente al promocionar a admin",
+          { userId: id },
+        );
+      }
+    }
+
     await query(`UPDATE users SET role = ? WHERE id = ?`, [role, id]);
 
     return res.status(200).json({
@@ -3234,6 +3386,240 @@ export const updateUserRole = async (req, res) => {
     });
   }
 };
+
+/**
+ * Exportar informe de ingresos mensuales en formato PDF
+ * GET /api/admin/export/ingresos-mensuales?year=2026&month=4
+ */
+export const exportIngresosMensuales = async (req, res) => {
+  try {
+    const now   = new Date();
+    const year  = parseInt(req.query.year  || now.getFullYear(),  10);
+    const month = parseInt(req.query.month || (now.getMonth() + 1), 10);
+
+    // --- 1. Resumen del mes ---
+    const sqlResumen = `
+      SELECT
+        SUM(COALESCE(amount, 0)) as total_ingresos,
+        COUNT(*)                  as total_pagos
+      FROM payments
+      WHERE MONTH(fecha_pago) = ? AND YEAR(fecha_pago) = ? AND estado = 'exitoso'
+    `;
+    const [resumen] = await query(sqlResumen, [month, year]);
+
+    // --- 2. Desglose por evento ---
+    const sqlEventos = `
+      SELECT
+        e.titulo,
+        DATE_FORMAT(e.fecha_evento, '%d/%m/%Y') as fecha_evento,
+        SUM(COALESCE(p.amount, 0))              as total_ingresos,
+        COUNT(p.id)                             as total_pagos
+      FROM payments p
+      INNER JOIN bookings b ON p.booking_id = b.id
+      INNER JOIN events   e ON b.event_id   = e.id
+      WHERE MONTH(p.fecha_pago) = ? AND YEAR(p.fecha_pago) = ? AND p.estado = 'exitoso'
+      GROUP BY e.id, e.titulo, e.fecha_evento
+      ORDER BY total_ingresos DESC
+    `;
+    const eventos = await query(sqlEventos, [month, year]);
+
+    const monthNames = [
+      'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+      'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
+    ];
+    const monthLabel = `${monthNames[month - 1]} ${year}`;
+
+    const formatCurrency = (v) =>
+      new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseFloat(v) || 0);
+
+    // === PDF ===
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'portrait',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=ingresos_${year}_${String(month).padStart(2, '0')}.pdf`,
+    );
+    doc.pipe(res);
+
+    const pageWidth = doc.page.width - 100; // left + right margins = 100
+
+    // === ENCABEZADO ===
+    doc
+      .fontSize(20)
+      .font('Helvetica-Bold')
+      .fillColor('#6366f1')
+      .text('La Clave Asociación', { align: 'center' });
+
+    doc.moveDown(0.3);
+    doc
+      .fontSize(16)
+      .fillColor('#111111')
+      .text(`Informe de Ingresos — ${monthLabel}`, { align: 'center' });
+
+    doc.moveDown(0.4);
+    doc
+      .fontSize(9)
+      .font('Helvetica')
+      .fillColor('#6b7280')
+      .text(
+        `Generado el: ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}`,
+        { align: 'center' },
+      );
+
+    // Línea separadora
+    doc.moveDown(0.8);
+    const lineY = doc.y;
+    doc.moveTo(50, lineY).lineTo(50 + pageWidth, lineY).strokeColor('#6366f1').lineWidth(1.5).stroke();
+    doc.moveDown(1.2);
+
+    // === RESUMEN DEL MES ===
+    doc
+      .fontSize(13)
+      .font('Helvetica-Bold')
+      .fillColor('#6366f1')
+      .text('Resumen del mes');
+
+    doc.moveDown(0.6);
+
+    // Caja resumen
+    const boxY = doc.y;
+    const boxH = 54;
+    doc.rect(50, boxY, pageWidth, boxH).fill('#f5f3ff');
+    doc.rect(50, boxY, pageWidth, boxH).stroke('#6366f1');
+
+    doc
+      .fontSize(11)
+      .font('Helvetica-Bold')
+      .fillColor('#374151')
+      .text('Total ingresos:', 68, boxY + 12)
+      .font('Helvetica')
+      .fillColor('#111111')
+      .text(formatCurrency(resumen?.total_ingresos), 200, boxY + 12);
+
+    doc
+      .fontSize(11)
+      .font('Helvetica-Bold')
+      .fillColor('#374151')
+      .text('Total transacciones:', 68, boxY + 32)
+      .font('Helvetica')
+      .fillColor('#111111')
+      .text(String(resumen?.total_pagos || 0), 200, boxY + 32);
+
+    doc.y = boxY + boxH + 20;
+    doc.moveDown(0.8);
+
+    // === DESGLOSE POR EVENTO ===
+    doc
+      .fontSize(13)
+      .font('Helvetica-Bold')
+      .fillColor('#6366f1')
+      .text('Desglose por evento');
+
+    doc.moveDown(0.6);
+
+    if (!eventos || eventos.length === 0) {
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('No hay pagos asociados a eventos en este período.', { align: 'center' });
+    } else {
+      const tableTop   = doc.y;
+      const tableLeft  = 50;
+      const colWidths  = { evento: 240, fecha: 100, pagos: 80, ingresos: 100 };
+      const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
+
+      // Cabecera tabla
+      doc
+        .rect(tableLeft, tableTop - 4, totalWidth, 22)
+        .fillAndStroke('#6366f1', '#6366f1');
+
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#ffffff');
+      let cx = tableLeft;
+      doc.text('Evento',       cx + 5, tableTop, { width: colWidths.evento,   align: 'left'   }); cx += colWidths.evento;
+      doc.text('Fecha evento', cx + 5, tableTop, { width: colWidths.fecha,    align: 'center' }); cx += colWidths.fecha;
+      doc.text('Pagos',        cx + 5, tableTop, { width: colWidths.pagos,    align: 'center' }); cx += colWidths.pagos;
+      doc.text('Ingresos',     cx + 5, tableTop, { width: colWidths.ingresos, align: 'right'  });
+
+      doc.moveDown(1.4);
+
+      // Filas de datos
+      doc.font('Helvetica').fontSize(9).fillColor('#111111');
+
+      let totalEventos = 0;
+      eventos.forEach((ev, i) => {
+        const rowY = doc.y;
+
+        if (rowY > 700) {
+          doc.addPage();
+          doc.y = 50;
+        }
+
+        if (i % 2 === 0) {
+          doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill('#f3f4f6');
+          doc.fillColor('#111111');
+        }
+
+        cx = tableLeft;
+        const titulo = (ev.titulo || '—').length > 38
+          ? ev.titulo.substring(0, 35) + '...'
+          : (ev.titulo || '—');
+
+        doc.text(titulo,                       cx + 5, rowY, { width: colWidths.evento,   align: 'left'   }); cx += colWidths.evento;
+        doc.text(ev.fecha_evento || '—',       cx + 5, rowY, { width: colWidths.fecha,    align: 'center' }); cx += colWidths.fecha;
+        doc.text(String(ev.total_pagos || 0),  cx + 5, rowY, { width: colWidths.pagos,    align: 'center' }); cx += colWidths.pagos;
+        doc
+          .font('Helvetica-Bold')
+          .text(formatCurrency(ev.total_ingresos), cx + 5, rowY, { width: colWidths.ingresos, align: 'right' })
+          .font('Helvetica');
+
+        totalEventos += parseFloat(ev.total_ingresos) || 0;
+        doc.moveDown(0.8);
+      });
+
+      // Fila de total
+      const totalRowY = doc.y + 4;
+      doc.rect(tableLeft, totalRowY - 4, totalWidth, 22).fill('#6366f1');
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#ffffff');
+      cx = tableLeft;
+      doc.text(
+        'TOTAL',
+        cx + 5, totalRowY,
+        { width: colWidths.evento + colWidths.fecha + colWidths.pagos, align: 'left' },
+      );
+      cx += colWidths.evento + colWidths.fecha + colWidths.pagos;
+      doc.text(formatCurrency(totalEventos), cx + 5, totalRowY, { width: colWidths.ingresos, align: 'right' });
+    }
+
+    // === PIE DE PÁGINA ===
+    doc
+      .fontSize(8)
+      .font('Helvetica')
+      .fillColor('#9ca3af')
+      .text(
+        '© La Clave Asociación — Documento generado automáticamente',
+        50,
+        doc.page.height - 40,
+        { align: 'center', width: pageWidth },
+      );
+
+    doc.end();
+  } catch (error) {
+    console.error('Error al exportar ingresos mensuales a PDF:', error);
+    if (res.headersSent) return res.end();
+    return res.status(500).json({
+      success: false,
+      message: 'Error al generar el PDF de ingresos mensuales',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 
 /**
  * ========================================
@@ -3270,6 +3656,7 @@ export default {
   exportReservas,
   exportUsuarios,
   exportEventos,
+  exportIngresosMensuales,
   listSolicitudes,
   getSolicitudDetails,
   aprobarSolicitud,

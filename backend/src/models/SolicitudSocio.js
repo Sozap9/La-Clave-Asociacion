@@ -15,7 +15,6 @@ class SolicitudSocio {
     try {
       const sql = `
         SELECT s.*, 
-               u.username AS admin_username, 
                u.nombre   AS admin_nombre
         FROM solicitudes_socios s
         LEFT JOIN users u ON s.revisado_por = u.id
@@ -65,12 +64,11 @@ class SolicitudSocio {
       // ya que MySQL2 execute() puede tener problemas con placeholders en LIMIT/OFFSET
       const dataSql = `
         SELECT 
-          s.id, s.username, s.nombre, s.apellidos, s.email,
+          s.id, s.nombre, s.apellidos, s.email,
           s.telefono, s.fecha_nacimiento, s.dni,
           s.dni_front_url, s.dni_back_url, s.motivacion,
           s.estado, s.motivo_rechazo, s.fecha_revision,
           s.ip_solicitud, s.created_at, s.updated_at,
-          u.username AS admin_username,
           u.nombre   AS admin_nombre
         FROM solicitudes_socios s
         LEFT JOIN users u ON s.revisado_por = u.id
@@ -134,7 +132,6 @@ class SolicitudSocio {
   static async create(solicitudData) {
     try {
       const {
-        username,
         nombre,
         apellidos,
         email,
@@ -153,15 +150,14 @@ class SolicitudSocio {
 
       const sql = `
         INSERT INTO solicitudes_socios (
-          username, nombre, apellidos, email, password_hash,
+          nombre, apellidos, email, password_hash,
           telefono, fecha_nacimiento, dni,
           dni_front_url, dni_back_url, motivacion,
           ip_solicitud
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const values = [
-        username,
         nombre,
         apellidos,
         email.toLowerCase().trim(),

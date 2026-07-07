@@ -12,7 +12,7 @@ export const getUserProfile = async (req, res) => {
 
     const [rows] = await pool.execute(
       `SELECT 
-        id, username, email, nombre, apellidos, telefono, 
+        id, email, nombre, apellidos, telefono, 
         fecha_nacimiento, dni, avatar_url, dni_frente_url, dni_dorso_url,
         role, activo, email_verified, created_at, updated_at
       FROM users 
@@ -147,7 +147,7 @@ export const updateUserProfile = async (req, res) => {
 
     const [updatedUser] = await pool.execute(
       `SELECT 
-        id, username, email, nombre, apellidos, telefono, 
+        id, email, nombre, apellidos, telefono, 
         fecha_nacimiento, dni, avatar_url, dni_frente_url, dni_dorso_url,
         role, activo, email_verified, created_at, updated_at
       FROM users 

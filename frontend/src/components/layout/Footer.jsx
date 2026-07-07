@@ -74,10 +74,10 @@ const Footer = () => {
           {/* Links de navegación */}
           <nav className="flex items-center gap-4">
             <Link
-              to="/estatutos"
+              to="/normativa"
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
             >
-              {t('footer.links.statutes')}
+              {t('footer.links.normativa')}
             </Link>
             <span className="text-gray-700 text-xs">·</span>
             <Link

@@ -1,6 +1,28 @@
-@import url("https://fonts.googleapis.com/css2?family=Zen+Dots&family=Roboto:wght@300;400;500;700;900&display=swap");
+/* ════════════════════════════════════════════════════════════
+   FUENTES ACTIVAS (Chakra Petch — una sola familia, dos roles)
+   Elegida por parecerse al cartel de marca: "square sans serif
+   con esquinas achaflanadas", igual que el título en Squartiqa
+   (de pago) de Canva. Bold = título, Light = el resto.
+   ════════════════════════════════════════════════════════════ */
+@import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap");
 
-@import url("https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Kodchasan:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&family=Orbitron:wght@400..900&family=Oxanium:wght@200..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
+/* ════════════════════════════════════════════════════════════
+   HISTÓRICO DE FUENTES — comentado, no se carga nada de aquí.
+   Para revertir a cualquiera de estas etapas anteriores:
+   1) Descomenta el @import correspondiente de abajo
+   2) Cambia los font-family del resto del archivo a los nombres
+      indicados en cada bloque
+   ════════════════════════════════════════════════════════════ */
+
+/* -- Etapa 3 (Stalinist One / Share Tech Mono) -- */
+/* @import url("https://fonts.googleapis.com/css2?family=Stalinist+One&family=Share+Tech+Mono&display=swap"); */
+
+/* -- Etapa 2 (Michroma / Rajdhani) -- */
+/* @import url("https://fonts.googleapis.com/css2?family=Michroma&family=Rajdhani:wght@300;400;500;600;700&display=swap"); */
+
+/* -- Etapa 1 / original (Zen Dots / Kodchasan / Oxanium / Ubuntu) -- */
+/* @import url("https://fonts.googleapis.com/css2?family=Zen+Dots&family=Roboto:wght@300;400;500;700;900&display=swap"); */
+/* @import url("https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Kodchasan:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&family=Orbitron:wght@400..900&family=Oxanium:wght@200..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"); */
 
 @tailwind base;
 @tailwind components;
@@ -13,15 +35,16 @@
 
   body {
     @apply bg-black text-white antialiased;
-    font-family: "Oxanium", sans-serif;
+    font-family: "Chakra Petch", sans-serif;
+    @apply font-light;
   }
 
   /* Tipografías para títulos */
 
   h1,
   h2 {
-    font-family: "Zen Dots", sans-serif;
-    @apply font-normal;
+    font-family: "Chakra Petch", sans-serif;
+    @apply font-bold;
     letter-spacing: 0.05em;
   }
 
@@ -29,8 +52,8 @@
   h4,
   h5,
   h6 {
-    font-family: "Kodchasan", sans-serif;
-    @apply font-medium;
+    font-family: "Chakra Petch", sans-serif;
+    @apply font-semibold;
   }
 
   /* MOBILE-FIRST */
@@ -51,8 +74,8 @@
   button,
   span,
   li {
-    font-family: "Ubuntu", sans-serif;
-    @apply text-sm md:text-base;
+    font-family: "Chakra Petch", sans-serif;
+    @apply text-sm md:text-base font-medium;
   }
 
   p,
@@ -62,8 +85,8 @@
   select,
   option,
   textarea {
-    font-family: "Kodchasan", sans-serif;
-    @apply text-sm md:text-base;
+    font-family: "Chakra Petch", sans-serif;
+    @apply text-sm md:text-base font-light;
   }
 
   /* Scrollbar personalizado */
@@ -87,23 +110,23 @@
 @layer components {
   /* Menú Hamburguesa */
   .menu-title {
-    font-family: "Zen Dots", sans-serif;
-    @apply text-xl font-normal tracking-wider;
+    font-family: "Chakra Petch", sans-serif;
+    @apply text-xl font-bold tracking-wider;
   }
 
   .menu-nav-item {
-    font-family: "Ubuntu", sans-serif;
+    font-family: "Chakra Petch", sans-serif;
     @apply text-lg font-medium tracking-wide;
   }
 
   .menu-user-name {
-    font-family: "Ubuntu", sans-serif;
-    @apply text-base font-semibold;
+    font-family: "Chakra Petch", sans-serif;
+    @apply text-base font-medium;
   }
 
   .menu-badge {
-    font-family: "Ubuntu", sans-serif;
-    @apply text-xs font-normal uppercase tracking-wider;
+    font-family: "Chakra Petch", sans-serif;
+    @apply text-xs font-medium uppercase tracking-wider;
   }
 
   .btn {
@@ -286,7 +309,8 @@
   }
 
   .font-display {
-    font-family: "Zen Dots", sans-serif;
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
     letter-spacing: 0.1em;
   }
 }

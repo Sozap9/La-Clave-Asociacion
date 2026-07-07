@@ -14,10 +14,9 @@ class Event {
       const sql = `
         SELECT 
           e.*,
-          u.username as creado_por_username,
           u.nombre as creado_por_nombre,
           SUM(CASE 
-            WHEN b.estado = 'confirmada' AND ub.role != 'admin' 
+            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' 
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real
@@ -110,12 +109,14 @@ class Event {
         ? 'WHERE ' + conditions.join(' AND ') 
         : '';
 
-      // Query principal - solo cuenta confirmadas y excluye admins
+      // Query principal - cuenta confirmadas Y esperando_pago (reservas con
+      // pago en curso también ocupan aforo, para no vender de más mientras
+      // alguien está pagando) y excluye admins
       const sql = `
         SELECT 
           e.*,
           SUM(CASE 
-            WHEN b.estado = 'confirmada' AND ub.role != 'admin' 
+            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' 
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real
@@ -336,7 +337,7 @@ class Event {
         SELECT 
           e.*,
           SUM(CASE 
-            WHEN b.estado = 'confirmada' AND ub.role != 'admin' 
+            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' 
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real

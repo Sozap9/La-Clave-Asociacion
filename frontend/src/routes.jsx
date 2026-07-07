@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import Estatutos from "./pages/Estatutos";
+import Normativa from "./pages/Normativa";
 import Contacto from "./pages/Contacto";
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
@@ -80,10 +80,10 @@ export const router = createBrowserRouter([
   },
 
   {
-    path: "/estatutos",
+    path: "/normativa",
     element: (
       <Layout>
-        <Estatutos />
+        <Normativa />
       </Layout>
     ),
   },

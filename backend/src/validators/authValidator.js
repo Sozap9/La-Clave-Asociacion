@@ -36,13 +36,6 @@ export const registerBasicValidator = [
     .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/).withMessage('Los apellidos solo pueden contener letras y espacios')
     .escape(),
 
-  body('username')
-    .optional({ nullable: true, checkFalsy: true })
-    .trim()
-    .isLength({ min: 3, max: 30 }).withMessage('El username debe tener entre 3 y 30 caracteres')
-    .matches(/^[a-zA-Z0-9_]+$/).withMessage('El username solo puede contener letras, números y guiones bajos')
-    .escape(),
-
   body('telefono')
     .optional({ nullable: true, checkFalsy: true })
     .trim()
@@ -113,14 +106,6 @@ export const registerSocioValidator = [
  * Las imágenes del DNI se validan por multer (no por express-validator)
  */
 export const solicitudSocioValidator = [
-  // USERNAME
-  body('username')
-    .notEmpty().withMessage('El username es obligatorio')
-    .trim()
-    .isLength({ min: 3, max: 30 }).withMessage('El username debe tener entre 3 y 30 caracteres')
-    .matches(/^[a-zA-Z0-9_]+$/).withMessage('El username solo puede contener letras, números y guiones bajos')
-    .escape(),
-
   // EMAIL
   body('email')
     .notEmpty().withMessage('El email es obligatorio')

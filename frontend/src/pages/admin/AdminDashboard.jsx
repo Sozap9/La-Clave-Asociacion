@@ -53,8 +53,9 @@ const AdminDashboard = () => {
       } else {
         setStats({
           totalEventos: 0,
-          totalUsuarios: 1,
+          totalUsuarios: 0,
           totalReservas: 0,
+          totalSocios: 0,
           sociosActivos: 0,
         });
       }
@@ -71,8 +72,9 @@ const AdminDashboard = () => {
       setError("No se pudieron cargar los datos del sistema");
       setStats({
         totalEventos: 0,
-        totalUsuarios: 1,
+        totalUsuarios: 0,
         totalReservas: 0,
+        totalSocios: 0,
         sociosActivos: 0,
       });
       setRecentEvents([]);
@@ -179,6 +181,60 @@ const AdminDashboard = () => {
       {/* Stats Cards */}
       {stats && <AdminStats stats={stats} />}
 
+      {/* Acciones Rápidas */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-white mb-6">Acciones Rápidas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <QuickActionCard
+            title="Crear Evento"
+            description="Añade un nuevo evento al sistema"
+            icon={Plus}
+            iconColor="primary"
+            path="/admin/eventos/nuevo"
+          />
+
+          <QuickActionCard
+            title="Crear Socio Manual"
+            description="Registra un socio sin pago previo"
+            icon={UserPlus}
+            iconColor="green"
+            path="/admin/socios/crear"
+          />
+
+          <QuickActionCard
+            title="Gestionar Socios"
+            description="Ver, aprobar y gestionar socios"
+            icon={Users}
+            iconColor="blue"
+            path="/admin/socios"
+          />
+
+          <QuickActionCard
+            title="Ver Reservas"
+            description="Consulta todas las reservas"
+            icon={Ticket}
+            iconColor="primary"
+            path="/admin/reservas"
+          />
+
+          <QuickActionCard
+            title="Verificar QR"
+            description="Escanear QR para check-in"
+            icon={QrCode}
+            iconColor="orange"
+            path="/admin/reservas/verificar-qr"
+          />
+
+          <QuickActionCard
+            title="Todos los Eventos"
+            description="Ver y gestionar todos los eventos"
+            icon={Calendar}
+            iconColor="cyan"
+            path="/admin/eventos"
+          />
+        </div>
+      </div>
+
       {/* Eventos Recientes */}
       {recentEvents.length > 0 && (
         <div className="mt-8">
@@ -276,60 +332,6 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
-
-      {/* Acciones Rápidas */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-white mb-6">Acciones Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <QuickActionCard
-            title="Crear Evento"
-            description="Añade un nuevo evento al sistema"
-            icon={Plus}
-            iconColor="primary"
-            path="/admin/eventos/nuevo"
-          />
-
-          <QuickActionCard
-            title="Crear Socio Manual"
-            description="Registra un socio sin pago previo"
-            icon={UserPlus}
-            iconColor="green"
-            path="/admin/socios/crear"
-          />
-
-          <QuickActionCard
-            title="Gestionar Socios"
-            description="Ver, aprobar y gestionar socios"
-            icon={Users}
-            iconColor="blue"
-            path="/admin/socios"
-          />
-
-          <QuickActionCard
-            title="Ver Reservas"
-            description="Consulta todas las reservas"
-            icon={Ticket}
-            iconColor="primary"
-            path="/admin/reservas"
-          />
-
-          <QuickActionCard
-            title="Verificar QR"
-            description="Escanear QR para check-in"
-            icon={QrCode}
-            iconColor="orange"
-            path="/admin/reservas/verificar-qr"
-          />
-
-          <QuickActionCard
-            title="Todos los Eventos"
-            description="Ver y gestionar todos los eventos"
-            icon={Calendar}
-            iconColor="cyan"
-            path="/admin/eventos"
-          />
-        </div>
-      </div>
     </div>
   );
 };

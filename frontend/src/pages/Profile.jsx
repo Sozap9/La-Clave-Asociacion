@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { User, Mail, Phone, Calendar, CreditCard, Shield, Crown, UserCircle, Edit, Lock } from 'lucide-react';
+import { User, Mail, Phone, Calendar, CreditCard, Shield, Crown, Edit, Lock } from 'lucide-react';
 import api from '../api/axios';
 import Loader from '../components/common/Loader';
 import EditProfileModal from '../components/common/EditProfileModal';
@@ -234,17 +234,6 @@ const Profile = () => {
                   <p className="text-white font-medium">
                     {userData.dni ? `****${userData.dni.slice(-4)}` : 'No especificado'}
                   </p>
-                </div>
-              </div>
-
-              {/* Usuario */}
-              <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
-                <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
-                  <UserCircle className="w-5 h-5 text-primary-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-400 mb-1">Usuario</p>
-                  <p className="text-white font-medium">{userData.username || 'No especificado'}</p>
                 </div>
               </div>
 

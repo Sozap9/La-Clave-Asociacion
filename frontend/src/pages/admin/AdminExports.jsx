@@ -140,7 +140,6 @@ const AdminExports = () => {
           icon={Users}
           fields={[
             "ID",
-            "Username",
             "Nombre",
             "Email",
             "Rol",

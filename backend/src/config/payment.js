@@ -32,6 +32,64 @@ const getStripe = () => {
 };
 
 /**
+ * Crear sesión de Stripe Checkout para el pago de una entrada a evento
+ * (pago único — mode: 'payment', NO es una suscripción)
+ *
+ * No se especifica payment_method_types a propósito: Stripe Checkout
+ * ofrece automáticamente todos los métodos habilitados en el Dashboard
+ * (tarjeta está activo por defecto; Bizum, Google Pay, etc. se activan
+ * desde el Dashboard de Stripe sin tocar código).
+ *
+ * @param {Object} params
+ * @param {Object} params.booking - Reserva recién creada (estado esperando_pago)
+ * @param {Object} params.event - Evento
+ * @param {Object} params.user - Usuario que reserva
+ * @param {Number} params.numeroEntradas - Número de entradas
+ * @returns {Object} Stripe Checkout Session (usar session.url para redirigir)
+ */
+export const createCheckoutSession = async ({ booking, event, user, numeroEntradas }) => {
+  try {
+    const stripe = getStripe();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    // Expira en 30 minutos — tiempo suficiente para pagar, pero corto
+    // para no bloquear aforo innecesariamente si alguien abandona el pago
+    const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      customer_email: user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: event.titulo,
+              description: `Entrada para el evento del ${event.fecha_evento}`,
+            },
+            unit_amount: Math.round(event.precio_socio * 100),
+          },
+          quantity: numeroEntradas,
+        },
+      ],
+      success_url: `${frontendUrl}/mis-entradas?pago=exitoso&booking_id=${booking.id}`,
+      cancel_url: `${frontendUrl}/eventos/${event.id}?pago=cancelado`,
+      expires_at: expiresAt,
+      metadata: {
+        booking_id: booking.id.toString(),
+        event_id: event.id.toString(),
+        socio_id: booking.socio_id.toString(),
+      },
+    });
+
+    return session;
+  } catch (error) {
+    console.error('Error creando Checkout Session:', error);
+    throw error;
+  }
+};
+
+/**
  * Crear cliente en Stripe
  */
 export const createStripeCustomer = async (userData) => {
@@ -42,7 +100,6 @@ export const createStripeCustomer = async (userData) => {
       phone: userData.telefono,
       metadata: {
         user_id: userData.id.toString(),
-        username: userData.username,
       },
     });
     return customer;
@@ -202,6 +259,7 @@ export const stripe = new Proxy(
 export default {
   stripe,
   createStripeCustomer,
+  createCheckoutSession,
   attachPaymentMethod,
   createSubscription,
   cancelSubscription,

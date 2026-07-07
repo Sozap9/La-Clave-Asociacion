@@ -259,7 +259,6 @@ export const createPaymentSetup = async (req, res) => {
         nombre: user.nombre,
         apellidos: user.apellidos,
         telefono: user.telefono,
-        username: user.username,
       });
       customerId = customer.id;
     }

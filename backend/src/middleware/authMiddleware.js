@@ -32,7 +32,7 @@ export const authenticate = async (req, res, next) => {
 
     // Verificar que el usuario existe y está activo
     const sql = `
-      SELECT id, username, email, role, activo 
+      SELECT id, email, nombre, role, activo 
       FROM users 
       WHERE id = ? AND activo = true
     `;
@@ -49,12 +49,12 @@ export const authenticate = async (req, res, next) => {
     // Agregar información del usuario al request
     req.user = {
       id: users[0].id,
-      username: users[0].username,
       email: users[0].email,
+      nombre: users[0].nombre,
       role: users[0].role  // IMPORTANTE: Asegurar que el role viene de la DB
     };
 
-    console.log('🔐 Usuario autenticado:', req.user.username, '- Role:', req.user.role); // LOG temporal
+    console.log('🔐 Usuario autenticado:', req.user.email, '- Role:', req.user.role); // LOG temporal
 
     // Actualizar último acceso (opcional, en background)
     query('UPDATE users SET ultimo_acceso = NOW() WHERE id = ?', [users[0].id])
@@ -88,7 +88,7 @@ export const optionalAuthenticate = async (req, res, next) => {
       const decoded = verifyAccessToken(token);
       
       const sql = `
-        SELECT id, username, email, role, activo 
+        SELECT id, email, nombre, role, activo 
         FROM users 
         WHERE id = ? AND activo = true
       `;
@@ -98,8 +98,8 @@ export const optionalAuthenticate = async (req, res, next) => {
       if (users.length > 0) {
         req.user = {
           id: users[0].id,
-          username: users[0].username,
           email: users[0].email,
+          nombre: users[0].nombre,
           role: users[0].role
         };
       }
@@ -176,14 +176,14 @@ export const requireRole = (...allowedRoles) => {
 
     // Verificar que el usuario tiene uno de los roles permitidos
     if (!roles.includes(req.user.role)) {
-      console.log(`🚫 Acceso denegado: Usuario ${req.user.username} con role ${req.user.role} intentó acceder a ruta que requiere ${roles.join(' o ')}`);
+      console.log(`🚫 Acceso denegado: Usuario ${req.user.email} con role ${req.user.role} intentó acceder a ruta que requiere ${roles.join(' o ')}`);
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para acceder a este recurso'
       });
     }
 
-    console.log(`✅ Acceso permitido: Usuario ${req.user.username} con role ${req.user.role}`);
+    console.log(`✅ Acceso permitido: Usuario ${req.user.email} con role ${req.user.role}`);
     next();
   };
 };

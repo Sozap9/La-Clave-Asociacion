@@ -7,7 +7,6 @@ import {
   refreshToken,
   logout,
   checkEmail,
-  checkUsername,
   registerAdmin,
   forgotPassword,
   resetPassword
@@ -95,10 +94,6 @@ router.post('/refresh-token', refreshToken);
 // Verificar disponibilidad de email
 // GET /api/auth/check-email/:email
 router.get('/check-email/:email', checkEmail);
-
-// Verificar disponibilidad de username
-// GET /api/auth/check-username/:username
-router.get('/check-username/:username', checkUsername);
 
 // ─── Recuperación de contraseña ─────────────────────────────────
 

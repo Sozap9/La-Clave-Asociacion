@@ -23,7 +23,7 @@ export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     // Log temporal para debug
     console.log('🔍 Verificando permisos:');
-    console.log('   - Usuario:', req.user?.username || 'NO AUTENTICADO');
+    console.log('   - Usuario:', req.user?.email || 'NO AUTENTICADO');
     console.log('   - Role actual:', req.user?.role || 'NINGUNO');
     console.log('   - Roles permitidos:', allowedRoles);
 

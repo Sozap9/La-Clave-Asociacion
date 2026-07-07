@@ -38,17 +38,59 @@ class User {
   }
 
   /**
-   * Buscar usuario por username
-   * @param {String} username - Username del usuario
-   * @returns {Object|null} Usuario encontrado o null
+   * Listar usuarios con filtros (rol, búsqueda) y paginación
+   * Usado por el selector de "Crear Socio Manual" (filtra role='basico')
+   * y por la gestión general de usuarios del panel admin.
+   * No devuelve password_hash ni datos sensibles del DNI.
+   * @param {Object} options - { page, limit, role, search }
+   * @returns {Object} { users, total, page, pages }
    */
-  static async findByUsername(username) {
+  static async list({ page = 1, limit = 20, role = null, search = null } = {}) {
     try {
-      const sql = "SELECT * FROM users WHERE username = ? LIMIT 1";
-      const results = await query(sql, [username]);
-      return results.length > 0 ? results[0] : null;
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+      const offset = (pageNum - 1) * limitNum;
+
+      const conditions = ["activo = TRUE"];
+      const params = [];
+
+      if (role) {
+        conditions.push("role = ?");
+        params.push(role);
+      }
+
+      if (search && search.trim().length >= 2) {
+        conditions.push(
+          "(nombre LIKE ? OR apellidos LIKE ? OR email LIKE ?)",
+        );
+        const like = `%${search.trim()}%`;
+        params.push(like, like, like);
+      }
+
+      const where = `WHERE ${conditions.join(" AND ")}`;
+
+      const sql = `
+        SELECT id, email, nombre, apellidos, telefono,
+               fecha_nacimiento, role, activo, created_at
+        FROM users
+        ${where}
+        ORDER BY created_at DESC
+        LIMIT ${limitNum} OFFSET ${offset}
+      `;
+      const users = await query(sql, params);
+
+      const countSql = `SELECT COUNT(*) as total FROM users ${where}`;
+      const countResult = await query(countSql, params);
+      const total = countResult[0].total;
+
+      return {
+        users,
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum),
+      };
     } catch (error) {
-      console.error("Error en findByUsername:", error);
+      console.error("Error en User.list:", error);
       throw error;
     }
   }
@@ -61,7 +103,6 @@ class User {
   static async create(userData) {
     try {
       const {
-        username,
         email,
         password,
         nombre,
@@ -82,14 +123,13 @@ class User {
 
       const sql = `
         INSERT INTO users (
-          username, email, password_hash, nombre, apellidos, 
+          email, password_hash, nombre, apellidos, 
           telefono, fecha_nacimiento, dni, dni_front_url, 
           dni_back_url, firma_url, role, idioma_preferido, ip_registro
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const values = [
-        username,
         email,
         password_hash,
         nombre,
@@ -124,7 +164,6 @@ class User {
   static async update(id, updateData) {
     try {
       const allowedFields = [
-        "username",
         "nombre",
         "apellidos",
         "telefono",
@@ -214,23 +253,6 @@ class User {
       throw error;
     }
   }
-
-  /**
-   * Verificar si un username ya existe
-   * @param {String} username - Username a verificar
-   * @returns {Boolean} true si existe
-   */
-  static async usernameExists(username) {
-    try {
-      const sql = "SELECT id FROM users WHERE username = ? LIMIT 1";
-      const results = await query(sql, [username]);
-      return results.length > 0;
-    } catch (error) {
-      console.error("Error en usernameExists:", error);
-      throw error;
-    }
-  }
-
 
   /**
    * Verificar si un DNI ya existe

@@ -110,6 +110,14 @@ import eventRoutes from "./routes/eventRoutes.js";
 // Admin routes with FormData (BEFORE express.json)
 app.use("/api/admin/events", eventRoutes);
 
+// WEBHOOK DE STRIPE - BEFORE BODY PARSERS
+// Stripe necesita el body en crudo (sin parsear) para verificar la firma
+// del webhook (ver webhookRoutes.js: usa express.raw internamente). Si
+// esto se montara después de express.json(), el body ya vendría parseado
+// como objeto y la verificación de firma fallaría siempre.
+import webhookRoutes from "./routes/webhookRoutes.js";
+app.use("/api/webhooks", webhookRoutes);
+
 
 // BODY PARSER - AFTER FormData routes
 app.use(express.json({ limit: "10mb" }));
@@ -124,7 +132,6 @@ import bookingRoutes from "./routes/bookingRoutes.js";
 import artistRoutes from "./routes/artistRoutes.js";
 import venueRoutes from "./routes/venueRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import webhookRoutes from "./routes/webhookRoutes.js";
 import pushRoutes from "./routes/pushRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 
@@ -139,7 +146,6 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/artists", artistRoutes);
 app.use("/api/venues", venueRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/webhooks", webhookRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/contact", contactRoutes);
 

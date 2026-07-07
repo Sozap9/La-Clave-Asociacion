@@ -1,9 +1,9 @@
-import { X, Calendar, MapPin, Clock } from "lucide-react";
+import { X, Calendar, MapPin, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { createBooking } from "../../api/eventsApi";
+import { createBooking, getMyBookings } from "../../api/eventsApi";
 import Button from "../common/Button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const EventDetail = ({ event, isOpen, onClose }) => {
   const { isAuthenticated } = useAuth();
@@ -11,6 +11,47 @@ const EventDetail = ({ event, isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // Reserva ya existente del socio para este evento (si la hay)
+  const [existingBooking, setExistingBooking] = useState(null);
+  const [checkingBooking, setCheckingBooking] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !event || !isAuthenticated) {
+      setExistingBooking(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkExistingBooking = async () => {
+      setCheckingBooking(true);
+      try {
+        const token = localStorage.getItem("token");
+        const result = await getMyBookings(token);
+        if (cancelled) return;
+
+        if (result.success) {
+          const found = (result.data || []).find(
+            (b) =>
+              b.event_id === event.id &&
+              ["confirmada", "esperando_pago"].includes(b.estado)
+          );
+          setExistingBooking(found || null);
+        }
+      } catch (err) {
+        console.error("Error comprobando reserva existente:", err);
+      } finally {
+        if (!cancelled) setCheckingBooking(false);
+      }
+    };
+
+    checkExistingBooking();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, event?.id, isAuthenticated]);
 
   if (!isOpen || !event) return null;
 
@@ -36,7 +77,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
   };
 
   const isFull = entradas_disponibles <= 0;
-  const canBook = !isFull && isAuthenticated;
+  const canBook = !isFull && isAuthenticated && !existingBooking;
 
   const handleBooking = async () => {
     if (!isAuthenticated) {
@@ -52,6 +93,16 @@ const EventDetail = ({ event, isOpen, onClose }) => {
       const result = await createBooking(event.id, token);
 
       if (result.success) {
+        // Evento de pago: el backend ya creó la reserva (esperando_pago)
+        // y una Stripe Checkout Session real — redirigimos ahí a pagar.
+        // La reserva no queda confirmada hasta que Stripe confirme el
+        // pago (webhook), no al volver de esta redirección.
+        if (result.data?.checkout_url) {
+          window.location.href = result.data.checkout_url;
+          return;
+        }
+
+        // Evento gratuito o entrada en lista de espera: ya viene resuelto
         setSuccess(true);
         setTimeout(() => {
           onClose();
@@ -179,18 +230,42 @@ const EventDetail = ({ event, isOpen, onClose }) => {
               {/* Botón reserva */}
               <div className="md:mt-auto pt-2">
                 {isAuthenticated ? (
-                  <Button
-                    variant="primary"
-                    onClick={handleBooking}
-                    disabled={!canBook || loading}
-                    className="w-full"
-                  >
-                    {loading
-                      ? "Reservando..."
-                      : isFull
-                        ? "Aforo Completo"
-                        : "Reservar Plaza"}
-                  </Button>
+                  existingBooking ? (
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        onClose();
+                        navigate("/mis-entradas");
+                      }}
+                      className="w-full !bg-[#2e1065] hover:!bg-[#3b0764] flex items-center justify-center gap-2"
+                    >
+                      {existingBooking.estado === "confirmada" ? (
+                        <CheckCircle size={18} />
+                      ) : (
+                        <AlertCircle size={18} />
+                      )}
+                      {existingBooking.estado === "confirmada"
+                        ? "Ya tienes tu entrada — Ver detalles"
+                        : "Pago pendiente — Ver detalles"}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      onClick={handleBooking}
+                      disabled={!canBook || loading || checkingBooking}
+                      className="w-full"
+                    >
+                      {loading
+                        ? "Procesando..."
+                        : checkingBooking
+                          ? "Comprobando..."
+                          : isFull
+                            ? "Aforo Completo"
+                            : precio_socio > 0
+                              ? "Reservar y Pagar"
+                              : "Reservar Plaza"}
+                    </Button>
+                  )
                 ) : (
                   <Button
                     variant="primary"

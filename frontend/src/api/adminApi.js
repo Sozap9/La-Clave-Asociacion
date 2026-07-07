@@ -730,3 +730,9 @@ export const exportReservas = async (params = {}) => {
     `reservas_${new Date().toISOString().split("T")[0]}.pdf`,
   );
 };
+
+export const exportIngresosMensuales = (year, month) =>
+  downloadPDF(
+    `${API_URL}/admin/export/ingresos-mensuales?year=${year}&month=${month}`,
+    `ingresos_${year}_${String(month).padStart(2, '0')}.pdf`,
+  );

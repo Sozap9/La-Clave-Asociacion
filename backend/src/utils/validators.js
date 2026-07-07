@@ -114,16 +114,6 @@ export const isValidDate = (date) => {
 };
 
 /**
- * Valida username (alfanumérico, guiones y guiones bajos, 3-30 caracteres)
- * @param {String} username - Username a validar
- * @returns {Boolean}
- */
-export const isValidUsername = (username) => {
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
-    return usernameRegex.test(username);
-};
-
-/**
  * Sanitiza string para evitar inyecciones
  * @param {String} str - String a sanitizar
  * @returns {String}
@@ -191,7 +181,6 @@ export default {
     isOldEnough,
     isStrongPassword,
     isValidDate,
-    isValidUsername,
     sanitizeString,
     isValidNumeroSocio,
     isValidCodigoReserva,

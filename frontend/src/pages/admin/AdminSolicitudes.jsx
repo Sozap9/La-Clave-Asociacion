@@ -137,7 +137,6 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
             </h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               {[
-                ["Usuario", solicitud.username],
                 ["Email", solicitud.email],
                 ["Teléfono", solicitud.telefono],
                 ["DNI / NIE", solicitud.dni],
@@ -461,13 +460,13 @@ const AdminSolicitudes = () => {
                   <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
                     <span className="text-white font-bold text-lg">
                       {s.nombre?.charAt(0).toUpperCase() ||
-                        s.username?.charAt(0).toUpperCase() ||
+                        s.email?.charAt(0).toUpperCase() ||
                         "?"}
                     </span>
                   </div>
                 }
-                title={`${s.nombre || ""} ${s.apellidos || ""}`.trim() || s.username}
-                subtitle={`@${s.username}`}
+                title={`${s.nombre || ""} ${s.apellidos || ""}`.trim() || s.email}
+                subtitle={s.telefono || ""}
                 badges={[
                   {
                     text: cfg.label,

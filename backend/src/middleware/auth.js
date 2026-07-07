@@ -30,7 +30,6 @@ export const authenticateToken = (req, res, next) => {
       // Soporta diferentes formatos de payload JWT
       req.user = {
         id: decoded.id || decoded.userId || decoded.user_id,
-        username: decoded.username,
         email: decoded.email,
         role: decoded.role
       };

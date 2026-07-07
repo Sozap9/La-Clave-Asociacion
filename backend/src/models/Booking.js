@@ -78,9 +78,14 @@ class Booking {
    */
   static async findBySocioAndEvent(socioId, eventId) {
     try {
+      // Incluye 'esperando_pago': mientras una reserva para este evento
+      // siga pendiente de pago (hasta 30 min, ver config/payment.js),
+      // no se puede abrir una segunda para el mismo evento — si no, se
+      // podrían acumular varias reservas del mismo socio al mismo evento
+      // mientras la primera sigue sin resolverse.
       const sql = `
         SELECT * FROM bookings 
-        WHERE socio_id = ? AND event_id = ? AND estado IN ('confirmada')
+        WHERE socio_id = ? AND event_id = ? AND estado IN ('confirmada', 'esperando_pago')
         LIMIT 1
       `;
       const results = await query(sql, [socioId, eventId]);

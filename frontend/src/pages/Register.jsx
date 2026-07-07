@@ -20,7 +20,6 @@ const Register = () => {
   const { t } = useLanguage();
 
   const [formData, setFormData] = useState({
-    username: "",
     nombre: "",
     apellidos: "",
     email: "",
@@ -80,10 +79,10 @@ const Register = () => {
       const body = new FormData();
       const combinedMotivacion = [
         formData.motivacion
-          ? `¿Cómo nos conociste? ${formData.motivacion}`
+          ? `${t("register.howDidYouFind")} ${formData.motivacion}`
           : "",
         formData.artistQuestion
-          ? `¿Eres artista? ${formData.artistQuestion}`
+          ? `${t("register.artistQuestion")} ${formData.artistQuestion}`
           : "",
       ]
         .filter(Boolean)
@@ -276,20 +275,6 @@ const Register = () => {
             <p className="text-primary-400 text-xs font-semibold uppercase tracking-widest flex items-center gap-2 pt-2">
               <Lock size={14} /> {t("register.sectionAccess")}
             </p>
-
-            <div>
-              <label className="block text-gray-400 text-sm mb-1">
-                {t("register.username")} {t("register.required")}
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className="input w-full"
-                required
-              />
-            </div>
 
             <div>
               <label className="block text-gray-400 text-sm mb-1">
