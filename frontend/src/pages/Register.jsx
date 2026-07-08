@@ -33,9 +33,7 @@ const Register = () => {
   });
 
   const [dniFront, setDniFront] = useState(null);
-  const [dniBack, setDniBack] = useState(null);
   const [dniFrontPreview, setDniFrontPreview] = useState(null);
-  const [dniBackPreview, setDniBackPreview] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,17 +45,12 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (side) => (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const preview = URL.createObjectURL(file);
-    if (side === "front") {
-      setDniFront(file);
-      setDniFrontPreview(preview);
-    } else {
-      setDniBack(file);
-      setDniBackPreview(preview);
-    }
+    setDniFront(file);
+    setDniFrontPreview(preview);
   };
 
   const handleSubmit = async (e) => {
@@ -68,7 +61,7 @@ const Register = () => {
       setError(t("register.errorPasswords"));
       return;
     }
-    if (!dniFront || !dniBack) {
+    if (!dniFront) {
       setError(t("register.errorDni"));
       return;
     }
@@ -94,7 +87,6 @@ const Register = () => {
         }
       });
       body.append("dni_front", dniFront);
-      body.append("dni_back", dniBack);
 
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/auth/solicitud-socio`,
@@ -374,8 +366,8 @@ const Register = () => {
               {t("register.identityHelp")}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Cara delantera */}
+            <div className="max-w-xs mx-auto sm:mx-0">
+              {/* Cara delantera (única cara requerida) */}
               <div>
                 <label className="block text-gray-400 text-sm mb-2">
                   {t("register.dniSideA")} {t("register.required")}
@@ -385,43 +377,13 @@ const Register = () => {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={handleFileChange("front")}
+                    onChange={handleFileChange}
                     required
                   />
                   {dniFrontPreview ? (
                     <img
                       src={dniFrontPreview}
                       alt="DNI delantera"
-                      className="w-full h-32 object-cover rounded-xl border-2 border-primary-500/50"
-                    />
-                  ) : (
-                    <div className="w-full h-32 border-2 border-dashed border-gray-600 hover:border-primary-500 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors">
-                      <Upload size={24} className="text-gray-500" />
-                      <span className="text-gray-500 text-sm">
-                        {t("register.uploadImage")}
-                      </span>
-                    </div>
-                  )}
-                </label>
-              </div>
-
-              {/* Cara trasera */}
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">
-                  {t("register.dniSideB")} {t("register.required")}
-                </label>
-                <label className="cursor-pointer block">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileChange("back")}
-                    required
-                  />
-                  {dniBackPreview ? (
-                    <img
-                      src={dniBackPreview}
-                      alt="DNI trasera"
                       className="w-full h-32 object-cover rounded-xl border-2 border-primary-500/50"
                     />
                   ) : (
