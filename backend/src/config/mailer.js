@@ -71,6 +71,10 @@ const createBrevoTransporter = (fromAddress) => {
     tls: {
       rejectUnauthorized: true,
     },
+    // Forzar IPv4: en algunas plataformas (Railway incluido) el contenedor
+    // intenta primero IPv6 y, si no hay ruta, se cuelga hasta hacer
+    // timeout en vez de caer a IPv4. Esto evita ese problema.
+    family: 4,
     // Timeouts cortos: si Brevo no responde, fallamos rápido en vez de
     // dejar la petición colgada esperando indefinidamente (ver ETIMEDOUT).
     connectionTimeout: 10000, // 10s para establecer conexión TCP
