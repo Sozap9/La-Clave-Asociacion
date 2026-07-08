@@ -1305,9 +1305,9 @@ export const getEventsStats = async (req, res) => {
     const sql = `
       SELECT 
         COUNT(*) as total_eventos,
-        COUNT(CASE WHEN estado = 'publicado' THEN 1 END) as publicados,
-        COUNT(CASE WHEN estado = 'borrador' THEN 1 END) as borradores,
-        COUNT(CASE WHEN estado = 'cancelado' THEN 1 END) as cancelados,
+        COUNT(CASE WHEN estado IN ('publicado', 'scheduled', 'active') THEN 1 END) as publicados,
+        COUNT(CASE WHEN estado IN ('borrador', 'draft') THEN 1 END) as borradores,
+        COUNT(CASE WHEN estado IN ('cancelado', 'cancelled') THEN 1 END) as cancelados,
         COUNT(CASE WHEN fecha_evento >= CURDATE() THEN 1 END) as proximos,
         COUNT(CASE WHEN fecha_evento < CURDATE() THEN 1 END) as pasados,
         COALESCE(AVG(entradas_reservadas), 0) as promedio_reservas
