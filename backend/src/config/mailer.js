@@ -120,7 +120,10 @@ const createBrevoApiTransporter = (label) => ({
       headers: { 'api-key': process.env.BREVO_API_KEY, Accept: 'application/json' },
     });
     if (!response.ok) {
-      throw new Error(`Brevo API key inválida o sin permisos (status ${response.status})`);
+      const data = await response.json().catch(() => ({}));
+      throw new Error(
+        `Brevo API key inválida o sin permisos (status ${response.status}): ${data?.message || JSON.stringify(data)}`,
+      );
     }
     return true;
   },
