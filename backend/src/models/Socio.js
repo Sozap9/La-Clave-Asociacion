@@ -276,6 +276,27 @@ class Socio {
    * @param {String} estado - Filtro por estado (opcional)
    * @returns {Object} { socios, total, page, pages }
    */
+  /**
+   * Obtener todos los socios activos con su email (para envíos masivos,
+   * ej. agenda mensual del cron) — antes se llamaba a este método desde
+   * cronService.js pero no existía en absoluto.
+   * @returns {Array} Socios activos con datos de usuario
+   */
+  static async getAllActive() {
+    try {
+      const sql = `
+        SELECT s.*, u.email, u.nombre, u.apellidos
+        FROM socios s
+        INNER JOIN users u ON s.user_id = u.id
+        WHERE s.estado = 'activo' AND u.activo = TRUE
+      `;
+      return await query(sql);
+    } catch (error) {
+      console.error('Error en getAllActive:', error);
+      throw error;
+    }
+  }
+
   static async list(page = 1, limit = 20, estado = null) {
     try {
       // Validar y sanitizar parámetros
