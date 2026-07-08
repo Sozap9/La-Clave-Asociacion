@@ -56,10 +56,14 @@ const createMockTransporter = (label) => ({
 
 // ─── Transporter real Brevo ──────────────────────────────────────────────────
 const createBrevoTransporter = (fromAddress) => {
+  const port = parseInt(process.env.BREVO_SMTP_PORT || '587');
+  // Puerto 465 = SSL directo (secure: true). Puerto 587/25 = STARTTLS (secure: false).
+  const secure = port === 465;
+
   const transporter = nodemailer.createTransport({
     host:   process.env.BREVO_SMTP_HOST,
-    port:   parseInt(process.env.BREVO_SMTP_PORT || '587'),
-    secure: false, // Brevo usa STARTTLS en puerto 587
+    port,
+    secure,
     auth: {
       user: process.env.BREVO_SMTP_USER,
       pass: process.env.BREVO_SMTP_KEY,
