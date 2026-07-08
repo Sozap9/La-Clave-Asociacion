@@ -280,7 +280,7 @@ export const getDashboardStats = async (req, res) => {
     if (tableExists.length > 0) {
       const actividadSql = `
         SELECT 
-          a.accion, a.entidad, a.descripcion, a.created_at,
+          a.accion, a.entidad_tipo AS entidad, a.descripcion, a.created_at,
           u.nombre
         FROM audit_log a
         LEFT JOIN users u ON a.user_id = u.id
@@ -2107,7 +2107,7 @@ export const getRecentActivity = async (req, res) => {
     const sql = `
       SELECT 
         a.accion, 
-        a.entidad, 
+        a.entidad_tipo AS entidad, 
         a.entidad_id, 
         a.descripcion, 
         a.ip_address, 
