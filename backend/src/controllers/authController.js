@@ -625,11 +625,11 @@ export const crearSolicitud = async (req, res) => {
       motivacion
     } = req.body;
 
-    // ── Validar que llegaron los archivos de DNI ──────────────────
-    if (!req.files?.dni_front?.[0] || !req.files?.dni_back?.[0]) {
+    // ── Validar que llegó al menos la cara delantera del DNI ──────
+    if (!req.files?.dni_front?.[0]) {
       return res.status(400).json({
         success: false,
-        message: 'Debes subir ambas caras del DNI'
+        message: 'Debes subir la cara delantera del DNI'
       });
     }
 
@@ -666,7 +666,9 @@ export const crearSolicitud = async (req, res) => {
     // ── Rutas relativas de los archivos subidos ───────────────────
     const dniBasePath = 'uploads/solicitudes/';
     const dni_front_url = dniBasePath + req.files.dni_front[0].filename;
-    const dni_back_url  = dniBasePath + req.files.dni_back[0].filename;
+    const dni_back_url  = req.files?.dni_back?.[0]
+      ? dniBasePath + req.files.dni_back[0].filename
+      : null;
 
     // ── Crear la solicitud ────────────────────────────────────────
     const solicitud = await SolicitudSocio.create({
