@@ -118,13 +118,10 @@ export const registerBasic = async (req, res) => {
 
     const user = await User.create(userData);
 
-    // 📧 Enviar email de bienvenida
-    try {
-      await EmailService.sendWelcomeEmail(user);
-    } catch (emailError) {
+    // 📧 Enviar email de bienvenida (no bloquea la respuesta)
+    EmailService.sendWelcomeEmail(user).catch((emailError) => {
       logger.error('Error al enviar email de bienvenida:', emailError);
-      // No fallar el registro si el email falla
-    }
+    });
 
     // Generar tokens
     const tokens = generateTokens(user);
@@ -508,20 +505,21 @@ export const forgotPassword = async (req, res) => {
  
     // Intentar enviar email — no bloqueante:
     // si falla, el token ya está guardado y el usuario puede reintentar
-    try {
-      const emailResult = await EmailService.sendPasswordReset(user, resetToken);
-      if (!emailResult.success) {
-        logger.warn('Email de reset no enviado (mock o error SMTP):', { userId: user.id });
-      } else {
-        logger.info('Email de reset enviado:', { userId: user.id, email: user.email });
-      }
-    } catch (emailError) {
-      logger.error('Error inesperado enviando email de reset:', {
-        userId: user.id,
-        error: emailError.message
+    EmailService.sendPasswordReset(user, resetToken)
+      .then((emailResult) => {
+        if (!emailResult.success) {
+          logger.warn('Email de reset no enviado (mock o error SMTP):', { userId: user.id });
+        } else {
+          logger.info('Email de reset enviado:', { userId: user.id, email: user.email });
+        }
+      })
+      .catch((emailError) => {
+        logger.error('Error inesperado enviando email de reset:', {
+          userId: user.id,
+          error: emailError.message
+        });
+        // No interrumpimos el flujo — el token está guardado
       });
-      // No interrumpimos el flujo — el token está guardado
-    }
  
     return res.status(200).json({ success: true, message: genericMessage });
  
@@ -627,11 +625,11 @@ export const crearSolicitud = async (req, res) => {
       motivacion
     } = req.body;
 
-    // ── Validar que llegó al menos la cara delantera del DNI ───────
-    if (!req.files?.dni_front?.[0]) {
+    // ── Validar que llegaron los archivos de DNI ──────────────────
+    if (!req.files?.dni_front?.[0] || !req.files?.dni_back?.[0]) {
       return res.status(400).json({
         success: false,
-        message: 'Debes subir la cara delantera del DNI'
+        message: 'Debes subir ambas caras del DNI'
       });
     }
 
@@ -668,9 +666,7 @@ export const crearSolicitud = async (req, res) => {
     // ── Rutas relativas de los archivos subidos ───────────────────
     const dniBasePath = 'uploads/solicitudes/';
     const dni_front_url = dniBasePath + req.files.dni_front[0].filename;
-    const dni_back_url  = req.files?.dni_back?.[0]
-      ? dniBasePath + req.files.dni_back[0].filename
-      : null;
+    const dni_back_url  = dniBasePath + req.files.dni_back[0].filename;
 
     // ── Crear la solicitud ────────────────────────────────────────
     const solicitud = await SolicitudSocio.create({
@@ -688,19 +684,16 @@ export const crearSolicitud = async (req, res) => {
     });
 
     // ── Emails ────────────────────────────────────────────────────
-    // Email de confirmación al solicitante
-    try {
-      await EmailService.sendSolicitudRecibida(solicitud);
-    } catch (emailError) {
+    // No usamos await aquí a propósito: si Brevo tarda o falla, no
+    // queremos que el usuario se quede esperando la respuesta HTTP.
+    // El error (si lo hay) solo se registra en el log.
+    EmailService.sendSolicitudRecibida(solicitud).catch((emailError) => {
       logger.error('Error al enviar email solicitud-recibida:', emailError);
-    }
+    });
 
-    // Email de aviso a admins
-    try {
-      await EmailService.sendAvisoNuevaSolicitudAdmins(solicitud);
-    } catch (emailError) {
+    EmailService.sendAvisoNuevaSolicitudAdmins(solicitud).catch((emailError) => {
       logger.error('Error al enviar email aviso-admins:', emailError);
-    }
+    });
 
     logger.info('Nueva solicitud de socio creada', {
       solicitudId: solicitud.id,

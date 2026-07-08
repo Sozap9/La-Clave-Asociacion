@@ -67,6 +67,11 @@ const createBrevoTransporter = (fromAddress) => {
     tls: {
       rejectUnauthorized: true,
     },
+    // Timeouts cortos: si Brevo no responde, fallamos rápido en vez de
+    // dejar la petición colgada esperando indefinidamente (ver ETIMEDOUT).
+    connectionTimeout: 10000, // 10s para establecer conexión TCP
+    greetingTimeout: 10000,   // 10s para el saludo SMTP inicial
+    socketTimeout: 15000,     // 15s de inactividad en el socket
   });
 
   return transporter;

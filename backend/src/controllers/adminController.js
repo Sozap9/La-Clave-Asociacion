@@ -124,11 +124,11 @@ export const getDashboardStats = async (req, res) => {
     const eventosSql = `
       SELECT 
         COUNT(*) as total_eventos,
-        COUNT(CASE WHEN estado IN ('publicado', 'scheduled', 'active') THEN 1 END) as publicados,
-        COUNT(CASE WHEN estado IN ('borrador', 'draft') THEN 1 END) as borradores,
-        COUNT(CASE WHEN estado IN ('cancelado', 'cancelled') THEN 1 END) as cancelados,
-        COUNT(CASE WHEN fecha_evento >= CURDATE() AND estado IN ('publicado', 'scheduled', 'active') THEN 1 END) as proximos,
-        COUNT(CASE WHEN fecha_evento < CURDATE() AND estado IN ('publicado', 'scheduled', 'active') THEN 1 END) as pasados,
+        COUNT(CASE WHEN estado = 'publicado' THEN 1 END) as publicados,
+        COUNT(CASE WHEN estado = 'borrador' THEN 1 END) as borradores,
+        COUNT(CASE WHEN estado = 'cancelado' THEN 1 END) as cancelados,
+        COUNT(CASE WHEN fecha_evento >= CURDATE() AND estado = 'publicado' THEN 1 END) as proximos,
+        COUNT(CASE WHEN fecha_evento < CURDATE() AND estado = 'publicado' THEN 1 END) as pasados,
         AVG(CASE WHEN aforo_maximo > 0 THEN (entradas_reservadas / aforo_maximo * 100) END) as ocupacion_promedio
       FROM events
     `;
@@ -141,7 +141,7 @@ export const getDashboardStats = async (req, res) => {
       FROM events
       WHERE fecha_evento >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
         AND aforo_maximo > 0
-        AND estado IN ('publicado', 'scheduled', 'active')
+        AND estado = 'publicado'
       ORDER BY porcentaje_ocupacion DESC
       LIMIT 5
     `;
@@ -152,7 +152,7 @@ export const getDashboardStats = async (req, res) => {
         id, titulo, fecha_evento, hora_evento, aforo_maximo, 
         entradas_reservadas, entradas_disponibles
       FROM events
-      WHERE fecha_evento >= CURDATE() AND estado IN ('publicado', 'scheduled', 'active')
+      WHERE fecha_evento >= CURDATE() AND estado = 'publicado'
       ORDER BY fecha_evento ASC, hora_evento ASC
       LIMIT 5
     `;
@@ -164,7 +164,7 @@ export const getDashboardStats = async (req, res) => {
         COUNT(*) as total_reservas,
         COUNT(CASE WHEN estado = 'confirmada' THEN 1 END) as confirmadas,
         COUNT(CASE WHEN estado = 'cancelada' THEN 1 END) as canceladas,
-        COUNT(CASE WHEN asistencia = TRUE THEN 1 END) as asistidas,
+        COUNT(CASE WHEN estado = 'asistida' THEN 1 END) as asistidas,
         COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as reservas_esta_semana,
         COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 END) as reservas_este_mes
       FROM bookings
@@ -280,7 +280,7 @@ export const getDashboardStats = async (req, res) => {
     if (tableExists.length > 0) {
       const actividadSql = `
         SELECT 
-          a.accion, a.entidad_tipo AS entidad, a.descripcion, a.created_at,
+          a.accion, a.entidad, a.descripcion, a.created_at,
           u.nombre
         FROM audit_log a
         LEFT JOIN users u ON a.user_id = u.id
@@ -919,16 +919,15 @@ export const createSocioManual = async (req, res) => {
 
     const nuevoSocio = await Socio.findById(insertResult.insertId);
 
-    // Email de bienvenida (no bloquea la respuesta si falla)
-    try {
-      const updatedUser = await User.findById(user_id);
-      await EmailService.sendSolicitudAprobada(updatedUser);
-    } catch (emailError) {
-      logger.error(
-        "Error al enviar email de bienvenida (socio manual):",
-        emailError,
-      );
-    }
+    // Email de bienvenida (no bloquea la respuesta si falla ni si tarda)
+    User.findById(user_id).then((updatedUser) => {
+      EmailService.sendSolicitudAprobada(updatedUser).catch((emailError) => {
+        logger.error(
+          "Error al enviar email de bienvenida (socio manual):",
+          emailError,
+        );
+      });
+    });
 
     logger.info("Socio creado manualmente por admin", {
       userId: user_id,
@@ -1305,9 +1304,9 @@ export const getEventsStats = async (req, res) => {
     const sql = `
       SELECT 
         COUNT(*) as total_eventos,
-        COUNT(CASE WHEN estado IN ('publicado', 'scheduled', 'active') THEN 1 END) as publicados,
-        COUNT(CASE WHEN estado IN ('borrador', 'draft') THEN 1 END) as borradores,
-        COUNT(CASE WHEN estado IN ('cancelado', 'cancelled') THEN 1 END) as cancelados,
+        COUNT(CASE WHEN estado = 'publicado' THEN 1 END) as publicados,
+        COUNT(CASE WHEN estado = 'borrador' THEN 1 END) as borradores,
+        COUNT(CASE WHEN estado = 'cancelado' THEN 1 END) as cancelados,
         COUNT(CASE WHEN fecha_evento >= CURDATE() THEN 1 END) as proximos,
         COUNT(CASE WHEN fecha_evento < CURDATE() THEN 1 END) as pasados,
         COALESCE(AVG(entradas_reservadas), 0) as promedio_reservas
@@ -2107,7 +2106,7 @@ export const getRecentActivity = async (req, res) => {
     const sql = `
       SELECT 
         a.accion, 
-        a.entidad_tipo AS entidad, 
+        a.entidad, 
         a.entidad_id, 
         a.descripcion, 
         a.ip_address, 
@@ -3186,13 +3185,11 @@ export const aprobarSolicitud = async (req, res) => {
     // Marcar solicitud como aprobada
     await SolicitudSocio.aprobar(parseInt(id), adminId);
 
-    // Email de bienvenida al nuevo socio
+    // Email de bienvenida al nuevo socio (no bloquea la respuesta)
     const newUser = await User.findById(newUserId);
-    try {
-      await EmailService.sendSolicitudAprobada(newUser);
-    } catch (emailError) {
+    EmailService.sendSolicitudAprobada(newUser).catch((emailError) => {
       logger.error("Error al enviar email solicitud-aprobada:", emailError);
-    }
+    });
 
     logger.info("Solicitud aprobada y socio creado", {
       solicitudId: id,
