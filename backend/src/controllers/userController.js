@@ -13,7 +13,7 @@ export const getUserProfile = async (req, res) => {
     const [rows] = await pool.execute(
       `SELECT 
         id, email, nombre, apellidos, telefono, 
-        fecha_nacimiento, dni, avatar_url, dni_frente_url, dni_dorso_url,
+        fecha_nacimiento, dni, avatar_url, dni_front_url, dni_back_url,
         role, activo, email_verified, created_at, updated_at
       FROM users 
       WHERE id = ?`,
@@ -56,15 +56,15 @@ export const updateUserProfile = async (req, res) => {
       fecha_nacimiento, 
       dni, 
       avatar_url, 
-      dni_frente_url, 
-      dni_dorso_url 
+      dni_front_url, 
+      dni_back_url 
     } = req.body;
 
     console.log('📥 Datos recibidos para actualizar:', {
       nombre, apellidos, email, telefono, fecha_nacimiento, dni,
       avatar_url: avatar_url ? 'presente' : 'no',
-      dni_frente_url: dni_frente_url ? 'presente' : 'no',
-      dni_dorso_url: dni_dorso_url ? 'presente' : 'no'
+      dni_front_url: dni_front_url ? 'presente' : 'no',
+      dni_back_url: dni_back_url ? 'presente' : 'no'
     });
 
     // Construir actualización dinámica
@@ -119,13 +119,13 @@ export const updateUserProfile = async (req, res) => {
       fieldsToUpdate.push('avatar_url = ?');
       values.push(avatar_url || null);
     }
-    if (dni_frente_url !== undefined) {
-      fieldsToUpdate.push('dni_frente_url = ?');
-      values.push(dni_frente_url || null);
+    if (dni_front_url !== undefined) {
+      fieldsToUpdate.push('dni_front_url = ?');
+      values.push(dni_front_url || null);
     }
-    if (dni_dorso_url !== undefined) {
-      fieldsToUpdate.push('dni_dorso_url = ?');
-      values.push(dni_dorso_url || null);
+    if (dni_back_url !== undefined) {
+      fieldsToUpdate.push('dni_back_url = ?');
+      values.push(dni_back_url || null);
     }
 
     if (fieldsToUpdate.length === 0) {
@@ -148,7 +148,7 @@ export const updateUserProfile = async (req, res) => {
     const [updatedUser] = await pool.execute(
       `SELECT 
         id, email, nombre, apellidos, telefono, 
-        fecha_nacimiento, dni, avatar_url, dni_frente_url, dni_dorso_url,
+        fecha_nacimiento, dni, avatar_url, dni_front_url, dni_back_url,
         role, activo, email_verified, created_at, updated_at
       FROM users 
       WHERE id = ?`,
