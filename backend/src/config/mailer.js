@@ -1,10 +1,17 @@
-import nodemailer from 'nodemailer';
 import logger from './logger.js';
 
 /**
  * ================================================================
- * CONFIGURACIÓN DE TRANSPORTERS — BREVO SMTP
+ * CONFIGURACIÓN DE ENVÍO DE EMAILS — BREVO API HTTP
  * ================================================================
+ * Cambiado de SMTP a la API HTTP de Brevo (https://api.brevo.com) porque
+ * Railway no consigue completar la conexión SMTP saliente (ETIMEDOUT
+ * persistente en los puertos 587 y 465, incluso forzando IPv4). La API
+ * HTTP va por HTTPS (puerto 443), que nunca se bloquea, y es el método
+ * que Brevo recomienda para plataformas cloud/serverless.
+ *
+ * Mantiene la misma interfaz que antes (transporter.sendMail(mailOptions))
+ * para no tener que tocar emailService.js ni ningún controlador.
  *
  * Tres remitentes con propósito diferente:
  *
@@ -17,31 +24,44 @@ import logger from './logger.js';
  *   admin    → notificaciones internas para el equipo admin
  *              (nueva solicitud pendiente, avisos de contacto)
  *
- * En desarrollo / pruebas: los tres usan el mismo correo configurado
- * en EMAIL_NOREPLY / EMAIL_SUPPORT / EMAIL_ADMIN (pueden ser iguales).
- * En producción: cada uno apunta a su dirección real del dominio.
- *
  * Variables de entorno necesarias:
- *   BREVO_SMTP_HOST   smtp-relay.brevo.com
- *   BREVO_SMTP_PORT   587
- *   BREVO_SMTP_USER   tu email de login en Brevo
- *   BREVO_SMTP_KEY    xsmtpsib-xxxxxxxxxxxx
+ *   BREVO_API_KEY     xkeysib-xxxxxxxxxxxx  (API Key, NO la clave SMTP)
  *   EMAIL_FROM_NAME   La Clave Asociación
- *   EMAIL_NOREPLY     noreply@tudominio.com  (o tu correo en pruebas)
+ *   EMAIL_NOREPLY     noreply@tudominio.com
  *   EMAIL_SUPPORT     support@tudominio.com
  *   EMAIL_ADMIN       admin@tudominio.com
+ *
+ * La API Key se genera en Brevo → Settings (icono engranaje) → SMTP & API
+ * → pestaña "API Keys" → "Generate a new API key". Es distinta de la
+ * BREVO_SMTP_KEY que usábamos antes.
  * ================================================================
  */
 
-// ─── Detección de modo mock (sin credenciales configuradas) ──────────────────
-const isConfigured = () =>
-  !!(
-    process.env.BREVO_SMTP_HOST &&
-    process.env.BREVO_SMTP_USER &&
-    process.env.BREVO_SMTP_KEY
-  );
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-// ─── Transporter mock para desarrollo ───────────────────────────────────────
+// ─── Detección de modo mock (sin API key configurada) ────────────────────────
+const isConfigured = () => !!process.env.BREVO_API_KEY;
+
+// ─── Parsear el formato '"Nombre" <email@dominio.com>' a {name, email} ───────
+const parseFromAddress = (fromAddress) => {
+  const match = /^"?([^"<]*)"?\s*<(.+)>$/.exec(fromAddress || '');
+  if (match) {
+    return { name: match[1].trim(), email: match[2].trim() };
+  }
+  return { name: process.env.EMAIL_FROM_NAME || 'La Clave Asociación', email: fromAddress };
+};
+
+// ─── Parsear el campo 'to' (string simple o 'a@x.com, b@x.com') a array ──────
+const parseToAddresses = (to) => {
+  if (Array.isArray(to)) return to.map((email) => ({ email: email.trim() }));
+  return to
+    .split(',')
+    .map((email) => email.trim())
+    .filter(Boolean)
+    .map((email) => ({ email }));
+};
+
+// ─── Transporter mock para desarrollo (sin API key configurada) ─────────────
 const createMockTransporter = (label) => ({
   sendMail: async (mailOptions) => {
     logger.info(`[MOCK — ${label}] Email que se enviaría:`, {
@@ -54,50 +74,68 @@ const createMockTransporter = (label) => ({
   verify: async () => true,
 });
 
-// ─── Transporter real Brevo ──────────────────────────────────────────────────
-const createBrevoTransporter = (fromAddress) => {
-  const port = parseInt(process.env.BREVO_SMTP_PORT || '587');
-  // Puerto 465 = SSL directo (secure: true). Puerto 587/25 = STARTTLS (secure: false).
-  const secure = port === 465;
+// ─── Transporter real vía API HTTP de Brevo ──────────────────────────────────
+const createBrevoApiTransporter = (label) => ({
+  sendMail: async (mailOptions) => {
+    const sender = parseFromAddress(mailOptions.from);
+    const recipients = parseToAddresses(mailOptions.to);
 
-  const transporter = nodemailer.createTransport({
-    host:   process.env.BREVO_SMTP_HOST,
-    port,
-    secure,
-    auth: {
-      user: process.env.BREVO_SMTP_USER,
-      pass: process.env.BREVO_SMTP_KEY,
-    },
-    tls: {
-      rejectUnauthorized: true,
-    },
-    // Forzar IPv4: en algunas plataformas (Railway incluido) el contenedor
-    // intenta primero IPv6 y, si no hay ruta, se cuelga hasta hacer
-    // timeout en vez de caer a IPv4. Esto evita ese problema.
-    family: 4,
-    // Timeouts cortos: si Brevo no responde, fallamos rápido en vez de
-    // dejar la petición colgada esperando indefinidamente (ver ETIMEDOUT).
-    connectionTimeout: 10000, // 10s para establecer conexión TCP
-    greetingTimeout: 10000,   // 10s para el saludo SMTP inicial
-    socketTimeout: 15000,     // 15s de inactividad en el socket
-  });
+    const body = {
+      sender,
+      to: recipients,
+      subject: mailOptions.subject,
+      htmlContent: mailOptions.html,
+    };
 
-  return transporter;
-};
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
-// ─── Verificar conexión SMTP al arrancar ─────────────────────────────────────
+    try {
+      const response = await fetch(BREVO_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          `Brevo API [${label}] respondió ${response.status}: ${data?.message || JSON.stringify(data)}`,
+        );
+      }
+
+      return { messageId: data.messageId || `brevo-${Date.now()}` };
+    } finally {
+      clearTimeout(timeout);
+    }
+  },
+  verify: async () => {
+    const response = await fetch('https://api.brevo.com/v3/account', {
+      headers: { 'api-key': process.env.BREVO_API_KEY, Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error(`Brevo API key inválida o sin permisos (status ${response.status})`);
+    }
+    return true;
+  },
+});
+
+// ─── Verificar conexión con Brevo al arrancar ────────────────────────────────
 const verifyTransporter = async (transporter, label) => {
   if (!isConfigured()) return;
 
   try {
     await transporter.verify();
-    logger.info(`SMTP [${label}] conectado — ${process.env.BREVO_SMTP_HOST}`);
+    logger.info(`Brevo API [${label}] conectado correctamente`);
   } catch (error) {
-    // ── Línea modificada: muestra el error completo para diagnóstico ──
-    logger.error(`SMTP [${label}] error de conexión:`, {
+    logger.error(`Brevo API [${label}] error de conexión:`, {
       message: error.message,
-      code:    error.code,
-      command: error.command,
     });
   }
 };
@@ -108,15 +146,14 @@ let supportTransporter;
 let adminTransporter;
 
 if (isConfigured()) {
-  noreplyTransporter = createBrevoTransporter(process.env.EMAIL_NOREPLY);
-  supportTransporter = createBrevoTransporter(process.env.EMAIL_SUPPORT);
-  adminTransporter   = createBrevoTransporter(process.env.EMAIL_ADMIN);
+  noreplyTransporter = createBrevoApiTransporter('noreply');
+  supportTransporter = createBrevoApiTransporter('support');
+  adminTransporter   = createBrevoApiTransporter('admin');
 
-  // Verificar solo el noreply al arrancar (los tres usan las mismas credenciales)
   verifyTransporter(noreplyTransporter, 'noreply');
 } else {
-  logger.warn(' BREVO_SMTP_KEY no configurada — los emails se mostrarán en consola (modo mock)');
-  logger.warn('   Configura BREVO_SMTP_HOST, BREVO_SMTP_USER y BREVO_SMTP_KEY en el .env');
+  logger.warn(' BREVO_API_KEY no configurada — los emails se mostrarán en consola (modo mock)');
+  logger.warn('   Genera una API Key en Brevo → Settings → SMTP & API → API Keys, y añádela como BREVO_API_KEY');
 
   noreplyTransporter = createMockTransporter('noreply');
   supportTransporter = createMockTransporter('support');
