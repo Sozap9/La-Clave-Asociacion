@@ -51,17 +51,14 @@ const Home = () => {
             <div className="w-24 sm:w-40 md:w-56 lg:w-72 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto mb-8 sm:mb-10 md:mb-12" />
 
             {/* Texto descriptivo */}
-            <div className="space-y-4 md:space-y-6 mb-8 sm:mb-10 md:mb-12">
+            <div className="mb-8 sm:mb-10 md:mb-12">
               <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-light">
-                {t('home.normativa.text')}
-              </p>
-              <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-light">
-                {t('home.socios.text')}
+                {t('home.unete.text')}
               </p>
             </div>
 
             {/* Botón */}
-            <div>
+            <div className="flex justify-center">
               <Button
                 variant="primary"
                 to="/registro"

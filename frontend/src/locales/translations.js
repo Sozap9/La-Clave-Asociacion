@@ -46,6 +46,9 @@ export const translations = {
         text: 'Si te interesa participar, compartir un proyecto o simplemente venir a disfrutar del espacio, puedes enviar tu solicitud. La aceptación queda a criterio de la asociación.',
         button: 'Hazte socio',
       },
+      unete: {
+        text: 'Si te interesa participar, compartir un proyecto o simplemente venir a disfrutar del espacio, puedes enviar tu solicitud; la aceptación queda a criterio de la asociación. La asociación se rige por una normativa interna que regula el acceso, la convivencia y el uso del espacio, así que te recomendamos leerla antes de enviar tu solicitud.',
+      },
     },
     login: {
       title: 'Inicio de Sesión',
