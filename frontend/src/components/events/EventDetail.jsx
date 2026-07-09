@@ -129,7 +129,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-[#0a0a0a] border border-[#262626] max-w-5xl w-full h-[90vh] md:h-[88vh] flex flex-col shadow-2xl animate-slide-up overflow-hidden"
+          className="bg-[#0a0a0a] border border-[#262626] max-w-5xl w-full max-h-[92vh] md:max-h-[85vh] flex flex-col shadow-2xl animate-slide-up overflow-hidden"
         >
           {/* Botón cerrar */}
           <button
@@ -143,7 +143,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
 
           {/* ── CABECERA: título + info grid ── */}
           <div className="bg-[#111111] border-b border-[#262626] px-4 sm:px-8 pt-6 sm:pt-10 pb-4 sm:pb-8 flex-none">
-            <h2 className="text-xl sm:text-3xl md:text-4xl font-light text-white uppercase tracking-widest mb-4 sm:mb-8">
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-light text-white uppercase tracking-widest mb-4 sm:mb-8 pr-10">
               {titulo}
             </h2>
 
@@ -177,10 +177,10 @@ const EventDetail = ({ event, isOpen, onClose }) => {
           </div>
 
           {/* ── CUERPO: mobile = columna, desktop = dos columnas ── */}
-          <div className="flex flex-col md:grid md:grid-cols-2 gap-0 flex-1 overflow-hidden">
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-0 flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
 
             {/* Columna izquierda (desktop) / scroll único (mobile) */}
-            <div className="p-4 sm:p-8 flex flex-col gap-5 border-r border-[#262626] overflow-y-auto">
+            <div className="p-4 sm:p-8 flex flex-col gap-5 border-r border-[#262626] md:overflow-y-auto min-h-0">
 
               {/* Alertas */}
               {error && (
