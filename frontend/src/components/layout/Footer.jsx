@@ -71,22 +71,6 @@ const Footer = () => {
             )}
           </div>
 
-          {/* Links de navegación */}
-          <nav className="flex items-center gap-4">
-            <Link
-              to="/normativa"
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
-            >
-              {t('footer.links.normativa')}
-            </Link>
-            <span className="text-gray-700 text-xs">·</span>
-            <Link
-              to="/contacto"
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
-            >
-              {t('footer.links.contact')}
-            </Link>
-          </nav>
         </div>
 
         {/* ── Separador ── */}
