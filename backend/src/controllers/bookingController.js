@@ -29,7 +29,7 @@ export const createBooking = async (req, res) => {
       return res.status(503).json({
         success: false,
         message:
-          "Las reservas para este evento se abrirán en breve. Vuelve a intentarlo dentro de unos días.",
+          "Las reservas para este evento se abrirán en breve.",
       });
     }
 
