@@ -42,9 +42,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ==== Socios ==== */}
-
-      <section className="relative py-16 sm:py-20 md:py-28 lg:py-32 bg-black overflow-hidden">
+      {/* ==== Únete ==== */}
+      <section className="relative pt-10 sm:pt-14 md:pt-16 pb-16 sm:pb-20 md:pb-28 lg:pb-32 bg-black overflow-hidden">
         <div className="relative container-custom px-4 sm:px-6">
           <div className="max-w-3xl lg:max-w-4xl mx-auto text-center">
 
@@ -53,6 +52,9 @@ const Home = () => {
 
             {/* Texto descriptivo */}
             <div className="space-y-4 md:space-y-6 mb-8 sm:mb-10 md:mb-12">
+              <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-light">
+                {t('home.normativa.text')}
+              </p>
               <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-light">
                 {t('home.socios.text')}
               </p>

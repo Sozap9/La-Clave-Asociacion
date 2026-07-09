@@ -284,7 +284,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 <img
                   src={`${import.meta.env.VITE_BASE_URL}${imagen_cartel_url}`}
                   alt={titulo}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="flex flex-col items-center gap-3 text-gray-600 p-12">
