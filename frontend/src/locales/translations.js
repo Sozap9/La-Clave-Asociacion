@@ -258,6 +258,9 @@ export const translations = {
         text: 'If you are interested in participating, sharing a project or simply coming to enjoy the space, you can submit your request. Acceptance is at the discretion of the association.',
         button: 'Become a member',
       },
+      unete: {
+        text: 'If you are interested in participating, sharing a project, or simply coming to enjoy the space, you can submit your request; acceptance is at the discretion of the association. The association is governed by internal regulations covering access, coexistence and use of the space, so we recommend reading them before submitting your request.',
+      },
     },
     login: {
       title: 'Log In',
