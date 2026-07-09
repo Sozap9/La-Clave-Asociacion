@@ -22,6 +22,17 @@ import logger from "../config/logger.js";
  */
 export const createBooking = async (req, res) => {
   try {
+    // Interruptor temporal de reservas: pon BOOKINGS_ENABLED=false en las
+    // variables de entorno para desactivar la compra de entradas sin tocar
+    // código (los eventos se siguen viendo y anunciando con normalidad).
+    if (process.env.BOOKINGS_ENABLED === "false") {
+      return res.status(503).json({
+        success: false,
+        message:
+          "Las reservas para este evento se abrirán en breve. Vuelve a intentarlo dentro de unos días.",
+      });
+    }
+
     const userId = req.user.id;
     const { event_id, numero_entradas = 1 } = req.body;
 
