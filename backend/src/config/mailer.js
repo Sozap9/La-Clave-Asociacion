@@ -74,44 +74,17 @@ const createMockTransporter = (label) => ({
   verify: async () => true,
 });
 
-// ─── Convertir attachments estilo nodemailer al formato de Brevo API ────────
-// Brevo no tiene un campo "cid" separado: para imágenes inline, el "name"
-// del adjunto tiene que coincidir exactamente con lo que se usa después de
-// "cid:" en el HTML (ej. <img src="cid:qr-123">  →  name: "qr-123").
-const convertAttachments = (attachments) => {
-  if (!attachments || attachments.length === 0) return undefined;
-
-  return attachments.map((att) => {
-    let base64Content;
-    if (Buffer.isBuffer(att.content)) {
-      base64Content = att.content.toString('base64');
-    } else if (typeof att.content === 'string') {
-      // Puede venir ya en base64, o como texto plano
-      base64Content = Buffer.from(att.content).toString('base64');
-    } else {
-      base64Content = '';
-    }
-
-    return {
-      name: att.cid || att.filename || 'adjunto',
-      content: base64Content,
-    };
-  });
-};
-
 // ─── Transporter real vía API HTTP de Brevo ──────────────────────────────────
 const createBrevoApiTransporter = (label) => ({
   sendMail: async (mailOptions) => {
     const sender = parseFromAddress(mailOptions.from);
     const recipients = parseToAddresses(mailOptions.to);
-    const attachment = convertAttachments(mailOptions.attachments);
 
     const body = {
       sender,
       to: recipients,
       subject: mailOptions.subject,
       htmlContent: mailOptions.html,
-      ...(attachment ? { attachment } : {}),
     };
 
     const controller = new AbortController();
