@@ -83,7 +83,9 @@ export const router = createBrowserRouter([
     path: "/normativa",
     element: (
       <Layout>
-        <Normativa />
+        <ProtectedRoute requireSocio>
+          <Normativa />
+        </ProtectedRoute>
       </Layout>
     ),
   },
