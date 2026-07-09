@@ -341,7 +341,7 @@ export const publishEvent = async (req, res) => {
     const { id } = req.params;
     
     await pool.execute(
-      'UPDATE events SET visible_desde = NOW(), estado = "scheduled", updated_at = NOW() WHERE id = ?', 
+      'UPDATE events SET estado = "scheduled", updated_at = NOW() WHERE id = ?', 
       [id]
     );
     
@@ -364,7 +364,7 @@ export const unpublishEvent = async (req, res) => {
     const { id } = req.params;
     
     await pool.execute(
-      'UPDATE events SET visible_desde = NULL, estado = "draft", updated_at = NOW() WHERE id = ?', 
+      'UPDATE events SET estado = "draft", updated_at = NOW() WHERE id = ?', 
       [id]
     );
     
@@ -386,18 +386,18 @@ export const togglePublishEvent = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const [events] = await pool.execute('SELECT visible_desde, estado FROM events WHERE id = ?', [id]);
+    const [events] = await pool.execute('SELECT estado FROM events WHERE id = ?', [id]);
     
     if (events.length === 0) {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
     
-    const isPublished = events[0].visible_desde !== null;
+    const isPublished = events[0].estado === 'scheduled';
     const newStatus = isPublished ? 'draft' : 'scheduled';
     
     await pool.execute(
-      'UPDATE events SET visible_desde = ?, estado = ?, updated_at = NOW() WHERE id = ?', 
-      [isPublished ? null : new Date(), newStatus, id]
+      'UPDATE events SET estado = ?, updated_at = NOW() WHERE id = ?', 
+      [newStatus, id]
     );
     
     console.log(`✅ Event ${isPublished ? 'unpublished' : 'published'}:`, id);

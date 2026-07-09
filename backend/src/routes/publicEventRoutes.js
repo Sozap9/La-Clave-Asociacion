@@ -28,17 +28,15 @@ router.get('/', async (req, res) => {
     const parsedLimit = parseInt(limit, 10);
     const validLimit = (!isNaN(parsedLimit) && parsedLimit > 0 && parsedLimit <= 100) ? parsedLimit : 20;
 
-    // Base query
+    // Base query — solo columnas que existen realmente en la tabla `events`.
+    // Un evento es público cuando su estado es 'scheduled' (publicado).
     let query = `
       SELECT 
-        id, titulo, descripcion, descripcion_corta, fecha_evento, hora_evento,
+        id, titulo, descripcion, fecha_evento, hora_evento,
         ubicacion, aforo_maximo, entradas_disponibles, imagen_cartel_url,
-        precio_socio, precio_invitado, permite_invitados, destacado,
-        artistas, tags, edad_minima
+        precio_socio, precio_invitado, permite_invitados, destacado
       FROM events
-      WHERE visible_desde IS NOT NULL
-        AND visible_desde <= NOW()
-        AND estado = 'scheduled'
+      WHERE estado = 'scheduled'
     `;
     const params = [];
 
@@ -101,14 +99,11 @@ router.get('/featured', async (req, res) => {
 
     const query = `
       SELECT 
-        id, titulo, descripcion, descripcion_corta, fecha_evento, hora_evento,
+        id, titulo, descripcion, fecha_evento, hora_evento,
         ubicacion, aforo_maximo, entradas_disponibles, imagen_cartel_url,
-        precio_socio, precio_invitado, permite_invitados, destacado,
-        artistas, tags, edad_minima
+        precio_socio, precio_invitado, permite_invitados, destacado
       FROM events
-      WHERE visible_desde IS NOT NULL
-        AND visible_desde <= NOW()
-        AND estado = 'scheduled'
+      WHERE estado = 'scheduled'
         AND destacado = 1
         AND fecha_evento >= CURDATE()
       ORDER BY fecha_evento ASC, hora_evento ASC
@@ -159,14 +154,11 @@ router.get('/:id', async (req, res) => {
 
     const query = `
       SELECT 
-        id, titulo, descripcion, descripcion_corta, fecha_evento, hora_evento,
+        id, titulo, descripcion, fecha_evento, hora_evento,
         ubicacion, aforo_maximo, entradas_disponibles, imagen_cartel_url,
-        precio_socio, precio_invitado, permite_invitados, destacado,
-        artistas, tags, edad_minima
+        precio_socio, precio_invitado, permite_invitados, destacado
       FROM events
       WHERE id = ?
-        AND visible_desde IS NOT NULL
-        AND visible_desde <= NOW()
         AND estado = 'scheduled'
     `;
 
