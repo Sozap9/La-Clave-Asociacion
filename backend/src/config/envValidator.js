@@ -129,9 +129,9 @@ const validateStripeKeys = () => {
   const { NODE_ENV, STRIPE_SECRET_KEY } = process.env;
 
   if (NODE_ENV === 'production' && STRIPE_SECRET_KEY.startsWith('sk_test_')) {
-    console.error('❌ ERROR: Estás usando claves de TEST de Stripe en PRODUCCIÓN');
-    console.error('   Cambia a claves de LIVE (sk_live_...)');
-    process.exit(1);
+    console.warn('⚠️  ADVERTENCIA: Estás usando claves de TEST de Stripe en producción.');
+    console.warn('   Los pagos NO serán reales hasta que cambies a claves LIVE (sk_live_...).');
+    console.warn('   Esto es intencional mientras completas la verificación de tu cuenta en Stripe.');
   }
 
   if (NODE_ENV === 'development' && STRIPE_SECRET_KEY.startsWith('sk_live_')) {
