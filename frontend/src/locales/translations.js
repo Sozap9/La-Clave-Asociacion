@@ -74,7 +74,7 @@ export const translations = {
       password: 'Contraseña',
       confirmPassword: 'Confirmar contraseña',
       howDidYouFind: '¿Cómo nos conociste?',
-      artistQuestion: '¿Eres artista o perteneces a algún colectivo?',
+      artistQuestion: '¿Tienes un proyecto o perteneces a algún grupo/colectivo?',
       dniSideA: 'Cara A',
       dniSideB: 'Cara B',
       uploadImage: 'Subir imagen',

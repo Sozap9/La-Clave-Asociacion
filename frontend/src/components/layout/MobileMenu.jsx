@@ -23,13 +23,11 @@ const MobileMenu = ({ isOpen, onClose }) => {
 
   const publicItems = [
     { label: t('menu.home'), href: NAV_ROUTES.HOME },
-    { label: t('menu.normativa'), href: NAV_ROUTES.NORMATIVA },
     { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
   const basicItems = [
     { label: t('menu.home'), href: NAV_ROUTES.HOME },
-    { label: t('menu.normativa'), href: NAV_ROUTES.NORMATIVA },
     { label: t('menu.contact'),  href: NAV_ROUTES.CONTACT },
   ];
 
