@@ -42,35 +42,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ==== Normativa ==== */}
-      <section className="relative pt-10 sm:pt-14 md:pt-16 pb-16 sm:pb-20 md:pb-28 lg:pb-32 bg-black overflow-hidden">
-        <div className="relative container-custom px-4 sm:px-6">
-          <div className="max-w-3xl lg:max-w-4xl mx-auto text-center">
-
-            {/* Línea decorativa — mismo estilo, más ancha, igual de fina */}
-            <div className="w-24 sm:w-40 md:w-56 lg:w-72 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto mb-8 sm:mb-10 md:mb-12" />
-
-            {/* Texto descriptivo */}
-            <div className="space-y-4 md:space-y-6 mb-8 sm:mb-10 md:mb-12">
-              <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-light">
-                {t('home.normativa.text')}
-              </p>
-            </div>
-
-            {/* Botón */}
-            <div>
-              <Button
-                variant="primary"
-                to="/normativa"
-                className="rounded-full px-8 py-3 md:px-12 md:py-4 lg:px-14 lg:py-5 text-sm md:text-base lg:text-lg"
-              >
-                {t('home.normativa.button')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ==== Socios ==== */}
 
       <section className="relative py-16 sm:py-20 md:py-28 lg:py-32 bg-black overflow-hidden">
