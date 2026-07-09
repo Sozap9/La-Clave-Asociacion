@@ -216,21 +216,16 @@ class Booking {
           e.id as event_id,
           e.titulo as evento_titulo,
           e.descripcion,
-          e.descripcion_corta,
           e.fecha_evento,
           e.hora_evento,
           e.ubicacion,
-          e.direccion,
           e.aforo_maximo,
           e.entradas_disponibles,
           e.imagen_cartel_url,
           e.precio_socio,
           e.precio_invitado,
           e.permite_invitados,
-          e.destacado,
-          e.edad_minima,
-          e.tags,
-          e.artistas
+          e.destacado
         FROM bookings b
         INNER JOIN events e ON b.event_id = e.id
         WHERE b.socio_id = ?
