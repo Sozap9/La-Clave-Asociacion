@@ -3153,15 +3153,20 @@ export const aprobarSolicitud = async (req, res) => {
       });
     }
 
+   // Generar username automáticamente a partir del email (mismo criterio
+    // que User.create()), ya que la columna sigue siendo NOT NULL UNIQUE
+    const username = `${solicitud.email.split('@')[0]}_${Date.now().toString(36)}`;
+
     // Crear usuario directamente con el password_hash ya generado
     const createUserSql = `
       INSERT INTO users (
-        email, password_hash, nombre, apellidos,
+        username, email, password_hash, nombre, apellidos,
         telefono, fecha_nacimiento, dni, dni_front_url, dni_back_url,
         role, activo, ip_registro, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'socio', TRUE, ?, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'socio', TRUE, ?, NOW())
     `;
     const userResult = await query(createUserSql, [
+      username,
       solicitud.email,
       solicitud.password_hash,
       solicitud.nombre,
@@ -3173,6 +3178,7 @@ export const aprobarSolicitud = async (req, res) => {
       solicitud.dni_back_url,
       solicitud.ip_solicitud,
     ]);
+    
     const newUserId = userResult.insertId;
 
     // Crear entrada en socios (membresía gratuita)
