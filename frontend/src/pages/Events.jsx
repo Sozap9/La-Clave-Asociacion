@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { Calendar } from "lucide-react";
 import { getAllEvents } from "../api/eventsApi";
 import EventCard from "../components/events/EventCard";
 import FilterBar from "../components/UI/FilterBar";
 import SearchInput from "../components/UI/SearchInput";
 import EventDetail from "../components/events/EventDetail";
 import Loader from "../components/common/Loader";
+import EmptyState from "../components/common/EmptyState";
 import { useLanguage } from "../context/LanguageContext";
 
 const Events = () => {
@@ -131,17 +133,20 @@ const Events = () => {
 
         {/* Sin resultados */}
         {!loading && events.length === 0 && !error && (
-          <div className="text-center py-20">
-            <h3 className="text-2xl font-bold text-white mb-2">
-              {t('events.notFound')}
-            </h3>
-            <p className="text-gray-400 text-lg">{getEmptyMessage()}</p>
-            {filters.search && (
-              <p className="text-gray-500 text-sm mt-2">
-                {t('events.trySearch')}
-              </p>
-            )}
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title={t('events.notFound')}
+            subtitle={
+              <>
+                {getEmptyMessage()}
+                {filters.search && (
+                  <span className="block text-gray-500 text-xs mt-2">
+                    {t('events.trySearch')}
+                  </span>
+                )}
+              </>
+            }
+          />
         )}
       </div>
 

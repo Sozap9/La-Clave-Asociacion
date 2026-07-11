@@ -17,6 +17,7 @@ import Loader from "../components/common/Loader";
 import EventDetail from "../components/events/EventDetail";
 import FilterBar from "../components/UI/FilterBar";
 import SearchInput from "../components/UI/SearchInput";
+import EmptyState from "../components/common/EmptyState";
 
 const MisEntradas = () => {
   const navigate = useNavigate();
@@ -482,21 +483,18 @@ const MisEntradas = () => {
 
         {/* Sin resultados */}
         {!loading && filteredBookings.length === 0 && !error && (
-          <div className="text-center py-16">
-            <Ticket
-              className="mx-auto mb-4 text-gray-700"
-              size={44}
-              strokeWidth={1}
-            />
-            <h3 className="text-lg font-light text-gray-400 uppercase tracking-widest mb-6">
-              {emptyTitle}
-            </h3>
-            {filter === "all" && !searchTerm && (
-              <Button variant="primary" to="/eventos">
-                Ver Eventos Disponibles
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            icon={Ticket}
+            title={emptyTitle}
+            subtitle={emptySubtitle}
+            action={
+              filter === "all" && !searchTerm ? (
+                <Button variant="primary" to="/eventos">
+                  Ver Eventos Disponibles
+                </Button>
+              ) : null
+            }
+          />
         )}
       </div>
 

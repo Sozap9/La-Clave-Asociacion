@@ -179,7 +179,7 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
               <button
                 onClick={() => folderInputRef.current?.click()}
                 disabled={uploading}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex items-center gap-2"
               >
                 <FolderUp size={20} />
                 Seleccionar Carpeta

@@ -29,7 +29,7 @@ const EventCard = ({ event, onViewDetail }) => {
     <div 
       onClick={handleClick}
       className="group cursor-pointer bg-[#1a1a1a] overflow-hidden border border-[#262626]
-                 hover:border-purple-600 transition-all duration-300"
+                 hover:border-primary-600 transition-all duration-300"
     >
       {/* Imagen del evento */}
       <div className="relative aspect-[4/3] overflow-hidden bg-[#0a0a0a]">
@@ -62,7 +62,7 @@ const EventCard = ({ event, onViewDetail }) => {
       <div className="p-4 space-y-3">
         {/* Título */}
         <h3 className="text-white text-lg font-light uppercase tracking-wide line-clamp-2 
-                      group-hover:text-purple-400 transition-colors">
+                      group-hover:text-primary-400 transition-colors">
           {event.titulo}
         </h3>
 
@@ -82,7 +82,7 @@ const EventCard = ({ event, onViewDetail }) => {
         {/* Precio (si existe) */}
         {event.precio_socio && (
           <div className="pt-2 border-t border-[#262626]">
-            <span className="text-purple-400 text-sm font-medium">
+            <span className="text-primary-400 text-sm font-medium">
               {event.precio_socio}€
             </span>
           </div>

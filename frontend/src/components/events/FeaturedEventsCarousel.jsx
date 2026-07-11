@@ -43,7 +43,7 @@ const FeaturedEventsCarousel = () => {
       <section className="py-24 bg-[#0a0a0a]">
         <div className="container-custom">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
           </div>
         </div>
       </section>

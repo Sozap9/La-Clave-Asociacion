@@ -8,22 +8,22 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#b284d8ff',
-          50: '#F5F3FF',
-          100: '#EDE9FE',
-          200: '#DDD6FE',
-          300: '#C4B5FD',
-          400: '#A78BFA',
-          500: '#8B5CF6',
-          600: '#7C3AED',
-          700: '#6D28D9',
-          800: '#5B21B6',
-          900: '#4C1D95',
+          DEFAULT: '#eab308',
+          50: '#FEFCE8',
+          100: '#FEF9C3',
+          200: '#FEF08A',
+          300: '#FDE047',
+          400: '#FACC15',
+          500: '#EAB308',
+          600: '#CA8A04',
+          700: '#A16207',
+          800: '#854D0E',
+          900: '#713F12',
         },
         accent: {
-          DEFAULT: '#9333ea',
-          light: '#a855f7',
-          dark: '#7e22ce',
+          DEFAULT: '#eab308',
+          light: '#facc15',
+          dark: '#a16207',
         }
       },
       fontFamily: {
@@ -35,9 +35,9 @@ export default {
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(139, 92, 246, 0.5)',
-        'glow-sm': '0 0 10px rgba(139, 92, 246, 0.3)',
-        'glow-lg': '0 0 30px rgba(139, 92, 246, 0.7)',
+        'glow': '0 0 20px rgba(234, 179, 8, 0.5)',
+        'glow-sm': '0 0 10px rgba(234, 179, 8, 0.3)',
+        'glow-lg': '0 0 30px rgba(234, 179, 8, 0.7)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

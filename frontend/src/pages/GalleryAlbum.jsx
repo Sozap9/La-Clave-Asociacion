@@ -4,6 +4,7 @@ import { Image, X, ChevronLeft, ChevronRight, Calendar, User, ArrowLeft } from '
 import * as galleryApi from '../api/galleryApi';
 import Loader from '../components/common/Loader';
 import Alert from '../components/common/Alert';
+import EmptyState from '../components/common/EmptyState';
 
 // URL base sin /api para servir archivos estáticos
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
@@ -185,12 +186,7 @@ const GalleryAlbum = () => {
 
         {/* Grid de imágenes */}
         {images.length === 0 ? (
-          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
-            <Image size={64} className="text-gray-600 mx-auto mb-4" />
-            <h3 className="text-white text-xl font-semibold mb-2">
-              No hay imágenes en este álbum
-            </h3>
-          </div>
+          <EmptyState icon={Image} title="No hay imágenes en este álbum" />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {images.map((image, index) => {

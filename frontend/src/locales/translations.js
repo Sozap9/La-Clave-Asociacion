@@ -47,7 +47,7 @@ export const translations = {
         button: 'Hazte socio',
       },
       unete: {
-        text: 'Si te interesa participar, compartir un proyecto o simplemente venir a disfrutar del espacio, puedes enviar tu solicitud; la aceptación queda a criterio de la asociación. La asociación se rige por una normativa interna que regula el acceso, la convivencia y el uso del espacio, así que te recomendamos leerla antes de enviar tu solicitud.',
+        text: 'Si te interesa participar, compartir un proyecto o simplemente venir a disfrutar del espacio, puedes enviar tu solicitud; la aceptación queda a criterio de la asociación. La asociación se rige por una normativa interna que regula el acceso, la convivencia y el uso del espacio.',
       },
     },
     login: {
@@ -259,7 +259,7 @@ export const translations = {
         button: 'Become a member',
       },
       unete: {
-        text: 'If you are interested in participating, sharing a project, or simply coming to enjoy the space, you can submit your request; acceptance is at the discretion of the association. The association is governed by internal regulations covering access, coexistence and use of the space, so we recommend reading them before submitting your request.',
+        text: 'If you are interested in participating, sharing a project, or simply coming to enjoy the space, you can submit your request; acceptance is at the discretion of the association. The association is governed by internal regulations covering access, coexistence and use of the space.',
       },
     },
     login: {

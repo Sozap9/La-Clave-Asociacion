@@ -12,6 +12,7 @@ import * as eventsApi from "../api/eventsApi";
 import { useAuth } from "../hooks/useAuth";
 import Loader from "../components/common/Loader";
 import Alert from "../components/common/Alert";
+import EmptyState from "../components/common/EmptyState";
 import FolderModal from "../components/gallery/FolderModal";
 import QuickImageUploadModal from "../components/gallery/QuickImageUploadModal";
 
@@ -329,19 +330,19 @@ const Gallery = () => {
 
         {/* Grid de álbumes */}
         {filteredFolders.length === 0 ? (
-          <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
-            <Image size={64} className="text-gray-600 mx-auto mb-4" />
-            <h3 className="text-white text-xl font-semibold mb-2">
-              {hasActiveFilters
+          <EmptyState
+            icon={Image}
+            title={
+              hasActiveFilters
                 ? "No se encontraron álbumes"
-                : "No hay álbumes disponibles"}
-            </h3>
-            <p className="text-gray-400">
-              {hasActiveFilters
+                : "No hay álbumes disponibles"
+            }
+            subtitle={
+              hasActiveFilters
                 ? "Intenta ajustar los filtros de búsqueda"
-                : "Pronto subiremos nuevas fotos de nuestros eventos"}
-            </p>
-          </div>
+                : "Pronto subiremos nuevas fotos de nuestros eventos"
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {filteredFolders.map((folder) => (
