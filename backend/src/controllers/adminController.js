@@ -115,7 +115,7 @@ export const getDashboardStats = async (req, res) => {
         COUNT(*) as total_socios,
         COUNT(CASE WHEN estado = 'activo' THEN 1 END) as socios_activos,
         COUNT(CASE WHEN estado = 'moroso' THEN 1 END) as socios_morosos,
-        COUNT(CASE WHEN estado = 'inactivo' THEN 1 END) as socios_baja
+        COUNT(CASE WHEN estado = 'cancelado' THEN 1 END) as socios_baja
       FROM socios
     `;
     const sociosStats = await query(sociosSql);
@@ -3178,7 +3178,7 @@ export const aprobarSolicitud = async (req, res) => {
       solicitud.dni_back_url,
       solicitud.ip_solicitud,
     ]);
-    
+
     const newUserId = userResult.insertId;
 
     // Crear entrada en socios (membresía gratuita)

@@ -171,19 +171,19 @@ class Booking {
    * @returns {Boolean} true si se marcó
    */
   static async markAsAttended(id) {
-    try {
-      const sql = `
-        UPDATE bookings 
-        SET estado = 'asistida', fecha_asistencia = NOW(), asistencia = 1
-        WHERE id = ?
-      `;
-      await query(sql, [id]);
-      return true;
-    } catch (error) {
-      console.error('Error en markAsAttended:', error);
-      throw error;
-    }
+  try {
+    const sql = `
+      UPDATE bookings 
+      SET fecha_asistencia = NOW(), asistencia = 1
+      WHERE id = ?
+    `;
+    await query(sql, [id]);
+    return true;
+  } catch (error) {
+    console.error('Error en markAsAttended:', error);
+    throw error;
   }
+}
 
   /**
    * Guardar URL del código QR
