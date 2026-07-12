@@ -52,6 +52,10 @@ export const handleStripeWebhook = async (req, res) => {
         await handleSubscriptionUpdated(event.data.object);
         break;
 
+      case "charge.refunded":
+        await handleChargeRefunded(event.data.object);
+        break;
+
       default:
         console.log(`Evento no manejado: ${event.type}`);
     }
@@ -364,6 +368,104 @@ async function handleSubscriptionUpdated(subscription) {
     }
   } catch (error) {
     console.error("Error en handleSubscriptionUpdated:", error);
+    throw error;
+  }
+}
+
+/**
+ * Manejar reembolso de un cargo (charge.refunded)
+ *
+ * Se dispara tanto en reembolsos totales como parciales. Busca el
+ * pago original por el payment_intent asociado al cargo, marca la
+ * reserva correspondiente como cancelada y libera el aforo del
+ * evento — así la web deja de mostrar como "confirmada" una entrada
+ * que ya se ha devuelto desde el Dashboard de Stripe.
+ *
+ * Idempotente: si el pago ya estaba marcado como 'reembolsado', no
+ * se vuelve a tocar el aforo (evita descuadres si Stripe reintenta
+ * el envío del webhook).
+ */
+async function handleChargeRefunded(charge) {
+  try {
+    const paymentIntentId = charge.payment_intent;
+    if (!paymentIntentId) {
+      logger.warn("charge.refunded sin payment_intent asociado — se ignora", {
+        chargeId: charge.id,
+      });
+      return;
+    }
+
+    const isFullyRefunded = charge.amount_refunded >= charge.amount;
+    const amountRefunded = (charge.amount_refunded || 0) / 100;
+
+    // Buscar el pago original registrado con ese payment_intent
+    const payments = await query(
+      `SELECT * FROM payments WHERE stripe_payment_intent_id = ? LIMIT 1`,
+      [paymentIntentId],
+    );
+
+    if (payments.length === 0) {
+      logger.warn("charge.refunded: no se encontró payment con ese payment_intent", {
+        paymentIntentId,
+        chargeId: charge.id,
+      });
+      return;
+    }
+
+    const payment = payments[0];
+
+    // Idempotencia: si ya estaba marcado como reembolsado, no repetir el proceso
+    if (payment.estado === "reembolsado") {
+      logger.info("Pago ya estaba marcado como reembolsado, se ignora reintento de webhook", {
+        paymentId: payment.id,
+      });
+      return;
+    }
+
+    // Marcar el pago como reembolsado (total o parcial)
+    await query(
+      `UPDATE payments SET estado = ?, metadata = JSON_SET(COALESCE(metadata, '{}'), '$.amount_refunded', ?) WHERE id = ?`,
+      [isFullyRefunded ? "reembolsado" : "reembolsado_parcial", amountRefunded, payment.id],
+    );
+
+    // Si el pago era de una entrada de evento, cancelar la reserva y liberar aforo
+    let bookingId = null;
+    try {
+      const metadata = typeof payment.metadata === "string" ? JSON.parse(payment.metadata) : payment.metadata;
+      bookingId = metadata?.booking_id || null;
+    } catch (parseError) {
+      logger.warn("No se pudo parsear metadata del payment al procesar reembolso", {
+        paymentId: payment.id,
+      });
+    }
+
+    if (bookingId && isFullyRefunded) {
+      const booking = await Booking.findById(bookingId);
+
+      if (booking && booking.estado === "confirmada") {
+        await Booking.cancel(bookingId, "Pago reembolsado en Stripe");
+
+        await query(
+          `UPDATE events SET entradas_disponibles = entradas_disponibles + ? WHERE id = ?`,
+          [booking.numero_entradas, booking.event_id],
+        );
+
+        logger.info("↩ Reserva cancelada y aforo liberado por reembolso:", {
+          bookingId,
+          chargeId: charge.id,
+          amountRefunded,
+        });
+      }
+    }
+
+    logger.info("Reembolso procesado:", {
+      paymentId: payment.id,
+      chargeId: charge.id,
+      amountRefunded,
+      isFullyRefunded,
+    });
+  } catch (error) {
+    logger.error("Error en handleChargeRefunded:", error);
     throw error;
   }
 }
