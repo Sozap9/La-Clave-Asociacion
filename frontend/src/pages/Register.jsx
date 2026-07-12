@@ -367,11 +367,8 @@ const Register = () => {
             </p>
 
             <div className="max-w-xs mx-auto sm:mx-0">
-              {/* Cara delantera (única cara requerida) */}
+              {/* Foto de DNI (única cara requerida) */}
               <div>
-                <label className="block text-gray-400 text-sm mb-2">
-                  {t("register.dniSideA")} {t("register.required")}
-                </label>
                 <label className="cursor-pointer block">
                   <input
                     type="file"
@@ -383,7 +380,7 @@ const Register = () => {
                   {dniFrontPreview ? (
                     <img
                       src={dniFrontPreview}
-                      alt="DNI delantera"
+                      alt="DNI"
                       className="w-full h-32 object-cover rounded-xl border-2 border-primary-500/50"
                     />
                   ) : (
