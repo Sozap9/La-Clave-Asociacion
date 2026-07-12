@@ -29,8 +29,12 @@ const MisEntradas = () => {
   const [filter, setFilter] = useState("upcoming");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Aviso de vuelta desde Stripe Checkout (?pago=exitoso|cancelado)
-  const pagoStatus = searchParams.get("pago");
+  // Guardamos si veníamos de un pago exitoso ANTES de limpiar la URL,
+  // para poder seguir reintentando la carga en segundo plano sin
+  // mostrar ningún aviso al socio.
+  const [cameFromSuccessfulPayment] = useState(
+    () => searchParams.get("pago") === "exitoso"
+  );
 
   // Modal Evento
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -46,23 +50,33 @@ const MisEntradas = () => {
   const [cancelling, setCancelling] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(false);
 
+  // Limpiamos el parámetro ?pago=... de la URL en cuanto entramos,
+  // para que no se muestre ningún aviso ni quede visible en la barra
+  // de direcciones.
+  useEffect(() => {
+    if (searchParams.get("pago")) {
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line
+  }, []);
+
   useEffect(() => {
     fetchBookings();
   }, []);
 
   // Si volvemos de un pago exitoso, el webhook de Stripe puede tardar
-  // unos segundos en confirmar la reserva — reintentamos la carga un
-  // par de veces para no dejar al socio viendo "Pago pendiente" más de
-  // la cuenta si el webhook ya llegó entre medias.
+  // unos segundos en confirmar la reserva — reintentamos la carga en
+  // segundo plano un par de veces, sin mostrar nada al socio, para que
+  // la reserva aparezca como "Confirmada" sin que tenga que recargar.
   useEffect(() => {
-    if (pagoStatus !== "exitoso") return;
+    if (!cameFromSuccessfulPayment) return;
 
     const retries = [3000, 6000, 10000];
     const timers = retries.map((ms) => setTimeout(() => fetchBookings(), ms));
 
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line
-  }, [pagoStatus]);
+  }, [cameFromSuccessfulPayment]);
 
   useEffect(() => {
     applyFilters();
@@ -326,37 +340,6 @@ const MisEntradas = () => {
             Gestiona tus reservas y entradas
           </p>
         </div>
-
-        {/* Aviso de vuelta desde Stripe Checkout */}
-        {pagoStatus === "exitoso" && (
-          <div className="bg-primary-500/10 border border-primary-500/40 text-primary-200 px-4 py-3 rounded-lg mb-8 flex items-center justify-between gap-3">
-            <span>
-              Estamos confirmando tu pago — puede tardar unos segundos en
-              reflejarse aquí. Si sigue en "Pago Pendiente" pasado un minuto,
-              recarga la página.
-            </span>
-            <button
-              onClick={() => setSearchParams({})}
-              className="text-primary-300 hover:text-white font-bold flex-shrink-0"
-            >
-              ×
-            </button>
-          </div>
-        )}
-        {pagoStatus === "cancelado" && (
-          <div className="bg-[#1a1a1a] border border-[#333333] text-gray-300 px-4 py-3 rounded-lg mb-8 flex items-center justify-between gap-3">
-            <span>
-              Has cancelado el pago. No te hemos cobrado nada — puedes
-              intentarlo de nuevo cuando quieras desde el evento.
-            </span>
-            <button
-              onClick={() => setSearchParams({})}
-              className="text-gray-400 hover:text-white font-bold flex-shrink-0"
-            >
-              ×
-            </button>
-          </div>
-        )}
 
         {/* Filtros y Búsqueda */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-8">
