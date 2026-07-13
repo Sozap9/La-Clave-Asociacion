@@ -225,7 +225,7 @@ const AdminStatsDetailed = () => {
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-8">
               <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                 <BarChart3 size={24} className="text-primary-300" />
-                Eventos Destacados por Entradas Vendidas
+                Eventos Destacados
               </h2>
               <div className="space-y-4">
                 {topEventos.map((evento, index) => (
