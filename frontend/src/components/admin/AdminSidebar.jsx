@@ -53,10 +53,9 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     { path: "/admin/actividad", label: "Actividad Reciente", icon: BarChart3 },
     {
       path: "/admin/stats/dashboard",
-      label: "Dashboard Stats",
+      label: "Generales",
       icon: BarChart3,
     },
-    { path: "/admin/stats/generales", label: "Generales", icon: BarChart3 },
   ];
 
   const sociosItems = [
