@@ -334,29 +334,30 @@ const MisEntradas = () => {
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom max-w-6xl">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Mis Entradas</h1>
-          <p className="text-gray-400 text-sm md:text-lg">
-            Gestiona tus reservas y entradas
-          </p>
-        </div>
+        <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div>
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Mis Entradas</h1>
+            <p className="text-gray-400 text-sm md:text-lg">
+              Gestiona tus reservas y entradas
+            </p>
+          </div>
 
-        {/* Filtros y Búsqueda */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-8">
-          <FilterBar
-            customFilters={entradaFilters}
-            activeFilter={filter}
-            onFilterChange={setFilter}
-            showCounts={true}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:pt-1">
+            <div className="w-full sm:w-80">
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                onClear={() => setSearchTerm("")}
+                placeholder="Buscar por evento..."
+                debounceMs={300}
+              />
+            </div>
 
-          <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
-            <SearchInput
-              value={searchTerm}
-              onChange={setSearchTerm}
-              onClear={() => setSearchTerm("")}
-              placeholder="Buscar por evento..."
-              debounceMs={300}
+            <FilterBar
+              customFilters={entradaFilters}
+              activeFilter={filter}
+              onFilterChange={setFilter}
+              showCounts={true}
             />
           </div>
         </div>

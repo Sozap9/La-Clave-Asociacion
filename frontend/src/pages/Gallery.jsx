@@ -189,8 +189,8 @@ const Gallery = () => {
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
         
-        {/* Header con botones a la derecha */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        {/* Header: título a la izquierda, controles a la derecha (misma altura) */}
+        <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div>
             <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Galería</h1>
             <p className="text-gray-400 text-sm md:text-lg">
@@ -198,33 +198,84 @@ const Gallery = () => {
             </p>
           </div>
 
-          {/* Botones Admin - Estilo filtros (negros) */}
-          {isAdmin && (
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button
-                onClick={handleUploadClick}
-                className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-                  activeAdminAction === 'upload'
-                    ? "bg-primary-600 text-white shadow-glow"
-                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                }`}
-              >
-                <Upload size={18} />
-                Subir Imagen
-              </button>
-              <button
-                onClick={handleCreateClick}
-                className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-                  activeAdminAction === 'create'
-                    ? "bg-primary-600 text-white shadow-glow"
-                    : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                }`}
-              >
-                <Plus size={18} />
-                Crear Álbum
-              </button>
+          <div className="flex flex-col items-stretch sm:items-end gap-3">
+            {/* Botones Admin - Estilo filtros (negros) */}
+            {isAdmin && (
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button
+                  onClick={handleUploadClick}
+                  className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                    activeAdminAction === 'upload'
+                      ? "bg-primary-600 text-white shadow-glow"
+                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  <Upload size={18} />
+                  Subir Imagen
+                </button>
+                <button
+                  onClick={handleCreateClick}
+                  className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                    activeAdminAction === 'create'
+                      ? "bg-primary-600 text-white shadow-glow"
+                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  <Plus size={18} />
+                  Crear Álbum
+                </button>
+              </div>
+            )}
+
+            {/* Búsqueda + filtro */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="w-full sm:w-80">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar álbumes por nombre..."
+                    className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-[#262626] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
+                  />
+                  
+                  <svg
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Filtros: select en mobile, desplegable en desktop */}
+              <FilterBar
+                customFilters={[
+                  { value: "all", label: "Todos" },
+                  { value: "desc", label: "Más Recientes" },
+                  { value: "asc", label: "Más Antiguos" },
+                ]}
+                activeFilter={sortOrder}
+                onFilterChange={setSortOrder}
+              />
             </div>
-          )}
+          </div>
         </div>
 
         {/* Alerts */}
@@ -239,59 +290,6 @@ const Gallery = () => {
             onClose={() => setSuccess("")}
           />
         )}
-
-        {/* Filtros y Búsqueda */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4 mb-6">
-            
-            {/* Barra de búsqueda */}
-            <div className="w-full sm:w-80">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar álbumes por nombre..."
-                  className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-[#262626] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
-                />
-                
-                <svg
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Filtros: select en mobile, desplegable en desktop */}
-            <FilterBar
-              customFilters={[
-                { value: "all", label: "Todos" },
-                { value: "desc", label: "Más Recientes" },
-                { value: "asc", label: "Más Antiguos" },
-              ]}
-              activeFilter={sortOrder}
-              onFilterChange={setSortOrder}
-            />
-          </div>
-        </div>
 
         {/* Grid de álbumes */}
         {filteredFolders.length === 0 ? (
