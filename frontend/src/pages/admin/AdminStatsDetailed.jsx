@@ -230,23 +230,18 @@ const AdminStatsDetailed = () => {
               <div className="space-y-4">
                 {topEventos.map((evento, index) => (
                   <div key={evento.id || index} className="flex items-center gap-4">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                        index === 0
-                          ? "bg-yellow-500 text-black"
-                          : index === 1
-                          ? "bg-gray-400 text-black"
-                          : index === 2
-                          ? "bg-orange-500 text-black"
-                          : "bg-gray-700 text-white"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
                     <div className="flex-1">
                       <h3 className="text-white font-semibold">
                         {evento.titulo}
                       </h3>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-primary-300 font-bold">
+                        {evento.entradas_reservadas}
+                      </p>
+                      <p className="text-gray-500 text-sm">
+                        de {evento.aforo_maximo}
+                      </p>
                     </div>
                   </div>
                 ))}
