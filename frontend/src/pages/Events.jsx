@@ -78,22 +78,16 @@ const Events = () => {
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">{t('events.title')}</h1>
-          <p className="text-gray-400 text-sm md:text-lg">
-            {t('events.subtitle')}
-          </p>
-        </div>
+        <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div>
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">{t('events.title')}</h1>
+            <p className="text-gray-400 text-sm md:text-lg">
+              {t('events.subtitle')}
+            </p>
+          </div>
 
-        {/* Filtros */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
-            <FilterBar
-              filters={{ status: filters.status, featured: filters.featured }}
-              onFilterChange={(f) => setFilters(f)}
-            />
-
-            <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:pt-1">
+            <div className="w-full sm:w-80">
               <SearchInput
                 value={filters.search}
                 onChange={(val) => setFilters({ ...filters, search: val })}
@@ -105,6 +99,11 @@ const Events = () => {
                 debounceMs={350}
               />
             </div>
+
+            <FilterBar
+              filters={{ status: filters.status, featured: filters.featured }}
+              onFilterChange={(f) => setFilters(f)}
+            />
           </div>
         </div>
 

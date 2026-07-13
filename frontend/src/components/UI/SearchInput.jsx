@@ -48,7 +48,7 @@ const SearchInput = ({
         placeholder={placeholder}
         value={internal}
         onChange={(e) => setInternal(e.target.value)}
-        className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-primary-500/30 rounded-lg \
+        className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-[#262626] rounded-lg \
                   text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 \
                   focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
       />

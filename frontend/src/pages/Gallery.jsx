@@ -15,6 +15,7 @@ import Alert from "../components/common/Alert";
 import EmptyState from "../components/common/EmptyState";
 import FolderModal from "../components/gallery/FolderModal";
 import QuickImageUploadModal from "../components/gallery/QuickImageUploadModal";
+import FilterBar from "../components/UI/FilterBar";
 
 // ✅ CORRECCIÓN: URL base sin /api para servir archivos estáticos
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace("/api", "");
@@ -189,7 +190,7 @@ const Gallery = () => {
       <div className="container-custom">
         
         {/* Header con botones a la derecha */}
-        <div className="mb-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Galería</h1>
             <p className="text-gray-400 text-sm md:text-lg">
@@ -241,64 +242,17 @@ const Gallery = () => {
 
         {/* Filtros y Búsqueda */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4 mb-6">
             
-            {/* Filtros: select en mobile, botones en desktop */}
-            <div className="w-full sm:w-auto">
-              {/* Mobile */}
-              <select
-                className="sm:hidden w-full px-4 py-2.5 bg-[#1a1a1a] text-white text-sm rounded-lg border border-[#262626] focus:outline-none focus:border-primary-500 appearance-none cursor-pointer"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-              >
-                <option value="all">Todos</option>
-                <option value="desc">Más Recientes</option>
-                <option value="asc">Más Antiguos</option>
-              </select>
-              {/* Desktop */}
-              <div className="hidden sm:flex flex-wrap gap-3">
-                <button
-                  onClick={() => setSortOrder("all")}
-                  className={`px-5 py-3 rounded-lg font-medium transition-all ${
-                    sortOrder === "all"
-                      ? "bg-primary-600 text-white shadow-glow"
-                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                  }`}
-                >
-                  Todos
-                </button>
-                <button
-                  onClick={() => setSortOrder("desc")}
-                  className={`px-5 py-3 rounded-lg font-medium transition-all ${
-                    sortOrder === "desc"
-                      ? "bg-primary-600 text-white shadow-glow"
-                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                  }`}
-                >
-                  Más Recientes
-                </button>
-                <button
-                  onClick={() => setSortOrder("asc")}
-                  className={`px-5 py-3 rounded-lg font-medium transition-all ${
-                    sortOrder === "asc"
-                      ? "bg-primary-600 text-white shadow-glow"
-                      : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-                  }`}
-                >
-                  Más Antiguos
-                </button>
-              </div>
-            </div>
-
-            {/* Barra de búsqueda a la derecha */}
-            <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
+            {/* Barra de búsqueda */}
+            <div className="w-full sm:w-80">
               <div className="relative">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar álbumes por nombre..."
-                  className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-primary-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
+                  className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-[#262626] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
                 />
                 
                 <svg
@@ -325,6 +279,17 @@ const Gallery = () => {
                 )}
               </div>
             </div>
+
+            {/* Filtros: select en mobile, desplegable en desktop */}
+            <FilterBar
+              customFilters={[
+                { value: "all", label: "Todos" },
+                { value: "desc", label: "Más Recientes" },
+                { value: "asc", label: "Más Antiguos" },
+              ]}
+              activeFilter={sortOrder}
+              onFilterChange={setSortOrder}
+            />
           </div>
         </div>
 

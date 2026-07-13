@@ -2,54 +2,91 @@
   * Componente FilterBar
   * 
   * En mobile (< sm): muestra un <select> nativo con el filtro activo
-  * En desktop (sm+): muestra los botones de siempre
+  * En desktop (sm+): botón desplegable con el filtro activo — evita
+  * ocupar una fila entera con botones sueltos, y mantiene el mismo
+  * estilo oscuro/dorado del resto de la web
   */
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { Filter } from "lucide-react";
 
-const FilterBar = ({ 
+const FilterBar = ({
   filters,
   onFilterChange,
   customFilters,
   activeFilter,
   showCounts = false
 }) => {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
 
-  // ── MODO GENÉRICO ──
+  // Cerrar al hacer click fuera del desplegable
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ── MODO GENÉRICO (ej. Galería) ──
   if (customFilters) {
-    const activeLabel = customFilters.find(f => f.value === activeFilter)?.label || customFilters[0]?.label;
+    const activeLabel =
+      customFilters.find((f) => f.value === activeFilter)?.label ||
+      customFilters[0]?.label;
 
     return (
-      <div className="w-full sm:w-auto">
+      <div className="w-full sm:w-auto" ref={containerRef}>
         {/* Mobile: select nativo */}
         <select
           className="sm:hidden w-full px-4 py-2.5 bg-[#1a1a1a] text-white text-sm rounded-lg border border-[#262626] focus:outline-none focus:border-primary-500 appearance-none cursor-pointer"
           value={activeFilter}
           onChange={(e) => onFilterChange(e.target.value)}
         >
-          {customFilters.map(filter => (
+          {customFilters.map((filter) => (
             <option key={filter.value} value={filter.value}>
-              {filter.label}{showCounts && filter.count !== undefined ? ` (${filter.count})` : ""}
+              {filter.label}
+              {showCounts && filter.count !== undefined ? ` (${filter.count})` : ""}
             </option>
           ))}
         </select>
 
-        {/* Desktop: botones */}
-        <div className="hidden sm:flex flex-wrap gap-3">
-          {customFilters.map(filter => (
-            <button
-              key={filter.value}
-              onClick={() => onFilterChange(filter.value)}
-              className={`px-5 py-3 text-base rounded-lg font-medium transition-all ${
-                activeFilter === filter.value
-                  ? "bg-primary-600 text-white shadow-glow"
-                  : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-              }`}
-            >
-              {filter.label}
-              {showCounts && filter.count !== undefined && ` (${filter.count})`}
-            </button>
-          ))}
+        {/* Desktop: icono discreto que despliega las opciones */}
+        <div className="hidden sm:block relative">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            title={activeLabel}
+            aria-label="Filtrar"
+            className={`flex items-center justify-center w-9 h-9 transition-colors ${
+              open ? "text-primary-300" : "text-gray-500 hover:text-primary-300"
+            }`}
+          >
+            <Filter size={19} />
+          </button>
+
+          {open && (
+            <div className="absolute z-20 mt-2 w-56 bg-[#1a1a1a] border border-[#262626] rounded-lg shadow-lg overflow-hidden">
+              {customFilters.map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => {
+                    onFilterChange(filter.value);
+                    setOpen(false);
+                  }}
+                  className={`w-full text-left px-5 py-3 text-base font-medium transition-colors ${
+                    activeFilter === filter.value
+                      ? "bg-primary-600 text-white"
+                      : "text-gray-300 hover:bg-[#2a2a2a]"
+                  }`}
+                >
+                  {filter.label}
+                  {showCounts && filter.count !== undefined && ` (${filter.count})`}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -58,10 +95,12 @@ const FilterBar = ({
   // ── MODO EVENTOS ──
   const handleStatusChange = (status) => {
     onFilterChange({ ...filters, status, featured: undefined });
+    setOpen(false);
   };
 
   const handleFeaturedClick = () => {
     onFilterChange({ ...filters, status: undefined, featured: true });
+    setOpen(false);
   };
 
   const isActiveFilter = (filterStatus) => {
@@ -84,8 +123,18 @@ const FilterBar = ({
     }
   };
 
+  const eventOptions = [
+    { value: "all", label: "Todos" },
+    { value: "upcoming", label: "Próximos Eventos" },
+    { value: "past", label: "Eventos Pasados" },
+    { value: "featured", label: "Destacados" },
+  ];
+
+  const activeEventLabel =
+    eventOptions.find((o) => o.value === currentMobileValue)?.label || "Todos";
+
   return (
-    <div className="w-full sm:w-auto">
+    <div className="w-full sm:w-auto" ref={containerRef}>
       {/* Mobile: select nativo */}
       <select
         className="sm:hidden w-full px-4 py-2.5 bg-[#1a1a1a] text-white text-sm rounded-lg border border-[#262626] focus:outline-none focus:border-primary-500 appearance-none cursor-pointer"
@@ -98,51 +147,63 @@ const FilterBar = ({
         <option value="featured">Destacados</option>
       </select>
 
-      {/* Desktop: botones */}
-      <div className="hidden sm:flex flex-wrap gap-3">
+      {/* Desktop: icono discreto que despliega las opciones */}
+      <div className="hidden sm:block relative">
         <button
-          onClick={() => handleStatusChange("all")}
-          className={`px-5 py-3 text-base rounded-lg font-medium transition-all ${
-            isActiveFilter("all")
-              ? "bg-primary-600 text-white shadow-glow"
-              : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
+          onClick={() => setOpen((v) => !v)}
+          title={activeEventLabel}
+          aria-label="Filtrar"
+          className={`flex items-center justify-center w-9 h-9 transition-colors ${
+            open ? "text-primary-300" : "text-gray-500 hover:text-primary-300"
           }`}
         >
-          Todos
+          <Filter size={19} />
         </button>
 
-        <button
-          onClick={() => handleStatusChange("upcoming")}
-          className={`px-5 py-3 text-base rounded-lg font-medium transition-all ${
-            isActiveFilter("upcoming")
-              ? "bg-primary-600 text-white shadow-glow"
-              : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-          }`}
-        >
-          Próximos Eventos
-        </button>
-
-        <button
-          onClick={() => handleStatusChange("past")}
-          className={`px-5 py-3 text-base rounded-lg font-medium transition-all ${
-            isActiveFilter("past")
-              ? "bg-primary-600 text-white shadow-glow"
-              : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-          }`}
-        >
-          Eventos Pasados
-        </button>
-
-        <button
-          onClick={handleFeaturedClick}
-          className={`px-5 py-3 text-base rounded-lg font-medium transition-all flex items-center gap-2 ${
-            isFeaturedActive
-              ? "bg-primary-600 text-white shadow-glow"
-              : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-          }`}
-        >
-          Destacados
-        </button>
+        {open && (
+          <div className="absolute z-20 mt-2 w-56 bg-[#1a1a1a] border border-[#262626] rounded-lg shadow-lg overflow-hidden">
+            <button
+              onClick={() => handleStatusChange("all")}
+              className={`w-full text-left px-5 py-3 text-base font-medium transition-colors ${
+                isActiveFilter("all")
+                  ? "bg-primary-600 text-white"
+                  : "text-gray-300 hover:bg-[#2a2a2a]"
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => handleStatusChange("upcoming")}
+              className={`w-full text-left px-5 py-3 text-base font-medium transition-colors ${
+                isActiveFilter("upcoming")
+                  ? "bg-primary-600 text-white"
+                  : "text-gray-300 hover:bg-[#2a2a2a]"
+              }`}
+            >
+              Próximos Eventos
+            </button>
+            <button
+              onClick={() => handleStatusChange("past")}
+              className={`w-full text-left px-5 py-3 text-base font-medium transition-colors ${
+                isActiveFilter("past")
+                  ? "bg-primary-600 text-white"
+                  : "text-gray-300 hover:bg-[#2a2a2a]"
+              }`}
+            >
+              Eventos Pasados
+            </button>
+            <button
+              onClick={handleFeaturedClick}
+              className={`w-full text-left px-5 py-3 text-base font-medium transition-colors ${
+                isFeaturedActive
+                  ? "bg-primary-600 text-white"
+                  : "text-gray-300 hover:bg-[#2a2a2a]"
+              }`}
+            >
+              Destacados
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
