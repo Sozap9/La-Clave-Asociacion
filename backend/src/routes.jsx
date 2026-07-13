@@ -1,47 +1,45 @@
-import { createBrowserRouter } from 'react-router-dom';
-import Layout from './components/layout/Layout';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import RegisterSocio from './pages/RegisterSocio';
-import Events from './pages/Events';
-import Profile from './pages/Profile';
-import UpgradeToSocio from './pages/UpgradeToSocio';
-import Gallery from './pages/Gallery';
-import GalleryAlbum from './pages/GalleryAlbum';
+import { createBrowserRouter } from "react-router-dom";
+import Normativa from "./pages/Normativa";
+import Contacto from "./pages/Contacto";
+import Layout from "./components/layout/Layout";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import RecuperarPassword from "./pages/RecuperarPassword";
+import Events from "./pages/Events";
+import Profile from "./pages/Profile";
+import Gallery from "./pages/Gallery";
+import GalleryAlbum from "./pages/GalleryAlbum";
+import MisEntradas from "./pages/MisEntradas";
 
 // Admin imports
-import AdminLayout from './components/admin/AdminLayout';
-import ProtectedRoute from './components/admin/ProtectedRoute';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminEvents from './pages/admin/AdminEvents';
-import AdminEventForm from './pages/admin/AdminEventForm';
-import AdminSocios from './pages/admin/AdminSocios';
-import AdminBookings from './pages/admin/AdminBookings';
-import AdminVerifyQR from './pages/admin/AdminVerifyQR';
-import AdminCreateSocio from './pages/admin/AdminCreateSocio';
-import AdminUsuarios from './pages/admin/AdminUsuarios';
-import AdminPayments from './pages/admin/AdminPayments';
-import AdminPaymentsMonthly from './pages/admin/AdminPaymentsMonthly';
-import AdminSociosMorosos from './pages/admin/AdminSociosMorosos';
-import AdminActivity from './pages/admin/AdminActivity';
-import AdminStatsDetailed from './pages/admin/AdminStatsDetailed';
-import AdminPlaceholder from './pages/admin/AdminPlaceholder';
-import AdminStatsGenerales from './pages/admin/AdminStatsGenerales';
-import AdminStatsEventos from './pages/admin/AdminStatsEventos';
-import AdminStatsReservas from './pages/admin/AdminStatsReservas';
-import AdminStatsPagos from './pages/admin/AdminStatsPagos';
-import AdminStatsGaleria from './pages/admin/AdminStatsGaleria';
-import AdminGallery from './pages/admin/AdminGallery';
-import AdminGalleryImages from './pages/admin/AdminGalleryImages';
+import AdminLayout from "./components/admin/AdminLayout";
+import ProtectedRoute from "./components/admin/ProtectedRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminDraftEvents from "./pages/admin/AdminDraftEvents";
+import AdminEventForm from "./pages/admin/AdminEventForm";
+import AdminSocios from "./pages/admin/AdminSocios";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminVerifyQR from "./pages/admin/AdminVerifyQR";
+import AdminCreateSocio from "./pages/admin/AdminCreateSocio";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminPaymentsMonthly from "./pages/admin/AdminPaymentsMonthly";
+import AdminActivity from "./pages/admin/AdminActivity";
+import AdminStatsDetailed from "./pages/admin/AdminStatsDetailed";
+import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
+import AdminStatsEventos from "./pages/admin/AdminStatsEventos";
+import AdminStatsReservas from "./pages/admin/AdminStatsReservas";
+import AdminStatsPagos from "./pages/admin/AdminStatsPagos";
+import AdminGallery from "./pages/admin/AdminGallery";
+import AdminGalleryImages from "./pages/admin/AdminGalleryImages";
+import AdminSolicitudes from "./pages/admin/AdminSolicitudes";
 
 // Exports individuales
-import AdminExportSocios from './pages/admin/AdminExportSocios';
-import AdminExportUsuarios from './pages/admin/AdminExportUsuarios';
-import AdminExportEventos from './pages/admin/AdminExportEventos';
-import AdminExportReservas from './pages/admin/AdminExportReservas';
+import AdminExportSocios from "./pages/admin/AdminExportSocios";
+import AdminExportEventos from "./pages/admin/AdminExportEventos";
+import AdminExportReservas from "./pages/admin/AdminExportReservas";
 
-// Componente temporal para rutas que aún no existen
 const ComingSoon = ({ title }) => (
   <div className="min-h-screen flex items-center justify-center">
     <div className="text-center">
@@ -52,115 +50,144 @@ const ComingSoon = ({ title }) => (
 );
 
 export const router = createBrowserRouter([
-  // ============================================
   // RUTAS PÚBLICAS
-  // ============================================
   {
-    path: '/',
-    element: <Layout><Home /></Layout>,
-  },
-  {
-    path: '/login',
-    element: <Layout><Login /></Layout>,
-  },
-  {
-    path: '/registro',
-    element: <Layout><Register /></Layout>,
-  },
-  {
-    path: '/registro-socio',
-    element: <Layout><RegisterSocio /></Layout>,
-  },
-  {
-    path: '/estatutos',
-    element: <Layout><ComingSoon title="Estatutos" /></Layout>,
-  },
-  {
-    path: '/ubicacion',
-    element: <Layout><ComingSoon title="Ubicación" /></Layout>,
-  },
-  {
-    path: '/privacidad',
-    element: <Layout><ComingSoon title="Política de Privacidad" /></Layout>,
-  },
-  {
-    path: '/terminos',
-    element: <Layout><ComingSoon title="Términos y Condiciones" /></Layout>,
-  },
-  {
-    path: '/recuperar-password',
-    element: <Layout><ComingSoon title="Recuperar Contraseña" /></Layout>,
-  },
-
-  // ============================================
-  // RUTAS PROTEGIDAS (Requieren autenticación)
-  // ============================================
-  {
-    path: '/perfil',
+    path: "/",
     element: (
-      <ProtectedRoute>
-        <Layout><Profile /></Layout>
-      </ProtectedRoute>
+      <Layout>
+        <Home />
+      </Layout>
     ),
   },
   {
-    path: '/mejorar-cuenta',
+    path: "/login",
+    element: (
+      <Layout>
+        <Login />
+      </Layout>
+    ),
+  },
+
+  // Única ruta de registro = solicitud de membresía
+  {
+    path: "/registro",
+    element: (
+      <Layout>
+        <Register />
+      </Layout>
+    ),
+  },
+
+  {
+    path: "/normativa",
+    element: (
+      <Layout>
+        <ProtectedRoute requireSocio>
+          <Normativa />
+        </ProtectedRoute>
+      </Layout>
+    ),
+  },
+  {
+    path: "/contacto",
+    element: (
+      <Layout>
+        <Contacto />
+      </Layout>
+    ),
+  },
+  {
+    path: "/privacidad",
+    element: (
+      <Layout>
+        <ComingSoon title="Política de Privacidad" />
+      </Layout>
+    ),
+  },
+  {
+    path: "/terminos",
+    element: (
+      <Layout>
+        <ComingSoon title="Términos y Condiciones" />
+      </Layout>
+    ),
+  },
+  {
+    path: "/recuperar-password",
+    element: (
+      <Layout>
+        <RecuperarPassword />
+      </Layout>
+    ),
+  },
+
+  // RUTAS PROTEGIDAS (autenticación requerida)
+  {
+    path: "/perfil",
     element: (
       <ProtectedRoute>
-        <Layout><UpgradeToSocio /></Layout>
+        <Layout>
+          <Profile />
+        </Layout>
       </ProtectedRoute>
     ),
   },
 
-  // ============================================
   // RUTAS SOLO PARA SOCIOS Y ADMIN
-  // ============================================
   {
-    path: '/eventos',
+    path: "/eventos",
     element: (
       <ProtectedRoute requireSocio>
-        <Layout><Events /></Layout>
+        <Layout>
+          <Events />
+        </Layout>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/galeria',
+    path: "/galeria",
     element: (
       <ProtectedRoute requireSocio>
-        <Layout><Gallery /></Layout>
+        <Layout>
+          <Gallery />
+        </Layout>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/galeria/:slug',
+    path: "/galeria/:slug",
     element: (
       <ProtectedRoute requireSocio>
-        <Layout><GalleryAlbum /></Layout>
+        <Layout>
+          <GalleryAlbum />
+        </Layout>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/mis-reservas',
+    path: "/mis-entradas",
     element: (
       <ProtectedRoute requireSocio>
-        <Layout><ComingSoon title="Mis Reservas" /></Layout>
+        <Layout>
+          <MisEntradas />
+        </Layout>
       </ProtectedRoute>
     ),
   },
   {
-    path: '/panel',
+    path: "/panel",
     element: (
       <ProtectedRoute requireSocio>
-        <Layout><ComingSoon title="Panel de Socio" /></Layout>
+        <Layout>
+          <ComingSoon title="Panel de Socio" />
+        </Layout>
       </ProtectedRoute>
     ),
   },
 
-  // ============================================
-  // RUTAS DE ADMIN (SOLO ADMINISTRADORES)
-  // ============================================
+  // RUTAS DE ADMIN
   {
-    path: '/admin',
+    path: "/admin",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -170,9 +197,9 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Gestión de Eventos
+  // Eventos
   {
-    path: '/admin/eventos',
+    path: "/admin/eventos",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -182,7 +209,17 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/eventos/nuevo',
+    path: "/admin/eventos/borradores",
+    element: (
+      <ProtectedRoute requireAdmin>
+        <AdminLayout>
+          <AdminDraftEvents />
+        </AdminLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin/eventos/nuevo",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -192,7 +229,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/eventos/editar/:id',
+    path: "/admin/eventos/editar/:id",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -202,9 +239,9 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Gestión de Socios
+  // Socios
   {
-    path: '/admin/socios',
+    path: "/admin/socios",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -214,7 +251,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/socios/crear',
+    path: "/admin/socios/crear",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -223,42 +260,22 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
+  // Solicitudes ✨ NUEVO
   {
-    path: '/admin/socios/morosos',
+    path: "/admin/solicitudes",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
-          <AdminSociosMorosos />
+          <AdminSolicitudes />
         </AdminLayout>
       </ProtectedRoute>
     ),
   },
 
-  // Gestión de Usuarios
+  // Reservas
   {
-    path: '/admin/usuarios',
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminUsuarios />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/usuarios/ver',
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminPlaceholder title="Ver Usuario" />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-
-  // Gestión de Reservas
-  {
-    path: '/admin/reservas',
+    path: "/admin/reservas",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -268,7 +285,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/reservas/verificar-qr',
+    path: "/admin/reservas/verificar-qr",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -278,9 +295,9 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Gestión de Pagos
+  // Pagos
   {
-    path: '/admin/pagos',
+    path: "/admin/pagos",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -290,7 +307,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/pagos/mensuales',
+    path: "/admin/pagos/mensuales",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -302,7 +319,7 @@ export const router = createBrowserRouter([
 
   // Estadísticas
   {
-    path: '/admin/stats/dashboard',
+    path: "/admin/stats/dashboard",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -312,17 +329,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/stats/generales',
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminStatsGenerales />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/stats/eventos',
+    path: "/admin/stats/eventos",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -332,7 +339,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/stats/reservas',
+    path: "/admin/stats/reservas",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -342,7 +349,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/stats/pagos',
+    path: "/admin/stats/pagos",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -351,20 +358,9 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: '/admin/stats/galeria',
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminStatsGaleria />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-
   // Actividad
   {
-    path: '/admin/actividad',
+    path: "/admin/actividad",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -376,7 +372,7 @@ export const router = createBrowserRouter([
 
   // Galería
   {
-    path: '/admin/galeria',
+    path: "/admin/galeria",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -386,7 +382,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/galeria/:folderId/imagenes',
+    path: "/admin/galeria/:folderId/imagenes",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -396,9 +392,9 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Exportaciones (PÁGINAS INDIVIDUALES)
+  // Exportaciones
   {
-    path: '/admin/export/socios',
+    path: "/admin/export/socios",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -408,17 +404,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/export/usuarios',
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminExportUsuarios />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/admin/export/eventos',
+    path: "/admin/export/eventos",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -428,7 +414,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/admin/export/reservas',
+    path: "/admin/export/reservas",
     element: (
       <ProtectedRoute requireAdmin>
         <AdminLayout>
@@ -438,11 +424,9 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // ============================================
-  // 404 - PÁGINA NO ENCONTRADA
-  // ============================================
+  // 404
   {
-    path: '*',
+    path: "*",
     element: (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
