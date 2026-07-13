@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import {
   BarChart3,
   Users,
+  UserPlus,
   Calendar,
   TrendingUp,
+  TrendingDown,
   Ticket,
   DollarSign,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import Loader from "../../components/common/Loader";
 import { getDashboardStats } from "../../api/adminApi";
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 const AdminStatsDetailed = () => {
   const [stats, setStats] = useState(null);
@@ -65,6 +66,12 @@ const AdminStatsDetailed = () => {
 
   if (loading) return <Loader fullScreen />;
 
+  const topEventos = stats?.eventos?.top_eventos || [];
+  const proximosEventos = stats?.eventos?.proximos_eventos || [];
+  const actividadReciente = stats?.actividad_reciente || [];
+  const solicitudesPendientes = stats?.socios?.solicitudes_pendientes || 0;
+  const comparativaMes = stats?.ingresos?.comparativa_mes || 0;
+
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
@@ -92,118 +99,137 @@ const AdminStatsDetailed = () => {
 
       {stats && (
         <>
-          {/* Stats principales - Grid 3x2 */}
+          {/* Stats principales - Grid 3x2, centradas en salud de la
+              asociación (socios), acción pendiente y rendimiento de
+              venta de entradas, en vez de conteos genéricos */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-8">
+            {/* Socios activos */}
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-3">
                 <Users className="text-primary-300" size={28} />
-                <p className="text-gray-400 text-sm">Total Usuarios</p>
+                <p className="text-gray-400 text-sm">Socios Activos</p>
               </div>
               <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
-                {stats.total_usuarios || 0}
+                {stats.socios?.activos || 0}
               </p>
               <div className="flex gap-4 text-sm">
-                <span className="text-primary-300">
-                  {stats.usuarios_activos || 0} activos
+                <span className="text-gray-500">
+                  {stats.usuarios?.admins || 0} administradores
                 </span>
                 <span className="text-gray-500">
-                  {stats.nuevos_usuarios_mes || 0} este mes
+                  {stats.socios?.total || 0} total
                 </span>
               </div>
             </div>
 
-            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
+            {/* Solicitudes pendientes — accionable, con link directo */}
+            <Link
+              to="/admin/solicitudes"
+              className={`block rounded-lg p-6 border transition-all ${
+                solicitudesPendientes > 0
+                  ? "bg-amber-500/10 border-amber-500/50 hover:border-amber-500"
+                  : "bg-[#1a1a1a] border-[#262626] hover:border-primary-500/50"
+              }`}
+            >
               <div className="flex items-center gap-3 mb-3">
-                <Users className="text-primary-300" size={28} />
-                <p className="text-gray-400 text-sm">Total Socios</p>
+                <UserPlus
+                  className={solicitudesPendientes > 0 ? "text-amber-400" : "text-primary-300"}
+                  size={28}
+                />
+                <p className="text-gray-400 text-sm">Solicitudes Pendientes</p>
               </div>
-              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
-                {stats.total_socios || 0}
+              <p
+                className={`text-2xl md:text-4xl font-bold mb-2 ${
+                  solicitudesPendientes > 0 ? "text-amber-400" : "text-primary-300"
+                }`}
+              >
+                {solicitudesPendientes}
               </p>
-              <div className="flex gap-4 text-sm">
-                <span className="text-primary-300">
-                  {stats.socios_activos || 0} activos
-                </span>
-                <span className="text-gray-500">
-                  {stats.nuevos_socios_mes || 0} este mes
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
-              <div className="flex items-center gap-3 mb-3">
-                <Calendar className="text-primary-300" size={28} />
-                <p className="text-gray-400 text-sm">Total Eventos</p>
-              </div>
-              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
-                {stats.total_eventos || 0}
+              <p className="text-gray-500 text-sm">
+                {solicitudesPendientes > 0 ? "esperando revisión →" : "todo al día"}
               </p>
-              <div className="flex gap-4 text-sm">
-                <span className="text-primary-300">
-                  {stats.eventos_proximos || 0} próximos
-                </span>
-                <span className="text-gray-500">
-                  {stats.eventos_mes || 0} este mes
-                </span>
-              </div>
-            </div>
+            </Link>
 
-            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
-              <div className="flex items-center gap-3 mb-3">
-                <Ticket className="text-primary-300" size={28} />
-                <p className="text-gray-400 text-sm">Total Reservas</p>
-              </div>
-              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
-                {stats.total_reservas || 0}
-              </p>
-              <div className="flex gap-4 text-sm">
-                <span className="text-primary-300">
-                  {stats.reservas_confirmadas || 0} confirmadas
-                </span>
-                <span className="text-gray-500">
-                  {stats.reservas_mes || 0} este mes
-                </span>
-              </div>
-            </div>
-
+            {/* Ingresos este mes + comparativa */}
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-3">
                 <DollarSign className="text-primary-300" size={28} />
-                <p className="text-gray-400 text-sm">Ingresos Totales</p>
+                <p className="text-gray-400 text-sm">Ingresos Este Mes</p>
               </div>
               <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
-                {formatCurrency(stats.ingresos_totales)}
+                {formatCurrency(stats.ingresos?.mes_actual)}
               </p>
-              <div className="flex gap-4 text-sm">
-                <span className="text-primary-300">
-                  {formatCurrency(stats.ingresos_mes)}
+              <div className="flex items-center gap-1 text-sm">
+                {comparativaMes >= 0 ? (
+                  <TrendingUp size={14} className="text-gray-500" />
+                ) : (
+                  <TrendingDown size={14} className="text-gray-500" />
+                )}
+                <span className="text-gray-500">
+                  {comparativaMes >= 0 ? "+" : ""}
+                  {comparativaMes}%
                 </span>
-                <span className="text-gray-500">este mes</span>
+                <span className="text-gray-500">vs mes anterior</span>
               </div>
             </div>
 
+            {/* Entradas vendidas este mes */}
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
+              <div className="flex items-center gap-3 mb-3">
+                <Ticket className="text-primary-300" size={28} />
+                <p className="text-gray-400 text-sm">Entradas Vendidas</p>
+              </div>
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
+                {stats.reservas?.entradas_vendidas_mes || 0}
+              </p>
+              <div className="flex gap-4 text-sm">
+                <span className="text-gray-500">
+                  {stats.reservas?.entradas_vendidas_total || 0} en total
+                </span>
+              </div>
+            </div>
+
+            {/* Próximos eventos */}
+            <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
+              <div className="flex items-center gap-3 mb-3">
+                <Calendar className="text-primary-300" size={28} />
+                <p className="text-gray-400 text-sm">Próximos Eventos</p>
+              </div>
+              <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
+                {stats.eventos?.proximos || 0}
+              </p>
+              <div className="flex gap-4 text-sm">
+                <span className="text-gray-500">
+                  {stats.eventos?.total || 0} eventos en total
+                </span>
+              </div>
+            </div>
+
+            {/* Ocupación media */}
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-3">
                 <TrendingUp className="text-primary-300" size={28} />
-                <p className="text-gray-400 text-sm">Tasa Ocupación</p>
+                <p className="text-gray-400 text-sm">Ocupación Media</p>
               </div>
               <p className="text-primary-300 text-2xl md:text-4xl font-bold mb-2">
-                {stats.tasa_ocupacion_promedio || 0}%
+                {stats.eventos?.ocupacion_promedio || 0}%
               </p>
-              <p className="text-gray-500 text-sm">promedio eventos</p>
+              <p className="text-gray-500 text-sm">promedio eventos publicados</p>
             </div>
           </div>
 
-          {/* Top 5 Eventos más populares */}
-          {stats.top_eventos && stats.top_eventos.length > 0 && (
+          {/* Top 5 Eventos por entradas vendidas (antes: ranking por
+              % ocupación, ahora centrado en volumen de venta real,
+              incluye eventos ya pasados) */}
+          {topEventos.length > 0 && (
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-8">
               <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                 <BarChart3 size={24} className="text-primary-300" />
-                Top 5 Eventos Más Populares
+                Eventos Destacados por Entradas Vendidas
               </h2>
               <div className="space-y-4">
-                {stats.top_eventos.map((evento, index) => (
-                  <div key={index} className="flex items-center gap-4">
+                {topEventos.map((evento, index) => (
+                  <div key={evento.id || index} className="flex items-center gap-4">
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                         index === 0
@@ -219,18 +245,19 @@ const AdminStatsDetailed = () => {
                     </div>
                     <div className="flex-1">
                       <h3 className="text-white font-semibold">
-                        {evento.titulo || evento.nombre}
+                        {evento.titulo}
                       </h3>
                       <p className="text-gray-400 text-sm">
-                        {evento.total_reservas} reservas •{" "}
-                        {evento.entradas_vendidas} entradas vendidas
+                        {evento.porcentaje_ocupacion}% de ocupación
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-primary-300 font-bold">
-                        {evento.ocupacion}%
+                        {evento.entradas_reservadas}
                       </p>
-                      <p className="text-gray-500 text-sm">ocupación</p>
+                      <p className="text-gray-500 text-sm">
+                        de {evento.aforo_maximo}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -241,23 +268,23 @@ const AdminStatsDetailed = () => {
           {/* Grid 2 columnas - Próximos eventos + Actividad reciente */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Próximos Eventos */}
-            {stats.proximos_eventos && stats.proximos_eventos.length > 0 && (
+            {proximosEventos.length > 0 && (
               <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                   <Calendar size={20} className="text-primary-300" />
                   Próximos Eventos
                 </h2>
                 <div className="space-y-4">
-                  {stats.proximos_eventos.map((evento, index) => (
+                  {proximosEventos.map((evento, index) => (
                     <div
-                      key={index}
+                      key={evento.id || index}
                       className="border-l-4 border-primary-500 pl-4"
                     >
                       <h3 className="text-white font-semibold">
-                        {evento.titulo || evento.nombre}
+                        {evento.titulo}
                       </h3>
                       <p className="text-gray-400 text-sm">
-                        {formatDate(evento.fecha_evento || evento.fecha)}
+                        {formatDate(evento.fecha_evento)}
                       </p>
                       <p className="text-gray-500 text-xs mt-1">
                         {evento.entradas_reservadas || 0} /{" "}
@@ -270,31 +297,30 @@ const AdminStatsDetailed = () => {
             )}
 
             {/* Actividad Reciente */}
-            {stats.actividad_reciente &&
-              stats.actividad_reciente.length > 0 && (
-                <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
-                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <TrendingUp size={20} className="text-primary-300" />
-                    Actividad Reciente
-                  </h2>
-                  <div className="space-y-4">
-                    {stats.actividad_reciente.map((activity, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-primary-500 rounded-full mt-2" />
-                        <div className="flex-1">
-                          <p className="text-white text-sm">
-                            {activity.descripcion ||
-                              `${activity.accion} en ${activity.entidad}`}
-                          </p>
-                          <p className="text-gray-500 text-xs">
-                            {formatDate(activity.created_at)}
-                          </p>
-                        </div>
+            {actividadReciente.length > 0 && (
+              <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                  <TrendingUp size={20} className="text-primary-300" />
+                  Actividad Reciente
+                </h2>
+                <div className="space-y-4">
+                  {actividadReciente.map((activity, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2" />
+                      <div className="flex-1">
+                        <p className="text-white text-sm">
+                          {activity.descripcion ||
+                            `${activity.accion} en ${activity.entidad}`}
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          {formatDate(activity.created_at)}
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </>
       )}
