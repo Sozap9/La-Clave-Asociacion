@@ -3,6 +3,47 @@ import { X, Camera, Check, Upload } from "lucide-react";
 import api from "../../api/axios";
 import DatePickerInput from "./DatePickerInput";
 
+/**
+ * Valida DNI español (formato: 12345678A)
+ */
+const isValidDNI = (dni) => {
+  if (typeof dni !== "string") return false;
+  const value = dni.trim().toUpperCase();
+  const dniRegex = /^[0-9]{8}[A-Z]$/;
+  if (!dniRegex.test(value)) return false;
+
+  const letters = "TRWAGMYFPDXBNJZSQVHLCKE";
+  const number = parseInt(value.substr(0, 8), 10);
+  const letter = value.substr(8, 1);
+
+  return letters.charAt(number % 23) === letter;
+};
+
+/**
+ * Valida NIE español (formato: X1234567A)
+ */
+const isValidNIE = (nie) => {
+  if (typeof nie !== "string") return false;
+  const value = nie.trim().toUpperCase();
+  const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;
+  if (!nieRegex.test(value)) return false;
+
+  const niePrefix = { X: "0", Y: "1", Z: "2" };
+  const letters = "TRWAGMYFPDXBNJZSQVHLCKE";
+
+  const nieNumber = niePrefix[value.charAt(0)] + value.substr(1, 7);
+  const letter = value.substr(8, 1);
+
+  return letters.charAt(parseInt(nieNumber, 10) % 23) === letter;
+};
+
+/**
+ * Valida DNI o NIE
+ */
+const isValidSpanishDocument = (document) => {
+  return isValidDNI(document) || isValidNIE(document);
+};
+
 const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
   const [formData, setFormData] = useState({
     nombre: "",
@@ -127,9 +168,8 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
       }
 
       if (updateData.dni) {
-        const dniRegex = /^[0-9]{8}[A-Z]$/i;
-        if (!dniRegex.test(updateData.dni)) {
-          setError("DNI inválido. Formato: 12345678A");
+        if (!isValidSpanishDocument(updateData.dni)) {
+          setError("Documento inválido. Formato DNI: 12345678A · Formato NIE: X1234567A");
           setLoading(false);
           return;
         }
@@ -327,7 +367,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  DNI
+                  DNI / NIE
                 </label>
                 <input
                   type="text"
@@ -336,7 +376,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   onChange={handleChange}
                   maxLength={9}
                   className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-                  placeholder="12345678A"
+                  placeholder="12345678A / X1234567A"
                 />
               </div>
             </div>
