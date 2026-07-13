@@ -28,11 +28,13 @@ const Register = () => {
     telefono: "",
     fecha_nacimiento: "",
     dni: "",
+    motivacion: "",
     artistQuestion: "",
   });
 
   const [dniFront, setDniFront] = useState(null);
   const [dniFrontPreview, setDniFrontPreview] = useState(null);
+  const [esArtista, setEsArtista] = useState(""); // "si" | "no" | ""
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,6 +54,13 @@ const Register = () => {
     setDniFrontPreview(preview);
   };
 
+  const handleEsArtistaChange = (value) => {
+    setEsArtista(value);
+    if (value === "no") {
+      setFormData((prev) => ({ ...prev, artistQuestion: "" }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -69,16 +78,22 @@ const Register = () => {
 
     try {
       const body = new FormData();
-      const motivacion = formData.artistQuestion
-        ? `${t("register.artistQuestion")} ${formData.artistQuestion}`
-        : "";
+      const combinedMotivacion = [
+        formData.motivacion
+          ? `${t("register.howDidYouFind")} ${formData.motivacion}`
+          : "",
+        formData.artistQuestion
+          ? `${t("register.artistQuestion")} ${formData.artistQuestion}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
 
       Object.entries(formData).forEach(([key, val]) => {
         if (key !== "confirmPassword" && key !== "artistQuestion") {
-          body.append(key, val);
+          body.append(key, key === "motivacion" ? combinedMotivacion : val);
         }
       });
-      body.append("motivacion", motivacion);
       body.append("dni_front", dniFront);
 
       const response = await fetch(
@@ -327,15 +342,60 @@ const Register = () => {
             {/* ── Preguntas ── */}
             <div>
               <label className="block text-gray-400 text-sm mb-1">
-                {t("register.artistQuestion")}
+                {t("register.howDidYouFind")}
               </label>
               <textarea
-                name="artistQuestion"
-                value={formData.artistQuestion}
+                name="motivacion"
+                value={formData.motivacion}
                 onChange={handleChange}
                 rows={2}
                 className="input w-full resize-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">
+                {t("register.artistQuestion")}
+              </label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleEsArtistaChange("si")}
+                  className={`px-6 py-2 rounded-lg font-medium text-sm transition-all border ${
+                    esArtista === "si"
+                      ? "bg-primary-600 border-primary-600 text-white"
+                      : "bg-transparent border-gray-600 text-gray-300 hover:border-primary-500/50"
+                  }`}
+                >
+                  {t("register.artistQuestionYes")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEsArtistaChange("no")}
+                  className={`px-6 py-2 rounded-lg font-medium text-sm transition-all border ${
+                    esArtista === "no"
+                      ? "bg-primary-600 border-primary-600 text-white"
+                      : "bg-transparent border-gray-600 text-gray-300 hover:border-primary-500/50"
+                  }`}
+                >
+                  {t("register.artistQuestionNo")}
+                </button>
+              </div>
+
+              {esArtista === "si" && (
+                <div className="mt-3">
+                  <label className="block text-gray-400 text-sm mb-1">
+                    {t("register.artistQuestionDetail")}
+                  </label>
+                  <textarea
+                    name="artistQuestion"
+                    value={formData.artistQuestion}
+                    onChange={handleChange}
+                    rows={3}
+                    className="input w-full resize-none"
+                  />
+                </div>
+              )}
             </div>
 
             {/* ── DNI fotos ── */}
@@ -346,7 +406,7 @@ const Register = () => {
               {t("register.identityHelp")}
             </p>
 
-            <div className="max-w-xs mx-auto sm:mx-0">
+            <div className="max-w-sm mx-auto">
               {/* Foto de DNI (única cara requerida) */}
               <div>
                 <label className="cursor-pointer block">
@@ -361,12 +421,12 @@ const Register = () => {
                     <img
                       src={dniFrontPreview}
                       alt="DNI"
-                      className="w-full h-32 object-cover rounded-xl border-2 border-primary-500/50"
+                      className="w-full h-52 object-cover rounded-xl border-2 border-primary-500/50"
                     />
                   ) : (
-                    <div className="w-full h-32 border-2 border-dashed border-gray-600 hover:border-primary-500 rounded-xl flex flex-col items-center justify-center gap-2 transition-colors">
-                      <Upload size={24} className="text-gray-500" />
-                      <span className="text-gray-500 text-sm">
+                    <div className="w-full h-52 bg-primary-500/5 border-2 border-dashed border-primary-500/40 hover:border-primary-500 hover:bg-primary-500/10 rounded-xl flex flex-col items-center justify-center gap-3 transition-colors">
+                      <Upload size={32} className="text-primary-400" />
+                      <span className="text-gray-300 text-sm font-medium">
                         {t("register.uploadImage")}
                       </span>
                     </div>
