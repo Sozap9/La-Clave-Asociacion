@@ -7,6 +7,7 @@ import { generateQRCode } from "../utils/qrCodeGenerator.js";
 import { createCheckoutSession } from "../config/payment.js";
 import { query, transaction, pool } from "../config/database.js";
 import logger from "../config/logger.js";
+import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
 
 /**
  * Crear reserva de entrada
@@ -453,6 +454,15 @@ export const cancelBooking = async (req, res) => {
 
     logger.info("✅ Reserva cancelada:", { bookingId: id });
 
+    registrarActividad({
+      userId,
+      accion: "cancelar",
+      entidadTipo: "reserva",
+      entidadId: Number(id),
+      descripcion: `Reserva #${id} cancelada${motivo ? `: ${motivo}` : ""}`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     // TODO: Notificar a persona en lista de espera si hay
 
     return res.status(200).json({
@@ -554,6 +564,15 @@ export const verifyQRAndCheckIn = async (req, res) => {
 
     // Marcar como asistida
     await Booking.markAsAttended(booking.id);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "verificar",
+      entidadTipo: "reserva",
+      entidadId: booking.id,
+      descripcion: `Check-in de ${booking.socio_nombre} ${booking.socio_apellidos} en "${booking.evento_titulo}" (${booking.numero_entradas} entrada${booking.numero_entradas !== 1 ? "s" : ""})`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,

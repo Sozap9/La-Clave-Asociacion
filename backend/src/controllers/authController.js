@@ -11,6 +11,7 @@ import {
 import logger from '../config/logger.js';
 import EmailService from '../services/emailService.js';
 import SolicitudSocio from '../models/SolicitudSocio.js';
+import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js';
 
 /**
  * Controlador de Autenticación
@@ -228,6 +229,15 @@ export const login = async (req, res) => {
       email: user.email
     });
 
+    registrarActividad({
+      userId: user.id,
+      accion: 'login',
+      entidadTipo: 'usuario',
+      entidadId: user.id,
+      descripcion: `${user.nombre || user.email} inició sesión`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Login exitoso',
@@ -311,6 +321,15 @@ export const logout = async (req, res) => {
   try {
     // Por ahora, el logout se maneja en el cliente eliminando los tokens
     // En el futuro, implementaremos una blacklist de tokens
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'logout',
+      entidadTipo: 'usuario',
+      entidadId: req.user?.id || null,
+      descripcion: `${req.user?.nombre || 'Usuario'} cerró sesión`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,

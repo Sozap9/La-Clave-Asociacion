@@ -1,4 +1,5 @@
 import { body } from 'express-validator';
+import { isValidSpanishDocument } from '../utils/validators.js';
 
 /**
  * ========================================
@@ -63,16 +64,12 @@ export const registerSocioValidator = [
   ...registerBasicValidator,
 
   body('dni')
-    .notEmpty().withMessage('El DNI es obligatorio para socios')
+    .notEmpty().withMessage('El documento de identidad es obligatorio para socios')
     .trim()
-    .matches(/^[0-9]{8}[A-Za-z]$/).withMessage('El DNI debe tener 8 números seguidos de una letra')
     .custom((value) => {
-      const dni = value.toUpperCase();
-      const numero = parseInt(dni.substr(0, 8));
-      const letra = dni.substr(8, 1);
-      const letras = 'TRWAGMYFPDXBNJZSQVHLCKE';
-      const letraCorrecta = letras.charAt(numero % 23);
-      if (letra !== letraCorrecta) throw new Error('La letra del DNI no es correcta');
+      if (!isValidSpanishDocument(value)) {
+        throw new Error('El documento debe ser un DNI o NIE español válido');
+      }
       return true;
     }),
 
@@ -103,7 +100,7 @@ export const registerSocioValidator = [
 /**
  * Validación para SOLICITUD DE SOCIO
  * Endpoint: POST /api/auth/solicitud-socio
- * Las imágenes del DNI se validan por multer (no por express-validator)
+ * Las imágenes del documento se validan por multer (no por express-validator)
  */
 export const solicitudSocioValidator = [
   // EMAIL
@@ -155,18 +152,16 @@ export const solicitudSocioValidator = [
       return true;
     }),
 
-  // DNI
+  // DNI / NIE
+  // Acepta DNI español (12345678A) o NIE (X1234567A), ambos con letra
+  // de control validada mediante el algoritmo oficial.
   body('dni')
-    .notEmpty().withMessage('El DNI es obligatorio')
+    .notEmpty().withMessage('El documento de identidad es obligatorio')
     .trim()
-    .matches(/^[0-9]{8}[A-Za-z]$/).withMessage('El DNI debe tener 8 números seguidos de una letra')
     .custom((value) => {
-      const dni = value.toUpperCase();
-      const numero = parseInt(dni.substr(0, 8));
-      const letra = dni.substr(8, 1);
-      const letras = 'TRWAGMYFPDXBNJZSQVHLCKE';
-      const letraCorrecta = letras.charAt(numero % 23);
-      if (letra !== letraCorrecta) throw new Error('La letra del DNI no es correcta');
+      if (!isValidSpanishDocument(value)) {
+        throw new Error('El documento debe ser un DNI o NIE español válido (ej. 12345678A o X1234567A)');
+      }
       return true;
     }),
 

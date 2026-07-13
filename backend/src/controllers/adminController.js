@@ -9,6 +9,7 @@ import Gallery from "../models/Gallery.js";
 import PDFDocument from "pdfkit";
 import EmailService from "../services/emailService.js"; 
 import logger from "../config/logger.js"; 
+import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
 
 /**
  * ========================================
@@ -3203,6 +3204,15 @@ export const aprobarSolicitud = async (req, res) => {
       adminId,
     });
 
+    registrarActividad({
+      userId: adminId,
+      accion: "aprobar",
+      entidadTipo: "socio",
+      entidadId: newUserId,
+      descripcion: `Solicitud de ${solicitud.nombre} ${solicitud.apellidos} aprobada`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     return res.status(200).json({
       success: true,
       message: `Solicitud aprobada. ${solicitud.nombre} ya es socio.`,
@@ -3265,6 +3275,15 @@ export const rechazarSolicitud = async (req, res) => {
     }
 
     logger.info("Solicitud rechazada", { solicitudId: id, adminId });
+
+    registrarActividad({
+      userId: adminId,
+      accion: "rechazar",
+      entidadTipo: "socio",
+      entidadId: parseInt(id),
+      descripcion: `Solicitud de ${solicitud.nombre} ${solicitud.apellidos} rechazada: ${motivo_rechazo.trim()}`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,

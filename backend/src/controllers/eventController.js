@@ -1,4 +1,5 @@
 import { pool } from '../config/database.js';
+import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js';
 
 /**
  * VALID STATUS VALUES:
@@ -76,6 +77,15 @@ export const createEvent = async (req, res) => {
     console.log('✅ Event created with ID:', result.insertId);
     console.log('========================================');
 
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'crear',
+      entidadTipo: 'evento',
+      entidadId: result.insertId,
+      descripcion: `Evento "${titulo}" creado`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     res.status(201).json({
       success: true,
       message: 'Event created successfully',
@@ -147,6 +157,15 @@ export const updateEvent = async (req, res) => {
     );
 
     console.log('✅ Event updated:', id);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'editar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Evento "${titulo}" editado`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     res.json({
       success: true,
@@ -285,11 +304,23 @@ export const deleteEvent = async (req, res) => {
         message: 'Cannot delete event with confirmed bookings' 
       });
     }
-    
+
+    const [eventRows] = await pool.execute('SELECT titulo FROM events WHERE id = ?', [id]);
+    const eventTitle = eventRows[0]?.titulo || `#${id}`;
+
     await pool.execute('DELETE FROM events WHERE id = ?', [id]);
     
     console.log('✅ Event deleted:', id);
-    
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'eliminar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Evento "${eventTitle}" eliminado`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     res.json({ success: true, message: 'Event deleted successfully' });
   } catch (error) {
     console.error('❌ Error in deleteEvent:', error);
@@ -346,7 +377,16 @@ export const publishEvent = async (req, res) => {
     );
     
     console.log('✅ Event published:', id);
-    
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'actualizar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Evento #${id} publicado`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     res.json({ success: true, message: 'Event published successfully' });
   } catch (error) {
     console.error('❌ Error in publishEvent:', error);
@@ -369,7 +409,16 @@ export const unpublishEvent = async (req, res) => {
     );
     
     console.log('✅ Event unpublished:', id);
-    
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'actualizar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Evento #${id} despublicado`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     res.json({ success: true, message: 'Event unpublished successfully' });
   } catch (error) {
     console.error('❌ Error in unpublishEvent:', error);
@@ -401,7 +450,16 @@ export const togglePublishEvent = async (req, res) => {
     );
     
     console.log(`✅ Event ${isPublished ? 'unpublished' : 'published'}:`, id);
-    
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'actualizar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Evento #${id} ${isPublished ? 'despublicado' : 'publicado'}`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     res.json({ 
       success: true, 
       message: isPublished ? 'Event unpublished' : 'Event published',
@@ -435,7 +493,16 @@ export const cancelEvent = async (req, res) => {
     );
     
     console.log('✅ Event cancelled:', id);
-    
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'cancelar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Evento #${id} cancelado${motivo ? `: ${motivo}` : ''}`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     res.json({ success: true, message: 'Event cancelled successfully' });
   } catch (error) {
     console.error('❌ Error in cancelEvent:', error);

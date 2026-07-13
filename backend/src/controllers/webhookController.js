@@ -7,6 +7,7 @@ import User from "../models/User.js";
 import EmailService from "../services/emailService.js";
 import { generateQRCode } from "../utils/qrCodeGenerator.js";
 import logger from "../config/logger.js";
+import { registrarActividad } from "../utils/activityLogger.js";
 
 /**
  * Webhook de Stripe
@@ -141,16 +142,26 @@ async function handleCheckoutSessionCompleted(session) {
       logger.error("❌ Error generando QR tras pago confirmado:", qrError);
     }
 
+    let purchaserUser = null;
     try {
       const socio = await Socio.findById(booking.socio_id);
-      const user = socio ? await User.findById(socio.user_id) : null;
+      purchaserUser = socio ? await User.findById(socio.user_id) : null;
       const finalBooking = await Booking.findById(bookingId);
-      if (user && event) {
-        await EmailService.sendBookingConfirmation(finalBooking, event, user);
+      if (purchaserUser && event) {
+        await EmailService.sendBookingConfirmation(finalBooking, event, purchaserUser);
       }
     } catch (emailError) {
       logger.error("❌ Error enviando email de confirmación tras pago:", emailError);
     }
+
+    registrarActividad({
+      userId: purchaserUser?.id || null,
+      accion: "crear",
+      entidadTipo: "pago",
+      entidadId: bookingId,
+      descripcion: `${purchaserUser ? `${purchaserUser.nombre} ${purchaserUser.apellidos}` : "Un socio"} compró ${booking.numero_entradas} entrada${booking.numero_entradas !== 1 ? "s" : ""} para "${event?.titulo || "un evento"}" (${((session.amount_total || 0) / 100).toFixed(2)} €)`,
+      ipAddress: null, // webhook server-to-server, sin IP de usuario
+    });
 
     logger.info("✅ Pago de entrada confirmado vía Stripe Checkout:", {
       bookingId,
@@ -457,6 +468,25 @@ async function handleChargeRefunded(charge) {
         });
       }
     }
+
+    let refundedUser = null;
+    try {
+      const socio = payment.socio_id ? await Socio.findById(payment.socio_id) : null;
+      refundedUser = socio ? await User.findById(socio.user_id) : null;
+    } catch (lookupError) {
+      logger.warn("No se pudo resolver el usuario del pago reembolsado para el log de actividad", {
+        paymentId: payment.id,
+      });
+    }
+
+    registrarActividad({
+      userId: refundedUser?.id || null,
+      accion: "cancelar",
+      entidadTipo: "pago",
+      entidadId: payment.id,
+      descripcion: `Reembolso ${isFullyRefunded ? "total" : "parcial"} de ${amountRefunded.toFixed(2)} € a ${refundedUser ? `${refundedUser.nombre} ${refundedUser.apellidos}` : "un socio"}`,
+      ipAddress: null,
+    });
 
     logger.info("Reembolso procesado:", {
       paymentId: payment.id,

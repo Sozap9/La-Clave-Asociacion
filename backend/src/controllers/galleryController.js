@@ -1,4 +1,5 @@
 import Gallery from '../models/Gallery.js';
+import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js';
 
 /**
  * ========================================
@@ -93,6 +94,15 @@ export const createFolder = async (req, res) => {
 
     const newFolder = await Gallery.createFolder(folderData);
 
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'crear',
+      entidadTipo: 'galeria',
+      entidadId: newFolder.id,
+      descripcion: `Carpeta de galería "${folderData.nombre}" creada`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Carpeta creada exitosamente',
@@ -122,6 +132,15 @@ export const updateFolder = async (req, res) => {
       });
     }
 
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'editar',
+      entidadTipo: 'galeria',
+      entidadId: Number(id),
+      descripcion: `Carpeta de galería "${updatedFolder.nombre || `#${id}`}" editada`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Carpeta actualizada exitosamente',
@@ -141,6 +160,7 @@ export const deleteFolder = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const folder = await Gallery.findFolderBy('id', parseInt(id));
     const images = await Gallery.listImages(id, false);
     const deleted = await Gallery.deleteFolder(id);
 
@@ -150,6 +170,15 @@ export const deleteFolder = async (req, res) => {
         message: 'Carpeta no encontrada'
       });
     }
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'eliminar',
+      entidadTipo: 'galeria',
+      entidadId: Number(id),
+      descripcion: `Carpeta de galería "${folder?.nombre || `#${id}`}" eliminada (${images.length} imagen${images.length !== 1 ? 'es' : ''})`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
@@ -223,6 +252,15 @@ export const uploadImage = async (req, res) => {
 
     const newImage = await Gallery.addImage(imageData);
 
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'crear',
+      entidadTipo: 'imagen',
+      entidadId: newImage.id,
+      descripcion: `Imagen ${titulo ? `"${titulo}" ` : ''}subida a la carpeta #${folderId}`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Imagen subida exitosamente',
@@ -251,6 +289,15 @@ export const updateImage = async (req, res) => {
         message: 'Imagen no encontrada'
       });
     }
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'editar',
+      entidadTipo: 'imagen',
+      entidadId: Number(id),
+      descripcion: `Imagen #${id} editada`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
@@ -281,6 +328,15 @@ export const deleteImage = async (req, res) => {
     }
 
     const deleted = await Gallery.deleteImage(id);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'eliminar',
+      entidadTipo: 'imagen',
+      entidadId: Number(id),
+      descripcion: `Imagen ${image.titulo ? `"${image.titulo}" ` : `#${id} `}eliminada`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
@@ -796,6 +852,15 @@ export const bulkUpdateImages = async (req, res) => {
 
     const successCount = results.filter(r => r.success).length;
 
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'actualizar',
+      entidadTipo: 'imagen',
+      entidadId: null,
+      descripcion: `Actualización masiva: ${successCount} de ${image_ids.length} imágenes`,
+      ipAddress: getIpFromRequest(req),
+    });
+
     return res.status(200).json({
       success: true,
       message: `${successCount} de ${image_ids.length} imágenes actualizadas`,
@@ -846,6 +911,15 @@ export const bulkDeleteImages = async (req, res) => {
     }
 
     const successCount = results.filter(r => r.success).length;
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'eliminar',
+      entidadTipo: 'imagen',
+      entidadId: null,
+      descripcion: `Eliminación masiva: ${successCount} de ${image_ids.length} imágenes`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
