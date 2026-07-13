@@ -549,7 +549,18 @@ export const verifyQRAndCheckIn = async (req, res) => {
       });
     }
 
-    const booking = await Booking.findByCode(codigo_reserva);
+    const raw = codigo_reserva.trim();
+
+    // El QR real codifica "LACLAVE-{bookingId}-{codigo_acceso}" (ver
+    // webhookController.handleCheckoutSessionCompleted), NO el
+    // codigo_reserva. Si el texto escaneado tiene ese formato, lo
+    // interpretamos así; si no, se trata como código manual
+    // (codigo_reserva) introducido a mano por el admin.
+    const qrMatch = raw.match(/^LACLAVE-(\d+)-(.+)$/);
+
+    const booking = qrMatch
+      ? await Booking.findByAccessCode(qrMatch[1], qrMatch[2])
+      : await Booking.findByCode(raw);
 
     if (!booking) {
       return res.status(404).json({

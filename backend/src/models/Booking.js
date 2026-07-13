@@ -39,6 +39,42 @@ class Booking {
   }
 
   /**
+   * Buscar reserva por código de acceso (el que realmente codifica
+   * el QR: "LACLAVE-{id}-{codigo_acceso}"), validando también el id
+   * como comprobación extra de integridad.
+   * @param {Number} bookingId
+   * @param {String} codigoAcceso
+   * @returns {Object|null} Reserva encontrada o null
+   */
+  static async findByAccessCode(bookingId, codigoAcceso) {
+    try {
+      const sql = `
+        SELECT 
+          b.*,
+          e.titulo as evento_titulo,
+          e.fecha_evento,
+          e.hora_evento,
+          e.ubicacion,
+          s.numero_socio,
+          u.nombre as socio_nombre,
+          u.apellidos as socio_apellidos
+        FROM bookings b
+        INNER JOIN events e ON b.event_id = e.id
+        INNER JOIN socios s ON b.socio_id = s.id
+        INNER JOIN users u ON s.user_id = u.id
+        WHERE b.id = ? AND b.codigo_acceso = ?
+        LIMIT 1
+      `;
+      const results = await query(sql, [bookingId, codigoAcceso]);
+      return results.length > 0 ? results[0] : null;
+    } catch (error) {
+      console.error('Error en findByAccessCode:', error);
+      throw error;
+    }
+  }
+
+
+  /**
    * Buscar reserva por código
    * @param {String} codigoReserva - Código de reserva
    * @returns {Object|null} Reserva encontrada o null

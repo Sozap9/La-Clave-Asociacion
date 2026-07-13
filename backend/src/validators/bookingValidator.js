@@ -73,12 +73,15 @@ export const cancelBookingValidator = [
  * por lo que el regex acepta entre 4 y 10 caracteres alfanuméricos en mayúsculas.
  */
 export const verifyQRValidator = [
-  // CÓDIGO DE RESERVA
+  // CÓDIGO DE RESERVA — acepta dos formatos:
+  // 1) El que realmente codifica el QR: LACLAVE-{bookingId}-{codigo_acceso}
+  // 2) El codigo_reserva introducido a mano: LCV-XXXXXX-XXXXXX
   body('codigo_reserva')
     .notEmpty().withMessage('El código de reserva es obligatorio')
     .trim()
-    .matches(/^LCV-[0-9]+-[A-Z0-9]{4,10}$/).withMessage('El código de reserva no tiene un formato válido (debe ser LCV-XXXXXX-XXXXXX)')
-    .isLength({ min: 10, max: 50 }).withMessage('El código de reserva debe tener entre 10 y 50 caracteres')
+    .matches(/^(LACLAVE-\d+-[A-Z0-9-]{4,40}|LCV-[0-9]+-[A-Z0-9]{4,10})$/)
+    .withMessage('El código escaneado no tiene un formato válido')
+    .isLength({ min: 10, max: 80 }).withMessage('El código de reserva debe tener entre 10 y 80 caracteres')
 ];
 
 /**
