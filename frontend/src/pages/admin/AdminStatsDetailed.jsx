@@ -247,17 +247,6 @@ const AdminStatsDetailed = () => {
                       <h3 className="text-white font-semibold">
                         {evento.titulo}
                       </h3>
-                      <p className="text-gray-400 text-sm">
-                        {evento.porcentaje_ocupacion}% de ocupación
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-primary-300 font-bold">
-                        {evento.entradas_reservadas}
-                      </p>
-                      <p className="text-gray-500 text-sm">
-                        de {evento.aforo_maximo}
-                      </p>
                     </div>
                   </div>
                 ))}
