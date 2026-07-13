@@ -194,8 +194,10 @@ async function handleCheckoutSessionExpired(session) {
 
     // Liberar el aforo que esta reserva pendiente tenía bloqueado
     await query(
-      `UPDATE events SET entradas_disponibles = entradas_disponibles + ? WHERE id = ?`,
-      [booking.numero_entradas, booking.event_id],
+      `UPDATE events SET entradas_disponibles = entradas_disponibles + ?,
+                          entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
+       WHERE id = ?`,
+      [booking.numero_entradas, booking.numero_entradas, booking.event_id],
     );
 
     logger.info("⏱️ Reserva cancelada por Checkout Session expirada:", {
@@ -457,8 +459,10 @@ async function handleChargeRefunded(charge) {
         await Booking.cancel(bookingId, "Pago reembolsado en Stripe");
 
         await query(
-          `UPDATE events SET entradas_disponibles = entradas_disponibles + ? WHERE id = ?`,
-          [booking.numero_entradas, booking.event_id],
+          `UPDATE events SET entradas_disponibles = entradas_disponibles + ?,
+                              entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
+           WHERE id = ?`,
+          [booking.numero_entradas, booking.numero_entradas, booking.event_id],
         );
 
         logger.info("↩ Reserva cancelada y aforo liberado por reembolso:", {

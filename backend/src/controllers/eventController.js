@@ -56,8 +56,8 @@ export const createEvent = async (req, res) => {
         titulo, descripcion, fecha_evento, hora_evento,
         ubicacion, aforo_maximo, precio_socio, precio_invitado, 
         imagen_cartel_url, permite_invitados, estado, destacado, 
-        entradas_disponibles, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, ?)`,
+        entradas_disponibles, entradas_reservadas, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, 0, ?)`,
       [
         titulo,
         descripcion,
@@ -135,19 +135,25 @@ export const updateEvent = async (req, res) => {
       ? `/uploads/events/${req.file.filename}` 
       : events[0].imagen_cartel_url;
 
-    const entradas_reservadas = events[0].entradas_reservadas || 0;
-    const nuevas_entradas_disponibles = parseInt(aforo_maximo) - entradas_reservadas;
+    // Calculamos cuántas entradas están realmente ocupadas a partir de
+    // entradas_disponibles (que sí se mantiene bien sincronizado en todo
+    // el flujo de reservas), en vez de la columna entradas_reservadas
+    // que históricamente no se incrementaba nunca y podía estar mal.
+    const aforoAnterior = events[0].aforo_maximo || 0;
+    const disponiblesAnterior = events[0].entradas_disponibles ?? aforoAnterior;
+    const entradasOcupadas = Math.max(aforoAnterior - disponiblesAnterior, 0);
+    const nuevas_entradas_disponibles = Math.max(parseInt(aforo_maximo) - entradasOcupadas, 0);
 
     await pool.execute(
       `UPDATE events SET 
         titulo = ?, descripcion = ?, fecha_evento = ?, hora_evento = ?,
-        ubicacion = ?, aforo_maximo = ?, entradas_disponibles = ?,
+        ubicacion = ?, aforo_maximo = ?, entradas_disponibles = ?, entradas_reservadas = ?,
         precio_socio = ?, precio_invitado = ?, imagen_cartel_url = ?,
         permite_invitados = ?, updated_at = NOW()
       WHERE id = ?`,
       [
         titulo, descripcion, fecha_evento, hora_evento,
-        ubicacion, parseInt(aforo_maximo), nuevas_entradas_disponibles,
+        ubicacion, parseInt(aforo_maximo), nuevas_entradas_disponibles, entradasOcupadas,
         precio_socio ? parseFloat(precio_socio) : 0,
         precio_invitado ? parseFloat(precio_invitado) : 0,
         imagen_cartel_url,

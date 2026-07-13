@@ -322,8 +322,10 @@ class CronService {
             [booking.id],
           );
           await query(
-            `UPDATE events SET entradas_disponibles = entradas_disponibles + ? WHERE id = ?`,
-            [booking.numero_entradas, booking.event_id],
+            `UPDATE events SET entradas_disponibles = entradas_disponibles + ?,
+                                entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
+             WHERE id = ?`,
+            [booking.numero_entradas, booking.numero_entradas, booking.event_id],
           );
         }
 

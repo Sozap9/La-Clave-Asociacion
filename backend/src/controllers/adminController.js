@@ -121,6 +121,8 @@ export const getDashboardStats = async (req, res) => {
     `;
     const sociosStats = await query(sociosSql);
 
+    const solicitudesPendientes = await SolicitudSocio.countPendientes();
+
     // 2. EVENTOS
     const eventosSql = `
       SELECT 
@@ -140,10 +142,9 @@ export const getDashboardStats = async (req, res) => {
         id, titulo, fecha_evento, aforo_maximo, entradas_reservadas,
         ROUND((entradas_reservadas / aforo_maximo * 100), 2) as porcentaje_ocupacion
       FROM events
-      WHERE fecha_evento >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
-        AND aforo_maximo > 0
-        AND estado = 'scheduled'
-      ORDER BY porcentaje_ocupacion DESC
+      WHERE aforo_maximo > 0
+        AND estado IN ('scheduled', 'completed')
+      ORDER BY entradas_reservadas DESC
       LIMIT 5
     `;
     const topEventos = await query(topEventosSql);
@@ -167,7 +168,9 @@ export const getDashboardStats = async (req, res) => {
         COUNT(CASE WHEN estado = 'cancelada' THEN 1 END) as canceladas,
         COUNT(CASE WHEN asistencia = 1 THEN 1 END) as asistidas,
         COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as reservas_esta_semana,
-        COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 END) as reservas_este_mes
+        COUNT(CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 END) as reservas_este_mes,
+        SUM(CASE WHEN estado = 'confirmada' THEN numero_entradas ELSE 0 END) as entradas_vendidas_total,
+        SUM(CASE WHEN estado = 'confirmada' AND DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN numero_entradas ELSE 0 END) as entradas_vendidas_mes
       FROM bookings
     `;
     const reservasStats = await query(reservasSql);
@@ -306,6 +309,7 @@ export const getDashboardStats = async (req, res) => {
           activos: sociosStats[0].socios_activos,
           morosos: sociosStats[0].socios_morosos,
           baja: sociosStats[0].socios_baja,
+          solicitudes_pendientes: solicitudesPendientes,
         },
         eventos: {
           total: eventosStats[0].total_eventos,
@@ -327,6 +331,8 @@ export const getDashboardStats = async (req, res) => {
           asistidas: reservasStats[0].asistidas,
           esta_semana: reservasStats[0].reservas_esta_semana,
           este_mes: reservasStats[0].reservas_este_mes,
+          entradas_vendidas_total: parseInt(reservasStats[0].entradas_vendidas_total) || 0,
+          entradas_vendidas_mes: parseInt(reservasStats[0].entradas_vendidas_mes) || 0,
         },
         ingresos: {
           mes_actual: ingresosMesActual,

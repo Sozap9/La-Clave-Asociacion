@@ -186,9 +186,10 @@ export const createBooking = async (req, res) => {
       try {
         await conn.execute(
           `UPDATE events
-           SET entradas_disponibles = entradas_disponibles - ?
+           SET entradas_disponibles = entradas_disponibles - ?,
+               entradas_reservadas = entradas_reservadas + ?
            WHERE id = ?`,
-          [numero_entradas, event_id],
+          [numero_entradas, numero_entradas, event_id],
         );
       } catch (updateError) {
         logger.warn(
@@ -288,8 +289,10 @@ export const createBooking = async (req, res) => {
         ["Error al iniciar el pago", booking.id],
       );
       await query(
-        `UPDATE events SET entradas_disponibles = entradas_disponibles + ? WHERE id = ?`,
-        [numero_entradas, event_id],
+        `UPDATE events SET entradas_disponibles = entradas_disponibles + ?,
+                            entradas_reservadas = entradas_reservadas - ?
+         WHERE id = ?`,
+        [numero_entradas, numero_entradas, event_id],
       );
 
       return res.status(502).json({
@@ -445,7 +448,7 @@ export const cancelBooking = async (req, res) => {
       // Liberar entradas
       await conn.execute(
         `UPDATE events 
-         SET entradas_reservadas = entradas_reservadas - ?,
+         SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0),
              entradas_disponibles = entradas_disponibles + ?
          WHERE id = ?`,
         [booking.numero_entradas, booking.numero_entradas, booking.event_id],
