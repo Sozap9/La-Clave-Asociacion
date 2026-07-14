@@ -4,6 +4,8 @@ import { getAllEvents } from "../api/eventsApi";
 import EventCard from "../components/events/EventCard";
 import FilterBar from "../components/UI/FilterBar";
 import SearchInput from "../components/UI/SearchInput";
+import Pagination from "../components/UI/Pagination";
+import { usePagination } from "../hooks/usePagination";
 import EventDetail from "../components/events/EventDetail";
 import Loader from "../components/common/Loader";
 import EmptyState from "../components/common/EmptyState";
@@ -31,7 +33,7 @@ const Events = () => {
     setError("");
 
     try {
-      const queryParams = {};
+      const queryParams = { limit: 100 };
 
       if (filters.featured) {
         queryParams.featured = "true";
@@ -74,6 +76,9 @@ const Events = () => {
     return t('events.empty.default');
   };
 
+  const { pageItems: paginatedEvents, page, pages, total, setPage } =
+    usePagination(events, 12);
+
   return (
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
@@ -87,6 +92,11 @@ const Events = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:pt-1">
+            <FilterBar
+              filters={{ status: filters.status, featured: filters.featured }}
+              onFilterChange={(f) => setFilters(f)}
+            />
+
             <div className="w-full sm:w-80">
               <SearchInput
                 value={filters.search}
@@ -99,11 +109,6 @@ const Events = () => {
                 debounceMs={350}
               />
             </div>
-
-            <FilterBar
-              filters={{ status: filters.status, featured: filters.featured }}
-              onFilterChange={(f) => setFilters(f)}
-            />
           </div>
         </div>
 
@@ -119,8 +124,9 @@ const Events = () => {
 
         {/* Grid de eventos */}
         {!loading && events.length > 0 && (
+          <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {events.map((event) => (
+            {paginatedEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={event}
@@ -128,6 +134,15 @@ const Events = () => {
               />
             ))}
           </div>
+
+          <Pagination
+            page={page}
+            pages={pages}
+            total={total}
+            onPageChange={setPage}
+            itemLabel="eventos"
+          />
+          </>
         )}
 
         {/* Sin resultados */}

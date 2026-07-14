@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Activity, User, Calendar, Filter, RefreshCw } from 'lucide-react';
 import Loader from '../../components/common/Loader';
+import Pagination from '../../components/UI/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -52,6 +54,9 @@ const AdminActivity = () => {
     if (filterEntidad !== 'all' && activity.entidad !== filterEntidad) return false;
     return true;
   }) : [];
+
+  const { pageItems: paginatedActivities, page, pages, total, setPage } =
+    usePagination(filteredActivities, 20);
 
   const getAccionIcon = (accion) => {
     switch (accion) {
@@ -199,7 +204,7 @@ const AdminActivity = () => {
         <div className="relative">
           <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#262626]" />
           <div className="space-y-6">
-            {filteredActivities.map((activity, index) => (
+            {paginatedActivities.map((activity, index) => (
               <div key={activity.id || index} className="relative pl-16">
                 <div className="absolute left-3 top-2 w-6 h-6 rounded-full bg-gray-900 border-2 border-primary-500 flex items-center justify-center">
                   <span className="text-xs">{getAccionIcon(activity.accion)}</span>
@@ -249,6 +254,14 @@ const AdminActivity = () => {
               </div>
             ))}
           </div>
+
+          <Pagination
+            page={page}
+            pages={pages}
+            total={total}
+            onPageChange={setPage}
+            itemLabel="registros"
+          />
         </div>
       )}
     </div>

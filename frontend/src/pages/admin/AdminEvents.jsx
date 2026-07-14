@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
+import Pagination from "../../components/UI/Pagination";
+import { usePagination } from "../../hooks/usePagination";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import AdminCard from "../../components/admin/AdminCard.jsx";
@@ -26,6 +28,8 @@ const AdminEvents = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [events, setEvents] = useState([]);
+  const { pageItems: paginatedEvents, page, pages, total, setPage } =
+    usePagination(events, 10);
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -64,6 +68,11 @@ const AdminEvents = () => {
 
     try {
       const params = {};
+      // Pedimos todos los eventos de una vez (límite alto): los filtros
+      // de "próximos"/"pasados" se aplican después en el cliente, así
+      // que paginar en el propio backend aquí daría resultados incompletos.
+      params.limit = 100;
+
       if (filters.status === "draft" || filters.status === "cancelled") {
         params.estado = filters.status;
       }
@@ -318,7 +327,7 @@ const AdminEvents = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {events.map((event) => {
+          {paginatedEvents.map((event) => {
             const isPublished = event.visible_desde !== null;
             const isFeatured = event.destacado === 1;
             const isExpanded = expandedEventId === event.id;
@@ -409,6 +418,14 @@ const AdminEvents = () => {
               />
             );
           })}
+
+          <Pagination
+            page={page}
+            pages={pages}
+            total={total}
+            onPageChange={setPage}
+            itemLabel="eventos"
+          />
         </div>
       )}
     </div>

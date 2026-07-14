@@ -16,6 +16,8 @@ import EmptyState from "../components/common/EmptyState";
 import FolderModal from "../components/gallery/FolderModal";
 import QuickImageUploadModal from "../components/gallery/QuickImageUploadModal";
 import FilterBar from "../components/UI/FilterBar";
+import Pagination from "../components/UI/Pagination";
+import { usePagination } from "../hooks/usePagination";
 
 // ✅ CORRECCIÓN: URL base sin /api para servir archivos estáticos
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace("/api", "");
@@ -183,6 +185,9 @@ const Gallery = () => {
     searchTerm.trim() ||
     sortOrder !== "all";
 
+  const { pageItems: paginatedFolders, page, pages, total, setPage } =
+    usePagination(filteredFolders, 12);
+
   if (loading) return <Loader fullScreen />;
 
   return (
@@ -229,6 +234,17 @@ const Gallery = () => {
 
             {/* Búsqueda + filtro */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              {/* Filtros: select en mobile, desplegable en desktop */}
+              <FilterBar
+                customFilters={[
+                  { value: "all", label: "Todos" },
+                  { value: "desc", label: "Más Recientes" },
+                  { value: "asc", label: "Más Antiguos" },
+                ]}
+                activeFilter={sortOrder}
+                onFilterChange={setSortOrder}
+              />
+
               <div className="w-full sm:w-80">
                 <div className="relative">
                   <input
@@ -263,17 +279,6 @@ const Gallery = () => {
                   )}
                 </div>
               </div>
-
-              {/* Filtros: select en mobile, desplegable en desktop */}
-              <FilterBar
-                customFilters={[
-                  { value: "all", label: "Todos" },
-                  { value: "desc", label: "Más Recientes" },
-                  { value: "asc", label: "Más Antiguos" },
-                ]}
-                activeFilter={sortOrder}
-                onFilterChange={setSortOrder}
-              />
             </div>
           </div>
         </div>
@@ -307,11 +312,21 @@ const Gallery = () => {
             }
           />
         ) : (
+          <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-            {filteredFolders.map((folder) => (
+            {paginatedFolders.map((folder) => (
               <AlbumCard key={folder.id} folder={folder} />
             ))}
           </div>
+
+          <Pagination
+            page={page}
+            pages={pages}
+            total={total}
+            onPageChange={setPage}
+            itemLabel="álbumes"
+          />
+          </>
         )}
       </div>
 

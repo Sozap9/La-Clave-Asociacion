@@ -14,6 +14,7 @@ import {
 import Loader from "../../components/common/Loader";
 import SearchInput from "../../components/UI/SearchInput";
 import FilterBar from "../../components/UI/FilterBar";
+import Pagination from "../../components/UI/Pagination";
 import Button from "../../components/common/Button";
 import AdminCard from "../../components/admin/AdminCard";
 import DatePickerInput from "../../components/common/DatePickerInput";
@@ -103,6 +104,7 @@ const AdminPayments = () => {
   const [estadoFilter, setEstadoFilter]   = useState("all");
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [page, setPage]                   = useState(1);
+  const [pagination, setPagination]       = useState({ total: 0, pages: 1 });
 
   // Sidebar: filtro por fecha y control del DatePicker
   const [dateFilter, setDateFilter]           = useState(null);
@@ -179,6 +181,10 @@ const AdminPayments = () => {
       if (result.success) {
         setEntries(result.data?.entries || []);
         setEventStats(result.data?.stats || null);
+        setPagination({
+          total: result.data?.pagination?.total || 0,
+          pages: result.data?.pagination?.pages || 1,
+        });
       } else {
         setError(result.message || "Error al cargar pagos del evento");
         setEntries([]);
@@ -530,25 +536,13 @@ const AdminPayments = () => {
                   </div>
 
                   {/* Paginación */}
-                  {entries.length > 0 && (
-                    <div className="mt-6 flex justify-center gap-2">
-                      <button
-                        onClick={() => setPage(Math.max(1, page - 1))}
-                        disabled={page === 1}
-                        className="px-4 py-2 rounded-lg border border-[#262626] text-gray-300 hover:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Anterior
-                      </button>
-                      <span className="px-4 py-2 text-gray-400">Página {page}</span>
-                      <button
-                        onClick={() => setPage(page + 1)}
-                        disabled={entries.length < 50}
-                        className="px-4 py-2 rounded-lg border border-[#262626] text-gray-300 hover:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Siguiente
-                      </button>
-                    </div>
-                  )}
+                  <Pagination
+                    page={page}
+                    pages={pagination.pages}
+                    total={pagination.total}
+                    onPageChange={setPage}
+                    itemLabel="entradas"
+                  />
                 </>
               )}
             </>

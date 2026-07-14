@@ -7,6 +7,8 @@ import Loader from '../../components/common/Loader';
 import Alert from '../../components/common/Alert';
 import FolderModal from '../../components/gallery/FolderModal';
 import DatePickerInput from '../../components/common/DatePickerInput';
+import Pagination from '../../components/UI/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 
 // ✅ CORRECCIÓN: Obtener URL base sin /api
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
@@ -148,6 +150,9 @@ const AdminGallery = () => {
 
   const hasActiveFilters = searchTerm.trim() || dateFilter;
 
+  const { pageItems: paginatedFolders, page, pages, total, setPage } =
+    usePagination(filteredFolders, 12);
+
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
@@ -247,8 +252,9 @@ const AdminGallery = () => {
           )}
         </div>
       ) : (
+        <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-          {filteredFolders.map((folder) => {
+          {paginatedFolders.map((folder) => {
             // ✅ CORRECCIÓN: Construir URL completa
             const coverImageUrl = folder.imagen_portada_url 
               ? (folder.imagen_portada_url.startsWith('http') 
@@ -339,6 +345,15 @@ const AdminGallery = () => {
               </div>
             );
           })}
+        </div>
+
+        <Pagination
+          page={page}
+          pages={pages}
+          total={total}
+          onPageChange={setPage}
+          itemLabel="álbumes"
+        />
         </div>
       )}
 

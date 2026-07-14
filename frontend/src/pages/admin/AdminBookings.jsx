@@ -3,6 +3,8 @@ import { Ticket, Calendar, User, ChevronDown, ArrowLeft } from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import FilterBar from '../../components/UI/FilterBar';
 import SearchInput from '../../components/UI/SearchInput';
+import Pagination from '../../components/UI/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -27,7 +29,7 @@ const AdminBookings = () => {
     setLoadingEvents(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/admin/events`, {
+      const response = await fetch(`${API_URL}/admin/events?limit=100`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await response.json();
@@ -109,6 +111,14 @@ const AdminBookings = () => {
     return true;
   }) : [];
 
+  const {
+    pageItems: paginatedBookings,
+    page: bookingsPage,
+    pages: bookingsPages,
+    total: bookingsTotal,
+    setPage: setBookingsPage,
+  } = usePagination(filteredBookings, 20);
+
   const getEstadoBadge = (estado) => {
     const styles = {
       confirmada: 'bg-green-500/20 text-green-300 border border-green-500/30',
@@ -155,6 +165,14 @@ const AdminBookings = () => {
     return true;
   });
 
+  const {
+    pageItems: paginatedEvents,
+    page: eventsPage,
+    pages: eventsPages,
+    total: eventsTotal,
+    setPage: setEventsPage,
+  } = usePagination(filteredEvents, 12);
+
   if (loadingEvents) return <Loader fullScreen />;
 
   if (!selectedEvent) {
@@ -196,7 +214,7 @@ const AdminBookings = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredEvents.map((event) => {
+            {paginatedEvents.map((event) => {
               const isPast = new Date(event.fecha_evento) < new Date();
               return (
                 <button
@@ -226,6 +244,14 @@ const AdminBookings = () => {
             })}
           </div>
         )}
+
+        <Pagination
+          page={eventsPage}
+          pages={eventsPages}
+          total={eventsTotal}
+          onPageChange={setEventsPage}
+          itemLabel="eventos"
+        />
       </div>
     );
   }
@@ -306,7 +332,7 @@ const AdminBookings = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredBookings.map((booking) => (
+              {paginatedBookings.map((booking) => (
                 <div key={booking.id} className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -358,6 +384,14 @@ const AdminBookings = () => {
               ))}
             </div>
           )}
+
+          <Pagination
+            page={bookingsPage}
+            pages={bookingsPages}
+            total={bookingsTotal}
+            onPageChange={setBookingsPage}
+            itemLabel="reservas"
+          />
         </>
       )}
 

@@ -19,6 +19,8 @@ import {
 import Loader from "../../components/common/Loader";
 import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
+import Pagination from "../../components/UI/Pagination";
+import { usePagination } from "../../hooks/usePagination";
 import AdminCard from "../../components/admin/AdminCard";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
@@ -40,6 +42,9 @@ const AdminSocios = () => {
   const [roleSelections, setRoleSelections] = useState({});
   const [activeFilter, setActiveFilter] = useState("socio");
 
+  const { pageItems: paginatedSocios, page, pages, total, setPage } =
+    usePagination(socios, 20);
+
   useEffect(() => {
     fetchSocios();
     // eslint-disable-next-line
@@ -50,6 +55,11 @@ const AdminSocios = () => {
     setError("");
     try {
       const params = {};
+
+      // Pedimos todos los socios de una vez (límite alto): el filtro
+      // por rol/estado se aplica después en el cliente, así que
+      // paginar en el propio backend aquí daría contadores incorrectos.
+      params.limit = 100;
 
       if (activeFilter === "socio") {
         params.estado = "activo";
@@ -254,7 +264,7 @@ const AdminSocios = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {socios.map((socio) => (
+          {paginatedSocios.map((socio) => (
             <AdminCard
               key={socio.user_id}
               avatar={
@@ -355,6 +365,14 @@ const AdminSocios = () => {
               className="p-4"
             ></AdminCard>
           ))}
+
+          <Pagination
+            page={page}
+            pages={pages}
+            total={total}
+            onPageChange={setPage}
+            itemLabel="socios"
+          />
         </div>
       )}
 

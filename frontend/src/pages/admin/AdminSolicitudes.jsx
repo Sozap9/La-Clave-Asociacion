@@ -5,8 +5,6 @@ import {
   XCircle,
   Trash2,
   Eye,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   UserCheck,
   X,
@@ -23,6 +21,7 @@ import {
 } from "../../api/adminApi";
 import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
+import Pagination from "../../components/UI/Pagination";
 import AdminCard from "../../components/admin/AdminCard";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
@@ -383,23 +382,44 @@ const AdminSolicitudes = () => {
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div>
-            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
-              Solicitudes de Socio
-            </h1>
-            <p className="text-gray-200 text-sm md:text-lg">
-              Gestiona las solicitudes de membresía
-            </p>
-            <p className="text-gray-400 text-sm md:text-lg">
-              {pagination.total} solicitud
-              {pagination.total !== 1 ? "es" : ""} en total
-            </p>
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div>
+          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
+            Solicitudes de Socio
+          </h1>
+          <p className="text-gray-200 text-sm md:text-lg">
+            Gestiona las solicitudes de membresía
+          </p>
+          <p className="text-gray-400 text-sm md:text-lg">
+            {pagination.total} solicitud
+            {pagination.total !== 1 ? "es" : ""} en total
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <FilterBar
+            customFilters={solicitudFilters}
+            activeFilter={filters.estado}
+            onFilterChange={handleEstado}
+          />
+
+          <div className="w-full sm:w-80">
+            <SearchInput
+              value={searchInput}
+              onChange={(v) => setSearchInput(v)}
+              onDebounced={handleSearch}
+              onClear={() => {
+                setSearchInput("");
+                handleSearch("");
+              }}
+              placeholder="Buscar por nombre, email o DNI..."
+              debounceMs={350}
+            />
           </div>
+
           <button
             onClick={load}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#262626] text-gray-400 hover:text-white rounded-lg transition-colors text-sm mt-2"
+            className="flex items-center gap-2 px-4 py-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#262626] text-gray-400 hover:text-white rounded-lg transition-colors text-sm whitespace-nowrap"
           >
             <RefreshCw size={15} />
             Actualizar
@@ -413,28 +433,6 @@ const AdminSolicitudes = () => {
           {error}
         </div>
       )}
-
-      {/* Filtros y búsqueda */}
-      <div className="mb-6 flex flex-wrap gap-4 items-center">
-        <FilterBar
-          customFilters={solicitudFilters}
-          activeFilter={filters.estado}
-          onFilterChange={handleEstado}
-        />
-        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
-          <SearchInput
-            value={searchInput}
-            onChange={(v) => setSearchInput(v)}
-            onDebounced={handleSearch}
-            onClear={() => {
-              setSearchInput("");
-              handleSearch("");
-            }}
-            placeholder="Buscar por nombre, email o DNI..."
-            debounceMs={350}
-          />
-        </div>
-      </div>
 
       {/* Lista */}
       {loading ? (
@@ -516,30 +514,13 @@ const AdminSolicitudes = () => {
       )}
 
       {/* Paginación */}
-      {pagination.pages > 1 && (
-        <div className="flex items-center justify-between mt-6 text-sm">
-          <span className="text-gray-500">
-            Página {pagination.page} de {pagination.pages} ({pagination.total}{" "}
-            total)
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
-              disabled={filters.page <= 1}
-              className="p-2 rounded-lg border border-[#262626] text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
-              disabled={filters.page >= pagination.pages}
-              className="p-2 rounded-lg border border-[#262626] text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={pagination.page}
+        pages={pagination.pages}
+        total={pagination.total}
+        onPageChange={(p) => setFilters((f) => ({ ...f, page: p }))}
+        itemLabel="solicitudes"
+      />
 
       {/* Modal detalle */}
       {selected && (

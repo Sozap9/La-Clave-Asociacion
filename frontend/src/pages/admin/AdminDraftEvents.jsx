@@ -17,6 +17,8 @@ import {
   Star,
 } from "lucide-react";
 import SearchInput from "../../components/UI/SearchInput";
+import Pagination from "../../components/UI/Pagination";
+import { usePagination } from "../../hooks/usePagination";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import AdminCard from "../../components/admin/AdminCard.jsx";
@@ -24,6 +26,8 @@ import AdminCard from "../../components/admin/AdminCard.jsx";
 const AdminDraftEvents = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const { pageItems: paginatedEvents, page, pages, total, setPage } =
+    usePagination(events, 10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -48,7 +52,7 @@ const AdminDraftEvents = () => {
     setSuccess("");
 
     try {
-      const params = { estado: "draft" };
+      const params = { estado: "draft", limit: 100 };
       if (search) params.search = search;
 
       const result = await getAllEventsAdmin(params);
@@ -198,7 +202,7 @@ const AdminDraftEvents = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {events.map((event) => {
+          {paginatedEvents.map((event) => {
             const isFeatured = event.destacado === 1;
             const isPublished = event.visible_desde !== null;
 
@@ -288,6 +292,14 @@ const AdminDraftEvents = () => {
               />
             );
           })}
+
+          <Pagination
+            page={page}
+            pages={pages}
+            total={total}
+            onPageChange={setPage}
+            itemLabel="borradores"
+          />
         </div>
       )}
     </div>

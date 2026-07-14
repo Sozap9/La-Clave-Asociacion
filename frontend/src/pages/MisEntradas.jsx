@@ -17,6 +17,8 @@ import Loader from "../components/common/Loader";
 import EventDetail from "../components/events/EventDetail";
 import FilterBar from "../components/UI/FilterBar";
 import SearchInput from "../components/UI/SearchInput";
+import Pagination from "../components/UI/Pagination";
+import { usePagination } from "../hooks/usePagination";
 import EmptyState from "../components/common/EmptyState";
 
 const MisEntradas = () => {
@@ -330,6 +332,9 @@ const MisEntradas = () => {
       ? "Intenta con otro filtro"
       : "Reserva tu primera entrada para un evento";
 
+  const { pageItems: paginatedBookings, page, pages, total, setPage } =
+    usePagination(filteredBookings, 10);
+
   return (
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom max-w-6xl">
@@ -343,6 +348,13 @@ const MisEntradas = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:pt-1">
+            <FilterBar
+              customFilters={entradaFilters}
+              activeFilter={filter}
+              onFilterChange={setFilter}
+              showCounts={true}
+            />
+
             <div className="w-full sm:w-80">
               <SearchInput
                 value={searchTerm}
@@ -352,13 +364,6 @@ const MisEntradas = () => {
                 debounceMs={300}
               />
             </div>
-
-            <FilterBar
-              customFilters={entradaFilters}
-              activeFilter={filter}
-              onFilterChange={setFilter}
-              showCounts={true}
-            />
           </div>
         </div>
 
@@ -375,7 +380,7 @@ const MisEntradas = () => {
         {/* Lista de entradas */}
         {!loading && filteredBookings.length > 0 && (
           <div className="space-y-4">
-            {filteredBookings.map((booking) => (
+            {paginatedBookings.map((booking) => (
               <div
                 key={booking.id}
                 onClick={() => handleViewEvent(booking)}
@@ -464,6 +469,14 @@ const MisEntradas = () => {
             ))}
           </div>
         )}
+
+        <Pagination
+          page={page}
+          pages={pages}
+          total={total}
+          onPageChange={setPage}
+          itemLabel="entradas"
+        />
 
         {/* Sin resultados */}
         {!loading && filteredBookings.length === 0 && !error && (
