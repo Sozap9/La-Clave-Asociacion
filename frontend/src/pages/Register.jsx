@@ -28,7 +28,6 @@ const Register = () => {
     telefono: "",
     fecha_nacimiento: "",
     dni: "",
-    motivacion: "",
     artistQuestion: "",
   });
 
@@ -78,22 +77,16 @@ const Register = () => {
 
     try {
       const body = new FormData();
-      const combinedMotivacion = [
-        formData.motivacion
-          ? `${t("register.howDidYouFind")} ${formData.motivacion}`
-          : "",
-        formData.artistQuestion
-          ? `${t("register.artistQuestion")} ${formData.artistQuestion}`
-          : "",
-      ]
-        .filter(Boolean)
-        .join("\n\n");
+      const combinedMotivacion = formData.artistQuestion
+        ? `${t("register.artistQuestion")} ${formData.artistQuestion}`
+        : "";
 
       Object.entries(formData).forEach(([key, val]) => {
         if (key !== "confirmPassword" && key !== "artistQuestion") {
-          body.append(key, key === "motivacion" ? combinedMotivacion : val);
+          body.append(key, val);
         }
       });
+      body.append("motivacion", combinedMotivacion);
       body.append("dni_front", dniFront);
 
       const response = await fetch(
@@ -340,19 +333,6 @@ const Register = () => {
             </div>
 
             {/* ── Preguntas ── */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-1">
-                {t("register.howDidYouFind")}
-              </label>
-              <textarea
-                name="motivacion"
-                value={formData.motivacion}
-                onChange={handleChange}
-                rows={2}
-                className="input w-full resize-none"
-              />
-            </div>
-
             <div>
               <label className="block text-gray-400 text-sm mb-2">
                 {t("register.artistQuestion")}
