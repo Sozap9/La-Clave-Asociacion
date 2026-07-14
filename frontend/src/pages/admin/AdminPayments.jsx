@@ -431,13 +431,13 @@ const AdminPayments = () => {
               </div>
 
               {/* ── Filtros ────────────────────────────────────────────────── */}
-              <div className="mb-6 flex flex-wrap gap-4 items-center">
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
                 <FilterBar
                   customFilters={estadoFilters}
                   activeFilter={estadoFilter}
                   onFilterChange={handleFilterChange}
                 />
-                <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
+                <div className="w-full sm:w-80">
                   <SearchInput
                     value={search}
                     onChange={handleSearchChange}

@@ -151,81 +151,82 @@ const AdminGallery = () => {
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestionar Álbumes</h1>
-            <p className="text-gray-400 text-sm md:text-lg">Administra los álbumes de fotos de la asociación</p>
-          </div>
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div>
+          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestionar Álbumes</h1>
+          <p className="text-gray-400 text-sm md:text-lg">Administra los álbumes de fotos de la asociación</p>
+        </div>
+
+        <div className="flex flex-col items-stretch sm:items-end gap-3">
           <Button
             variant="primary"
             onClick={handleCreate}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <Plus size={20} />
             Nuevo Álbum
           </Button>
-        </div>
-      </div>
 
-      {error && (
-        <Alert type="error" message={error} onClose={() => setError('')} />
-      )}
-      
-      {success && (
-        <Alert type="success" message={success} onClose={() => setSuccess('')} />
-      )}
-
-      {/* Filtros y Búsqueda */}
-      <div className="mb-8 flex flex-wrap items-center gap-4">
-        {/* Búsqueda por nombre */}
-        <div className="relative flex-1 min-w-[220px] max-w-sm">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar álbumes por nombre..."
-            className="w-full px-4 py-3 pl-10 pr-10 bg-[#1a1a1a]/60 border border-primary-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
-          />
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-            >
-              <X size={14} />
-            </button>
+          {error && (
+            <Alert type="error" message={error} onClose={() => setError('')} />
           )}
-        </div>
 
-        {/* Filtro por fecha (mes/año) */}
-        <div className="min-w-[180px]">
-          <DatePickerInput
-            selected={dateFilter}
-            onChange={setDateFilter}
-            placeholderText="Filtrar por mes..."
-            showMonthYearPicker
-            dateFormat="MM/yyyy"
-            isClearable
-          />
-        </div>
+          {success && (
+            <Alert type="success" message={success} onClose={() => setSuccess('')} />
+          )}
 
-        {/* Limpiar filtros */}
-        {hasActiveFilters && (
-          <button
-            onClick={() => { setSearchTerm(''); setDateFilter(null); }}
-            className="px-4 py-3 bg-[#1a1a1a] text-gray-400 hover:text-white hover:bg-[#2a2a2a] rounded-lg text-sm transition-all flex items-center gap-2"
-          >
-            <X size={14} />
-            Limpiar
-          </button>
-        )}
+          {/* Filtros y Búsqueda */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {/* Búsqueda por nombre */}
+            <div className="relative w-full sm:w-80">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar álbumes por nombre..."
+                className="w-full px-4 py-3 pl-10 pr-10 bg-[#1a1a1a]/60 border border-[#262626] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+              />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Filtro por fecha (mes/año) */}
+            <div className="w-full sm:w-44">
+              <DatePickerInput
+                selected={dateFilter}
+                onChange={setDateFilter}
+                placeholderText="Filtrar por mes..."
+                showMonthYearPicker
+                dateFormat="MM/yyyy"
+                isClearable
+              />
+            </div>
+
+            {/* Limpiar filtros */}
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setSearchTerm(''); setDateFilter(null); }}
+                className="px-4 py-3 bg-[#1a1a1a] border border-[#262626] text-gray-400 hover:text-white hover:bg-[#2a2a2a] rounded-lg text-sm transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                <X size={14} />
+                Limpiar
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Grid de álbumes */}

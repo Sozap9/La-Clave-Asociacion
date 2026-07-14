@@ -129,7 +129,7 @@ const AdminDraftEvents = () => {
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
         <div>
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Eventos en borrador</h1>
           <p className="text-gray-400 text-sm md:text-lg">
@@ -137,12 +137,25 @@ const AdminDraftEvents = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          onClick={() => navigate("/admin/eventos/nuevo")}
-        >
-          Crear evento
-        </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <div className="w-full sm:w-80">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              onClear={() => setSearch("")}
+              placeholder="Buscar eventos por nombre..."
+              debounceMs={350}
+            />
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={() => navigate("/admin/eventos/nuevo")}
+            className="whitespace-nowrap"
+          >
+            Crear evento
+          </Button>
+        </div>
       </div>
 
       {/* Alerts */}
@@ -169,17 +182,6 @@ const AdminDraftEvents = () => {
           </button>
         </div>
       )}
-
-      {/* Search */}
-      <div className="mb-8 w-full sm:max-w-md sm:ml-auto">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          onClear={() => setSearch("")}
-          placeholder="Buscar eventos por nombre..."
-          debounceMs={350}
-        />
-      </div>
 
       {/* Lista */}
       {events.length === 0 ? (

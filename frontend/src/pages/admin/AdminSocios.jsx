@@ -207,13 +207,34 @@ const AdminSocios = () => {
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Socios</h1>
-        <p className="text-gray-200 text-sm md:text-lg">Administra tu lista de socios</p>
-        <p className="text-gray-400 text-sm md:text-lg">
-          {socios.length} socio{socios.length !== 1 ? "s" : ""} registrado
-          {socios.length !== 1 ? "s" : ""}
-        </p>
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div>
+          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Socios</h1>
+          <p className="text-gray-200 text-sm md:text-lg">Administra tu lista de socios</p>
+          <p className="text-gray-400 text-sm md:text-lg">
+            {socios.length} socio{socios.length !== 1 ? "s" : ""} registrado
+            {socios.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+
+        {/* Filtros y búsqueda */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:pt-1">
+          <FilterBar
+            customFilters={socioFilters}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+          />
+
+          <div className="w-full sm:w-80">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              onClear={() => setSearch("")}
+              placeholder="Buscar por nombre, email..."
+              debounceMs={350}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Error */}
@@ -222,27 +243,6 @@ const AdminSocios = () => {
           {error}
         </div>
       )}
-
-      {/* Filtros y búsqueda */}
-      <div className="mb-6 flex flex-wrap gap-4 items-center">
-        {/* Filtros a la izquierda */}
-        <FilterBar
-          customFilters={socioFilters}
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-        />
-
-        {/* Búsqueda a la derecha */}
-        <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            onClear={() => setSearch("")}
-            placeholder="Buscar por nombre, email..."
-            debounceMs={350}
-          />
-        </div>
-      </div>
 
       {/* Lista de socios */}
       {socios.length === 0 ? (

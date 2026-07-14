@@ -15,7 +15,8 @@ const FilterBar = ({
   onFilterChange,
   customFilters,
   activeFilter,
-  showCounts = false
+  showCounts = false,
+  includeCancelled = false,
 }) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
@@ -128,6 +129,7 @@ const FilterBar = ({
     { value: "upcoming", label: "Próximos Eventos" },
     { value: "past", label: "Eventos Pasados" },
     { value: "featured", label: "Destacados" },
+    ...(includeCancelled ? [{ value: "cancelled", label: "Cancelados" }] : []),
   ];
 
   const activeEventLabel =
@@ -145,6 +147,7 @@ const FilterBar = ({
         <option value="upcoming">Próximos Eventos</option>
         <option value="past">Eventos Pasados</option>
         <option value="featured">Destacados</option>
+        {includeCancelled && <option value="cancelled">Cancelados</option>}
       </select>
 
       {/* Desktop: icono discreto que despliega las opciones */}
@@ -202,6 +205,18 @@ const FilterBar = ({
             >
               Destacados
             </button>
+            {includeCancelled && (
+              <button
+                onClick={() => handleStatusChange("cancelled")}
+                className={`w-full text-left px-5 py-3 text-base font-medium transition-colors ${
+                  isActiveFilter("cancelled")
+                    ? "bg-primary-600 text-white"
+                    : "text-gray-300 hover:bg-[#2a2a2a]"
+                }`}
+              >
+                Cancelados
+              </button>
+            )}
           </div>
         )}
       </div>

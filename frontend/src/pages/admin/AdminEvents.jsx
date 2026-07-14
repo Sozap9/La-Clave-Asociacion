@@ -235,7 +235,7 @@ const AdminEvents = () => {
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
         <div>
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de eventos</h1>
           <p className="text-gray-400 text-sm md:text-lg">
@@ -283,49 +283,14 @@ const AdminEvents = () => {
 
       {/* Filtros */}
       <div className="mb-12">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4 mb-8">
           <FilterBar
             filters={{ status: filters.status, featured: filters.featured }}
             onFilterChange={(f) => setFilters(f)}
+            includeCancelled
           />
 
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => {
-                setFilters({
-                  ...filters,
-                  status: "draft",
-                  featured: undefined,
-                });
-              }}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                filters.status === "draft" && !filters.featured
-                  ? "bg-primary-600 text-white shadow-glow"
-                  : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-              }`}
-            >
-              Borrador
-            </button>
-
-            <button
-              onClick={() => {
-                setFilters({
-                  ...filters,
-                  status: "cancelled",
-                  featured: undefined,
-                });
-              }}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                filters.status === "cancelled" && !filters.featured
-                  ? "bg-primary-600 text-white shadow-glow"
-                  : "bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a]"
-              }`}
-            >
-              Cancelados
-            </button>
-          </div>
-
-          <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
+          <div className="w-full sm:w-80">
             <SearchInput
               value={filters.search}
               onChange={(val) => setFilters({ ...filters, search: val })}

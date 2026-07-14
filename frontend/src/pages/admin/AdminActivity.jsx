@@ -134,17 +134,17 @@ const AdminActivity = () => {
       )}
 
       {/* Filtros */}
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-white text-sm font-medium mb-2">
-              <Filter size={16} className="inline mr-2" />
+      <div className="mb-6 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="flex items-center gap-2 text-gray-400 text-sm font-medium mb-2">
+              <Filter size={14} />
               Filtrar por Acción
             </label>
             <select
               value={filterAccion}
               onChange={(e) => setFilterAccion(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:border-primary-500 focus:outline-none"
+              className="w-full bg-[#1a1a1a] border border-[#262626] rounded-lg px-4 py-3 text-white text-sm focus:border-primary-500 focus:outline-none transition-colors"
             >
               <option value="all">Todas las acciones</option>
               {uniqueAcciones.map(accion => (
@@ -155,15 +155,15 @@ const AdminActivity = () => {
             </select>
           </div>
 
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-white text-sm font-medium mb-2">
-              <Filter size={16} className="inline mr-2" />
+          <div className="flex-1">
+            <label className="flex items-center gap-2 text-gray-400 text-sm font-medium mb-2">
+              <Filter size={14} />
               Filtrar por Entidad
             </label>
             <select
               value={filterEntidad}
               onChange={(e) => setFilterEntidad(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:border-primary-500 focus:outline-none"
+              className="w-full bg-[#1a1a1a] border border-[#262626] rounded-lg px-4 py-3 text-white text-sm focus:border-primary-500 focus:outline-none transition-colors"
             >
               <option value="all">Todas las entidades</option>
               {uniqueEntidades.map(entidad => (

@@ -160,22 +160,19 @@ const AdminBookings = () => {
   if (!selectedEvent) {
     return (
       <div className="p-4 md:p-8 bg-black min-h-screen">
-        <div className="mb-8">
-          <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Reservas</h1>
-          <p className="text-gray-400 text-sm md:text-lg">Selecciona un evento para ver sus reservas</p>
-        </div>
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
+          <div>
+            <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Reservas</h1>
+            <p className="text-gray-400 text-sm md:text-lg">Selecciona un evento para ver sus reservas</p>
+          </div>
 
-        {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">{error}</div>
-        )}
-
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <FilterBar
               filters={{ status: eventStatusFilter, featured: undefined }}
               onFilterChange={(f) => setEventStatusFilter(f.status || 'all')}
             />
-            <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
+
+            <div className="w-full sm:w-80">
               <SearchInput
                 value={eventSearchTerm}
                 onChange={(val) => setEventSearchTerm(val)}
@@ -185,6 +182,10 @@ const AdminBookings = () => {
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">{error}</div>
+        )}
 
         {filteredEvents.length === 0 ? (
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
@@ -240,7 +241,7 @@ const AdminBookings = () => {
           <span>Volver a eventos</span>
         </button>
 
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-gradient mb-2 text-2xl md:text-4xl">{selectedEvent.titulo}</h1>
             <div className="flex items-center gap-4 text-gray-400">
@@ -254,43 +255,43 @@ const AdminBookings = () => {
               {Array.isArray(bookings) ? `${bookings.length} reserva${bookings.length !== 1 ? 's' : ''} total${bookings.length !== 1 ? 'es' : ''}` : 'Cargando reservas...'}
             </p>
           </div>
-          <button
-            onClick={() => setShowEventSelector(true)}
-            className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#262626] text-white rounded-lg transition-colors flex items-center gap-2"
-          >
-            <Calendar size={18} />
-            Cambiar evento
-          </button>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <FilterBar
+              customFilters={[
+                { value: 'all',       label: 'Todas',      count: bookings.length },
+                { value: 'confirmada',label: 'Confirmadas',count: bookings.filter(b => b.estado === 'confirmada').length },
+                { value: 'asistida',  label: 'Asistidas',  count: bookings.filter(b => b.estado === 'asistida').length },
+                { value: 'cancelada', label: 'Canceladas', count: bookings.filter(b => b.estado === 'cancelada').length },
+              ]}
+              activeFilter={filter}
+              onFilterChange={(value) => setFilter(value)}
+              showCounts={true}
+            />
+
+            <div className="w-full sm:w-80">
+              <SearchInput
+                value={search}
+                onChange={(val) => setSearch(val)}
+                onClear={() => setSearch('')}
+                placeholder="Buscar por código, nombre o email..."
+              />
+            </div>
+
+            <button
+              onClick={() => setShowEventSelector(true)}
+              className="px-4 py-3 bg-[#1a1a1a] border border-[#262626] hover:bg-[#262626] text-white rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              <Calendar size={18} />
+              Cambiar evento
+            </button>
+          </div>
         </div>
       </div>
 
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">{error}</div>
       )}
-
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-6 flex-wrap bg-transparent">
-          <FilterBar
-            customFilters={[
-              { value: 'all',       label: 'Todas',      count: bookings.length },
-              { value: 'confirmada',label: 'Confirmadas',count: bookings.filter(b => b.estado === 'confirmada').length },
-              { value: 'asistida',  label: 'Asistidas',  count: bookings.filter(b => b.estado === 'asistida').length },
-              { value: 'cancelada', label: 'Canceladas', count: bookings.filter(b => b.estado === 'cancelada').length },
-            ]}
-            activeFilter={filter}
-            onFilterChange={(value) => setFilter(value)}
-            showCounts={true}
-          />
-          <div className="w-full sm:flex-1 sm:max-w-md sm:ml-auto">
-            <SearchInput
-              value={search}
-              onChange={(val) => setSearch(val)}
-              onClear={() => setSearch('')}
-              placeholder="Buscar por código, nombre o email..."
-            />
-          </div>
-        </div>
-      </div>
 
       {loading ? (
         <Loader fullScreen />
