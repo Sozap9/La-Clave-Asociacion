@@ -229,19 +229,20 @@ const AdminActivity = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#262626]">
-                    {activity.usuario_nombre && (
+                    {activity.usuario ? (
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-gray-400" />
                         <span className="text-gray-400 text-sm">
-                          {activity.usuario_nombre} {activity.usuario_apellidos || ''}
+                          {activity.usuario}
                         </span>
                       </div>
-                    )}
-                    {activity.ip_address && (
-                      <span className="text-gray-500 text-xs font-mono">IP: {activity.ip_address}</span>
-                    )}
-                    {activity.entidad_id && (
-                      <span className="text-gray-500 text-xs">ID: {activity.entidad_id}</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <User size={14} className="text-gray-500" />
+                        <span className="text-gray-500 text-sm italic">
+                          Usuario anónimo
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
