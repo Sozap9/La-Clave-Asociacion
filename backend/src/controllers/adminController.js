@@ -2116,7 +2116,6 @@ export const getRecentActivity = async (req, res) => {
         a.entidad_tipo AS entidad, 
         a.entidad_id, 
         a.descripcion, 
-        a.ip_address, 
         a.created_at,
         CONCAT(u.nombre, ' ', u.apellidos) as usuario
       FROM activity_log a

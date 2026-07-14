@@ -229,15 +229,6 @@ export const login = async (req, res) => {
       email: user.email
     });
 
-    registrarActividad({
-      userId: user.id,
-      accion: 'login',
-      entidadTipo: 'usuario',
-      entidadId: user.id,
-      descripcion: `${user.nombre || user.email} inició sesión`,
-      ipAddress: getIpFromRequest(req),
-    });
-
     return res.status(200).json({
       success: true,
       message: 'Login exitoso',
@@ -321,15 +312,6 @@ export const logout = async (req, res) => {
   try {
     // Por ahora, el logout se maneja en el cliente eliminando los tokens
     // En el futuro, implementaremos una blacklist de tokens
-
-    registrarActividad({
-      userId: req.user?.id || null,
-      accion: 'logout',
-      entidadTipo: 'usuario',
-      entidadId: req.user?.id || null,
-      descripcion: `${req.user?.nombre || 'Usuario'} cerró sesión`,
-      ipAddress: getIpFromRequest(req),
-    });
 
     return res.status(200).json({
       success: true,
@@ -720,6 +702,15 @@ export const crearSolicitud = async (req, res) => {
       solicitudId: solicitud.id,
       email: solicitud.email,
       ip: req.ip
+    });
+
+    registrarActividad({
+      userId: null,
+      accion: 'crear',
+      entidadTipo: 'socio',
+      entidadId: solicitud.id,
+      descripcion: `${sanitizeString(nombre)} ${sanitizeString(apellidos)} envió una solicitud de registro`,
+      ipAddress: getIpFromRequest(req),
     });
 
     return res.status(201).json({
