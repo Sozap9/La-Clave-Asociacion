@@ -131,8 +131,6 @@ const AdminGallery = () => {
     navigate(`/admin/galeria/${folder.id}/imagenes`);
   };
 
-  if (loading) return <Loader fullScreen />;
-
   // Filtrar álbumes
   const filteredFolders = folders.filter(folder => {
     const matchesSearch = !searchTerm.trim() ||
@@ -152,6 +150,8 @@ const AdminGallery = () => {
 
   const { pageItems: paginatedFolders, page, pages, total, setPage } =
     usePagination(filteredFolders, 12);
+
+  if (loading) return <Loader fullScreen />;
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
