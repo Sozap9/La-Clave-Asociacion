@@ -203,7 +203,7 @@ class EmailService {
       // bookingController.getBookingQRImage. Por el mismo motivo que el
       // cartel: Gmail no muestra "data:base64" incrustado, tiene que
       // ser una URL HTTPS de verdad.
-      const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}.png`;
+      const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}`;
 
       const mailOptions = {
         from: fromNoreply(),

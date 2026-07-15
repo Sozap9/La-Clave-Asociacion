@@ -426,7 +426,7 @@ export const retryBookingPayment = async (req, res) => {
  * exacto (el mismo que lleva el QR) no se puede pedir la imagen de
  * la reserva de otra persona.
  *
- * GET /api/bookings/qr/:id/:codigo.png
+ * GET /api/bookings/qr/:id/:codigo
  */
 export const getBookingQRImage = async (req, res) => {
   try {
@@ -434,11 +434,25 @@ export const getBookingQRImage = async (req, res) => {
 
     const booking = await Booking.findById(id);
 
-    if (!booking || booking.codigo_acceso !== codigo) {
+    if (!booking) {
+      logger.warn("getBookingQRImage: booking no encontrada", { id, codigo });
+      return res.status(404).send("Not found");
+    }
+
+    if (booking.codigo_acceso !== codigo) {
+      logger.warn("getBookingQRImage: codigo_acceso no coincide", {
+        id,
+        codigoRecibido: codigo,
+        codigoEsperado: booking.codigo_acceso,
+      });
       return res.status(404).send("Not found");
     }
 
     if (!booking.qr_code_url || !booking.qr_code_url.startsWith("data:")) {
+      logger.warn("getBookingQRImage: qr_code_url no es base64 o no existe", {
+        id,
+        qrCodeUrl: booking.qr_code_url,
+      });
       return res.status(404).send("QR no disponible");
     }
 
