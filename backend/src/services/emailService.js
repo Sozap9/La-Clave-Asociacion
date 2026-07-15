@@ -183,7 +183,12 @@ class EmailService {
       // del email (medida de seguridad de Google, no algo que podamos
       // evitar desde aquí) — así que hay que enlazar a una URL real que
       // el cliente de correo pueda cargar, igual que el QR de abajo.
-      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      //
+      // BACKEND_URL en Railway ya incluye "/api" al final (igual que
+      // VITE_API_URL en el frontend) — lo quitamos aquí antes de
+      // construir las rutas, porque si no se duplicaba a "/api/api/..."
+      // y todo devolvía 404 (visto en logs de producción).
+      const backendUrl = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/api\/?$/, '');
       let cartelUrl = null;
 
       if (event.imagen_cartel_url) {
@@ -203,7 +208,13 @@ class EmailService {
       // bookingController.getBookingQRImage. Por el mismo motivo que el
       // cartel: Gmail no muestra "data:base64" incrustado, tiene que
       // ser una URL HTTPS de verdad.
-      const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}`;
+      // Cache-busting: Brevo cachea la imagen por URL de origen. Como la
+      // URL del QR de una reserva es siempre la misma (mismo id, mismo
+      // codigo_acceso), si Brevo la pidió una vez cuando el endpoint aún
+      // fallaba, sirve esa copia rota para siempre en cualquier reenvío
+      // futuro — aunque el backend ya esté arreglado. Añadir un parámetro
+      // que cambia en cada envío obliga a Brevo a pedirla de nuevo.
+      const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}?v=${Date.now()}`;
 
       const mailOptions = {
         from: fromNoreply(),
