@@ -5,7 +5,8 @@ import {
   getBooking,
   cancelBooking,
   getMyBookingStats,
-  retryBookingPayment
+  retryBookingPayment,
+  getBookingQRImage
 } from '../controllers/bookingController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { isSocio } from '../middleware/roleMiddleware.js';
@@ -20,8 +21,19 @@ const router = express.Router();
 
 /**
  * ========================================
+ * RUTA PÚBLICA: imagen del QR (sin autenticación)
+ * Se abre desde el <img> de los emails, sin sesión iniciada.
+ * Protegida por el codigo_acceso en la propia URL — ver
+ * bookingController.getBookingQRImage.
+ * GET /api/bookings/qr/:id/:codigo.png
+ * ========================================
+ */
+router.get('/qr/:id/:codigo.png', getBookingQRImage);
+
+/**
+ * ========================================
  * MIDDLEWARE GLOBAL
- * Todas las rutas requieren autenticación
+ * A partir de aquí, todas las rutas requieren autenticación
  * ========================================
  */
 router.use(authenticate);

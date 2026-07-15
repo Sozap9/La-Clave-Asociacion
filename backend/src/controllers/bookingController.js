@@ -408,6 +408,53 @@ export const retryBookingPayment = async (req, res) => {
 };
 
 /**
+ * Servir el QR de una reserva como imagen PNG real (no data URI).
+ *
+ * Necesario para los emails: Gmail bloquea deliberadamente las imágenes
+ * "data:base64" incrustadas en el HTML del correo (medida de seguridad
+ * confirmada por Google), así que aunque el QR esté guardado en base64
+ * en la BD y el HTML sea correcto, Gmail nunca lo va a pintar si va
+ * incrustado. La única forma fiable es que el <img> del email apunte a
+ * una URL HTTPS real que el cliente de correo pueda solicitar — esta.
+ *
+ * Lee el PNG desde la columna qr_code_url (persistente en BD, no del
+ * disco efímero de Railway), así que sigue funcionando aunque el
+ * proceso se haya reiniciado desde que se generó.
+ *
+ * Público a propósito (el email se abre sin sesión iniciada), pero
+ * protegido por el codigo_acceso en la URL — sin conocer ese código
+ * exacto (el mismo que lleva el QR) no se puede pedir la imagen de
+ * la reserva de otra persona.
+ *
+ * GET /api/bookings/qr/:id/:codigo.png
+ */
+export const getBookingQRImage = async (req, res) => {
+  try {
+    const { id, codigo } = req.params;
+
+    const booking = await Booking.findById(id);
+
+    if (!booking || booking.codigo_acceso !== codigo) {
+      return res.status(404).send("Not found");
+    }
+
+    if (!booking.qr_code_url || !booking.qr_code_url.startsWith("data:")) {
+      return res.status(404).send("QR no disponible");
+    }
+
+    const base64Data = booking.qr_code_url.replace(/^data:image\/png;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    return res.send(buffer);
+  } catch (error) {
+    logger.error("Error en getBookingQRImage:", error);
+    return res.status(500).send("Error");
+  }
+};
+
+/**
  * Obtener mis reservas
  * GET /api/bookings/me
  */

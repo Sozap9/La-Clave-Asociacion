@@ -10,10 +10,20 @@ import logger from '../config/logger.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { generateQRCodeBase64 } from '../utils/qrCodeGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Quita los segundos de la hora del evento para mostrarla ("17:00:00"
+ * → "17:00"). La columna hora_evento viene de MySQL como "HH:MM:SS".
+ * @param {String} horaEvento
+ * @returns {String}
+ */
+const formatHora = (horaEvento) => {
+  if (!horaEvento) return '';
+  return horaEvento.substring(0, 5);
+};
 
 /**
  * Convierte el texto combinado de motivación (varias preguntas +
@@ -168,39 +178,32 @@ class EmailService {
         day: 'numeric'
       });
 
-      // ===== PREPARAR IMAGEN DEL CARTEL (INLINE, BASE64) =====
-      // Antes se adjuntaba por CID (Content-ID), pero la API HTTP de
-      // Brevo (usada desde mailer.js por el bloqueo de puertos SMTP en
-      // Railway) NO soporta imágenes inline vía CID — Brevo lo confirma
-      // en su propia documentación. El HTML llegaba bien pero la imagen
-      // referenciada como cid:... nunca se resolvía, y se veía rota.
-      // Solución: incrustar la imagen directamente como data URI en el
-      // src del <img>, que sí es universalmente compatible.
-      let cartelDataURL = null;
+      // ===== IMAGEN DEL CARTEL: URL real, no base64 =====
+      // Gmail bloquea las imágenes "data:base64" incrustadas en el HTML
+      // del email (medida de seguridad de Google, no algo que podamos
+      // evitar desde aquí) — así que hay que enlazar a una URL real que
+      // el cliente de correo pueda cargar, igual que el QR de abajo.
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      let cartelUrl = null;
 
       if (event.imagen_cartel_url) {
         try {
           const cartelPath = path.join(__dirname, '../../uploads', event.imagen_cartel_url);
           if (fs.existsSync(cartelPath)) {
-            const cartelBuffer = fs.readFileSync(cartelPath);
-            const ext = path.extname(cartelPath).replace('.', '').toLowerCase();
-            const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
-            cartelDataURL = `data:${mime};base64,${cartelBuffer.toString('base64')}`;
+            cartelUrl = `${backendUrl}${event.imagen_cartel_url}`;
           }
         } catch (err) {
-          logger.warn('No se pudo cargar imagen del cartel:', err.message);
+          logger.warn('No se pudo comprobar la imagen del cartel:', err.message);
         }
       }
 
-      // ===== GENERAR QR CODE BASE64 PARA INLINE =====
-      // Mismo motivo que el cartel: se incrusta directo como data URI,
-      // sin pasar por attachments/CID.
-      let qrDataURL = null;
-      try {
-        qrDataURL = await generateQRCodeBase64(booking.codigo_reserva, booking.id);
-      } catch (qrError) {
-        logger.warn('No se pudo generar QR:', qrError.message);
-      }
+      // ===== QR: URL real servida desde /api/bookings/qr/:id/:codigo.png =====
+      // Lee el QR guardado en base64 en la BD (persistente, no depende
+      // del disco de Railway) y lo sirve como PNG real — ver
+      // bookingController.getBookingQRImage. Por el mismo motivo que el
+      // cartel: Gmail no muestra "data:base64" incrustado, tiene que
+      // ser una URL HTTPS de verdad.
+      const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}.png`;
 
       const mailOptions = {
         from: fromNoreply(),
@@ -233,9 +236,9 @@ class EmailService {
                         <table width="100%" cellpadding="0" cellspacing="0">
                           <tr>
                             <!-- Cartel evento -->
-                            ${cartelDataURL ? `
+                            ${cartelUrl ? `
                             <td width="160" style="padding:24px 0 24px 24px;vertical-align:top;">
-                              <img src="${cartelDataURL}" alt="${event.titulo}"
+                              <img src="${cartelUrl}" alt="${event.titulo}"
                                 style="width:140px;height:140px;object-fit:cover;border-radius:10px;border:2px solid #2a2a2a;display:block;">
                             </td>
                             ` : ''}
@@ -247,7 +250,7 @@ class EmailService {
                               <strong style="color:#fff;">${fechaEvento}</strong>
                               </p>
                               <p style="margin:0 0 8px 0;font-size:14px;color:#aaa;">
-                              <strong style="color:#fff;">${event.hora_evento}</strong>
+                              <strong style="color:#fff;">${formatHora(event.hora_evento)}</strong>
                               </p>
                               <p style="margin:0 0 16px 0;font-size:14px;color:#aaa;">
                               <strong style="color:#fff;">${event.ubicacion || 'La Clave 981'}</strong>
@@ -276,13 +279,11 @@ class EmailService {
                           <tr>
                             <!-- QR code inline -->
                             <td width="230" style="vertical-align:middle;text-align:center;">
-                              ${qrDataURL ? `
                               <div style="background:#fff;padding:10px;border-radius:10px;display:inline-block;border:3px solid #D97706;">
-                                <img src="${qrDataURL}" alt="QR Code" width="200" height="200"
+                                <img src="${qrUrl}" alt="QR Code" width="200" height="200"
                                   style="display:block;border-radius:4px;">
                               </div>
                               <p style="margin:8px 0 0 0;color:#666;font-size:11px;">Escanea en la entrada</p>
-                              ` : '<p style="color:#666;font-size:12px;">QR no disponible</p>'}
                             </td>
                             <!-- Datos titular -->
                             <td style="padding-left:24px;vertical-align:middle;color:#e5e5e5;">
@@ -342,8 +343,8 @@ class EmailService {
         to: user.email,
         bookingId: booking.id,
         messageId: info.messageId,
-        hasCartel: !!cartelDataURL,
-        hasQR: !!qrDataURL
+        hasCartel: !!cartelUrl,
+        qrUrl
       });
       
       return { success: true, messageId: info.messageId };
@@ -415,7 +416,7 @@ class EmailService {
                           <div style="margin: 12px 0;">
                             <span style="color: #f59e0b;"></span>
                             <strong style="color: #f59e0b; margin-right: 8px;">Hora:</strong>
-                            <span style="font-size: 15px;">${event.hora_evento}</span>
+                            <span style="font-size: 15px;">${formatHora(event.hora_evento)}</span>
                           </div>
                           
                           <div style="margin: 12px 0;">
@@ -546,7 +547,7 @@ class EmailService {
                           
                           <div style="margin: 12px 0;">
                             <strong style="color: #F59E0B; margin-right: 8px;">Hora:</strong>
-                            <span style="font-size: 15px;">${event.hora_evento}</span>
+                            <span style="font-size: 15px;">${formatHora(event.hora_evento)}</span>
                           </div>
                           
                           <div style="margin: 12px 0;">
@@ -630,7 +631,7 @@ class EmailService {
               ${event.titulo}
             </h3>
             <p style="margin: 5px 0; color: #d1d5db; font-size: 14px;">
-            <strong>${fecha}</strong> | ${event.hora_evento} | ${event.ubicacion}
+            <strong>${fecha}</strong> | ${formatHora(event.hora_evento)} | ${event.ubicacion}
             </p>
             ${event.descripcion_corta ? `
             <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 13px; line-height: 1.5;">
