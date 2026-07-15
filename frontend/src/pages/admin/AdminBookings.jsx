@@ -97,17 +97,17 @@ const AdminBookings = () => {
     }
   };
 
-  // Regenera el QR (en base64, persistente) y reenvía el email de
-  // confirmación. Útil sobre todo para reservas confirmadas antes del
-  // cambio a QR en base64, cuyo QR quedó roto porque Railway borró el
-  // PNG del disco en algún reinicio.
-  const [resendingId, setResendingId] = useState(null);
-  const handleResendTicket = async (bookingId) => {
-    if (!confirm('¿Reenviar la entrada por email con el QR regenerado?')) return;
-    setResendingId(bookingId);
+  // Modal de reenviar entrada (regenera QR + reenvía email)
+  const [resendModalBooking, setResendModalBooking] = useState(null);
+  const [resendStatus, setResendStatus] = useState('idle'); // idle | sending | success | error
+  const [resendMessage, setResendMessage] = useState('');
+
+  const handleResendTicket = async () => {
+    if (!resendModalBooking) return;
+    setResendStatus('sending');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/admin/bookings/${bookingId}/reenviar`, {
+      const response = await fetch(`${API_URL}/admin/bookings/${resendModalBooking.id}/reenviar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -116,15 +116,22 @@ const AdminBookings = () => {
       });
       const result = await response.json();
       if (result.success) {
-        alert(result.message || 'Entrada reenviada');
+        setResendStatus('success');
+        setResendMessage(result.message || 'Entrada reenviada');
       } else {
-        alert(result.message || 'Error al reenviar la entrada');
+        setResendStatus('error');
+        setResendMessage(result.message || 'Error al reenviar la entrada');
       }
     } catch (err) {
-      alert('Error de conexión');
-    } finally {
-      setResendingId(null);
+      setResendStatus('error');
+      setResendMessage('Error de conexión');
     }
+  };
+
+  const closeResendModal = () => {
+    setResendModalBooking(null);
+    setResendStatus('idle');
+    setResendMessage('');
   };
 
   const filteredBookings = Array.isArray(bookings) ? bookings.filter(booking => {
@@ -403,11 +410,10 @@ const AdminBookings = () => {
                       {booking.estado === 'confirmada' && (
                         <>
                           <button
-                            onClick={() => handleResendTicket(booking.id)}
-                            disabled={resendingId === booking.id}
-                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors disabled:opacity-60"
+                            onClick={() => setResendModalBooking(booking)}
+                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors"
                           >
-                            {resendingId === booking.id ? 'Enviando...' : 'Reenviar'}
+                            Reenviar
                           </button>
                           <button onClick={() => handleCancelBooking(booking.id)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors">
                             Cancelar
@@ -539,6 +545,89 @@ const AdminBookings = () => {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal reenviar entrada */}
+      {resendModalBooking && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => resendStatus !== 'sending' && closeResendModal()}
+        >
+          <div
+            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {resendStatus === 'idle' && (
+              <>
+                <h2 className="text-xl font-bold text-white mb-2">Reenviar entrada</h2>
+                <p className="text-gray-400 text-sm mb-1">
+                  Se va a regenerar el QR y reenviar el email de confirmación a:
+                </p>
+                <p className="text-white font-semibold mb-1">
+                  {resendModalBooking.socio_nombre} {resendModalBooking.socio_apellidos}
+                </p>
+                <p className="text-gray-500 text-sm mb-6 font-mono">
+                  {resendModalBooking.socio_email}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeResendModal}
+                    className="flex-1 px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleResendTicket}
+                    className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                  >
+                    Reenviar
+                  </button>
+                </div>
+              </>
+            )}
+
+            {resendStatus === 'sending' && (
+              <div className="py-6 text-center">
+                <Loader size="md" />
+                <p className="text-gray-400 text-sm mt-4">Regenerando QR y enviando email...</p>
+              </div>
+            )}
+
+            {resendStatus === 'success' && (
+              <div className="text-center">
+                <p className="text-green-400 text-lg font-semibold mb-2">Entrada reenviada</p>
+                <p className="text-gray-400 text-sm mb-6">{resendMessage}</p>
+                <button
+                  onClick={closeResendModal}
+                  className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+
+            {resendStatus === 'error' && (
+              <div className="text-center">
+                <p className="text-red-400 text-lg font-semibold mb-2">No se pudo reenviar</p>
+                <p className="text-gray-400 text-sm mb-6">{resendMessage}</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeResendModal}
+                    className="flex-1 px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    onClick={handleResendTicket}
+                    className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

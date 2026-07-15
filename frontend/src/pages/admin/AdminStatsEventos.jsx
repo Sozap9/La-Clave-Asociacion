@@ -155,7 +155,7 @@ const AdminStatsEventos = () => {
                         {new Date(evento.fecha_evento).toLocaleDateString(
                           "es-ES"
                         )}{" "}
-                        • {evento.hora_evento}
+                        • {evento.hora_evento?.slice(0, 5)}
                       </p>
                     </div>
                     <div className="text-right">
