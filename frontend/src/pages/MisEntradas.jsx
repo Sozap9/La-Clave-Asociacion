@@ -612,7 +612,11 @@ const MisEntradas = () => {
                   {selectedBooking.qr_code_url ? (
                     <>
                       <img
-                        src={`${import.meta.env.VITE_BASE_URL}${selectedBooking.qr_code_url}`}
+                        src={
+                          selectedBooking.qr_code_url.startsWith("data:")
+                            ? selectedBooking.qr_code_url
+                            : `${import.meta.env.VITE_BASE_URL}${selectedBooking.qr_code_url}`
+                        }
                         alt="QR Code"
                         className="w-full h-auto"
                         onError={(e) => {
