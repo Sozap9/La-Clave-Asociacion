@@ -35,10 +35,12 @@ const getStripe = () => {
  * Crear sesión de Stripe Checkout para el pago de una entrada a evento
  * (pago único — mode: 'payment', NO es una suscripción)
  *
- * No se especifica payment_method_types a propósito: Stripe Checkout
- * ofrece automáticamente todos los métodos habilitados en el Dashboard
- * (tarjeta está activo por defecto; Bizum, Google Pay, etc. se activan
- * desde el Dashboard de Stripe sin tocar código).
+ * Se especifica payment_method_types explícitamente para limitar el
+ * checkout a tarjeta (Apple Pay/Google Pay se muestran solos en cuanto
+ * 'card' está en la lista). Añade 'paypal' a paymentMethodTypes más
+ * abajo cuando esté activado en el Dashboard. Si en el futuro se quiere
+ * volver a mostrar todo lo que esté activo en el Dashboard (Bizum,
+ * Link, etc.), basta con quitar el parámetro payment_method_types.
  *
  * @param {Object} params
  * @param {Object} params.booking - Reserva recién creada (estado esperando_pago)
@@ -56,8 +58,20 @@ export const createCheckoutSession = async ({ booking, event, user, numeroEntrad
     // para no bloquear aforo innecesariamente si alguien abandona el pago
     const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60;
 
+    // Restringimos explícitamente a tarjeta.
+    // Apple Pay y Google Pay se activan automáticamente en cuanto
+    // 'card' está en la lista — no hace falta añadirlos aparte, y como
+    // esto es Stripe Checkout hospedado (checkout.stripe.com) tampoco
+    // hace falta verificar el dominio para Apple Pay.
+    // 'paypal' se añadirá aquí cuando esté activado en el Dashboard
+    // (Settings → Payment methods → PayPal → Turn on). Pedirlo antes de
+    // activarlo hace que Stripe muestre alternativas no deseadas
+    // (ej. Satispay) en su lugar.
+    const paymentMethodTypes = ['card'];
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      payment_method_types: paymentMethodTypes,
       customer_email: user.email,
       line_items: [
         {
