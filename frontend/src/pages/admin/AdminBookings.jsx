@@ -97,6 +97,36 @@ const AdminBookings = () => {
     }
   };
 
+  // Regenera el QR (en base64, persistente) y reenvía el email de
+  // confirmación. Útil sobre todo para reservas confirmadas antes del
+  // cambio a QR en base64, cuyo QR quedó roto porque Railway borró el
+  // PNG del disco en algún reinicio.
+  const [resendingId, setResendingId] = useState(null);
+  const handleResendTicket = async (bookingId) => {
+    if (!confirm('¿Reenviar la entrada por email con el QR regenerado?')) return;
+    setResendingId(bookingId);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/admin/bookings/${bookingId}/reenviar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert(result.message || 'Entrada reenviada');
+      } else {
+        alert(result.message || 'Error al reenviar la entrada');
+      }
+    } catch (err) {
+      alert('Error de conexión');
+    } finally {
+      setResendingId(null);
+    }
+  };
+
   const filteredBookings = Array.isArray(bookings) ? bookings.filter(booking => {
     if (filter !== 'all' && booking.estado !== filter) return false;
     if (search) {
@@ -371,9 +401,18 @@ const AdminBookings = () => {
                     </div>
                     <div className="flex flex-col gap-2 ml-4">
                       {booking.estado === 'confirmada' && (
-                        <button onClick={() => handleCancelBooking(booking.id)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors">
-                          Cancelar
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleResendTicket(booking.id)}
+                            disabled={resendingId === booking.id}
+                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition-colors disabled:opacity-60"
+                          >
+                            {resendingId === booking.id ? 'Enviando...' : 'Reenviar'}
+                          </button>
+                          <button onClick={() => handleCancelBooking(booking.id)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors">
+                            Cancelar
+                          </button>
+                        </>
                       )}
                       <button onClick={() => setSelectedBooking(booking)} className="px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg text-sm transition-colors">
                         Ver Detalles
