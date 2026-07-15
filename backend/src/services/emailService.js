@@ -316,6 +316,25 @@ class EmailService {
                       </td>
                     </tr>
 
+                    <!-- BOTÓN DE RESPALDO: por si el QR no carga en el
+                         cliente de correo (Brevo a veces no consigue
+                         cargar imágenes generadas dinámicamente a
+                         tiempo al enviar, y cachea la copia rota para
+                         siempre). Mis Entradas siempre tiene el QR
+                         correcto y actualizado. -->
+                    <tr>
+                      <td style="padding:0 30px 24px 30px;text-align:center;">
+                        <p style="margin:0 0 10px 0;color:#666;font-size:12px;">
+                          ¿No ves el código QR arriba?
+                        </p>
+                        <a href="${process.env.FRONTEND_URL}/mis-entradas"
+                          style="display:inline-block;background:#D97706;color:#fff;text-decoration:none;
+                          font-size:13px;font-weight:bold;padding:10px 24px;border-radius:8px;">
+                          Ver mi entrada online
+                        </a>
+                      </td>
+                    </tr>
+
                     <!-- AVISO IMPORTANTE -->
                     <tr>
                       <td style="padding:0 30px 24px 30px;">
