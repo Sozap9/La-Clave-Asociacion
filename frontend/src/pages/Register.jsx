@@ -98,6 +98,12 @@ const Register = () => {
       if (data.success) {
         setSuccess(true);
         setSuccessEmail(data.data?.email || formData.email);
+      } else if (Array.isArray(data.errors) && data.errors.length > 0) {
+        // El backend devuelve un array con el detalle por campo
+        // (ej: { field: "password", message: "La contraseña debe..." }).
+        // Mostramos todos los mensajes concretos en vez del genérico
+        // "Error de validación", para que el usuario sepa qué corregir.
+        setError(data.errors.map((err) => err.message).join(" "));
       } else {
         setError(data.message || "Error al enviar la solicitud");
       }
