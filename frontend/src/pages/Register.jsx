@@ -36,6 +36,8 @@ const Register = () => {
   const [esArtista, setEsArtista] = useState(""); // "si" | "no" | ""
 
   const [loading, setLoading] = useState(false);
+  // error puede ser un string (error general) o un array de strings
+  // (uno por cada campo que falló la validación)
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [successEmail, setSuccessEmail] = useState("");
@@ -101,9 +103,10 @@ const Register = () => {
       } else if (Array.isArray(data.errors) && data.errors.length > 0) {
         // El backend devuelve un array con el detalle por campo
         // (ej: { field: "password", message: "La contraseña debe..." }).
-        // Mostramos todos los mensajes concretos en vez del genérico
-        // "Error de validación", para que el usuario sepa qué corregir.
-        setError(data.errors.map((err) => err.message).join(" "));
+        // Guardamos cada mensaje por separado (sin duplicados) para
+        // poder mostrarlos como una lista, uno por línea.
+        const mensajes = [...new Set(data.errors.map((err) => err.message))];
+        setError(mensajes);
       } else {
         setError(data.message || "Error al enviar la solicitud");
       }
@@ -175,8 +178,8 @@ const Register = () => {
 
         <div className="bg-gradient-to-br from-primary-600/20 via-primary-700/10 to-primary-800/20 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-primary-500/20">
           {error && (
-            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 text-sm">
-              {error}
+            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 text-sm whitespace-pre-line">
+              {Array.isArray(error) ? error.join("\n") : error}
             </div>
           )}
 
