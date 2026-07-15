@@ -56,6 +56,26 @@ const MisEntradas = () => {
   const [payingBookingId, setPayingBookingId] = useState(null);
   const [payError, setPayError] = useState("");
 
+  // Si el usuario le da "atrás" después de pulsar "Pagar ahora" (antes de
+  // que llegue a cargar Stripe), el navegador a veces restaura esta página
+  // desde el caché (bfcache) en vez de recargarla. Como nunca volvíamos a
+  // poner payingBookingId a null (dábamos por hecho que la página se iba),
+  // el botón se quedaba congelado en "Redirigiendo..." sin poder volver a
+  // pulsarlo. El evento 'pageshow' con persisted=true detecta justo ese
+  // caso y libera el botón. También refrescamos las reservas por si el
+  // estado cambió mientras tanto.
+  useEffect(() => {
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        setPayingBookingId(null);
+        fetchBookings();
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+    // eslint-disable-next-line
+  }, []);
+
   // Limpiamos el parámetro ?pago=... de la URL en cuanto entramos,
   // para que no se muestre ningún aviso ni quede visible en la barra
   // de direcciones.
@@ -245,6 +265,13 @@ const MisEntradas = () => {
     setPayError("");
     setPayingBookingId(booking.id);
 
+    // Salvaguarda: si por lo que sea la redirección no llega a completarse
+    // (red lenta, la pestaña sigue viva más de la cuenta, etc.), liberamos
+    // el botón a los 10s en vez de dejarlo bloqueado indefinidamente.
+    const safetyTimeout = setTimeout(() => {
+      setPayingBookingId((current) => (current === booking.id ? null : current));
+    }, 10000);
+
     try {
       const token = localStorage.getItem("token");
       const result = await retryBookingPayment(booking.id, token);
@@ -254,10 +281,12 @@ const MisEntradas = () => {
         // en la primera compra
         window.location.href = result.data.checkout_url;
       } else {
+        clearTimeout(safetyTimeout);
         setPayError(result.message || "No se pudo iniciar el pago");
         setPayingBookingId(null);
       }
     } catch (err) {
+      clearTimeout(safetyTimeout);
       setPayError("Error de conexión. Intenta de nuevo.");
       setPayingBookingId(null);
     }
