@@ -327,7 +327,7 @@ class EmailService {
                         <p style="margin:0 0 10px 0;color:#666;font-size:12px;">
                           ¿No ves el código QR arriba?
                         </p>
-                        <a href="${process.env.FRONTEND_URL}/mis-entradas"
+                        <a href="${process.env.FRONTEND_URL}/mis-entradas?ver=${booking.id}"
                           style="display:inline-block;background:#D97706;color:#fff;text-decoration:none;
                           font-size:13px;font-weight:bold;padding:10px 24px;border-radius:8px;">
                           Ver mi entrada online
