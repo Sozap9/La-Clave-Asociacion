@@ -30,6 +30,7 @@ import {
   getBookingDetails,
   cancelBookingAdmin,
   getBookingsStats,
+  resendBookingTicket,
 
   // Pagos
   listPayments,
@@ -281,6 +282,14 @@ router.get(
 
 // Cancelar reserva (OPERACIÓN CRÍTICA - 20 ops/hora)
 router.patch("/bookings/:id/cancel", adminStrictLimiter, cancelBookingAdmin);
+
+// Regenerar QR (base64) y reenviar el email de confirmación con la entrada
+router.post(
+  "/bookings/:id/reenviar",
+  idParamValidator,
+  handleValidationErrors,
+  resendBookingTicket,
+);
 
 // Verificar QR y registrar asistencia
 router.post(

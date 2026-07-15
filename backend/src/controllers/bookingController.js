@@ -3,7 +3,7 @@ import Event from "../models/Event.js";
 import Socio from "../models/Socio.js";
 import User from "../models/User.js";
 import EmailService from "../services/emailService.js";
-import { generateQRCode } from "../utils/qrCodeGenerator.js";
+import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
 import { createCheckoutSession } from "../config/payment.js";
 import { query, transaction, pool } from "../config/database.js";
 import logger from "../config/logger.js";
@@ -210,7 +210,12 @@ export const createBooking = async (req, res) => {
       let qrCode = null;
       try {
         const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
-        qrCode = await generateQRCode(qrData, booking.id);
+        // Base64 en vez de archivo en disco: Railway tiene sistema de
+        // archivos efímero y borra los PNG escritos en runtime en cada
+        // reinicio del proceso, dejando el QR roto en la web. Guardando
+        // el PNG como data URI directamente en la columna sobrevive a
+        // los reinicios (igual que ya hace el QR del email).
+        qrCode = await generateQRCodeBase64(qrData, booking.id);
         await query(`UPDATE bookings SET qr_code_url = ? WHERE id = ?`, [
           qrCode,
           booking.id,

@@ -84,7 +84,7 @@ class EmailService {
                   <table width="600" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-radius: 12px; overflow: hidden;">
                     
                     <tr>
-                      <td style="background: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%); padding: 40px 30px; text-align: center;">
+                      <td style="background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); padding: 40px 30px; text-align: center;">
                         <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">
                           ¡Bienvenido a La Clave!
                         </h1>
@@ -93,7 +93,7 @@ class EmailService {
                     
                     <tr>
                       <td style="padding: 40px 30px; color: #e5e5e5;">
-                        <h2 style="color: #8B5CF6; margin: 0 0 20px 0; font-size: 24px;">
+                        <h2 style="color: #F59E0B; margin: 0 0 20px 0; font-size: 24px;">
                           ¡Hola ${user.nombre}!
                         </h2>
                         
@@ -101,12 +101,12 @@ class EmailService {
                           Gracias por unirte a <strong> La Clave 981 </strong>,tu nuevo espacio para disfrutar del arte y la cultura. 
                         </p>
                         
-                        <div style="background-color: #2a2a2a; border-left: 4px solid #8B5CF6; padding: 20px; margin: 30px 0; border-radius: 4px;">
-                          <p style="margin: 0 0 10px 0; color: #a78bfa; font-weight: bold;">
+                        <div style="background-color: #2a2a2a; border-left: 4px solid #F59E0B; padding: 20px; margin: 30px 0; border-radius: 4px;">
+                          <p style="margin: 0 0 10px 0; color: #FBBF24; font-weight: bold;">
                             Detalles de tu cuenta:
                           </p>
                           <p style="margin: 5px 0; font-size: 14px;">
-                            <strong style="color: #8B5CF6;">Email:</strong> ${user.email}
+                            <strong style="color: #F59E0B;">Email:</strong> ${user.email}
                           </p>
                         </div>
                         
@@ -235,8 +235,8 @@ class EmailService {
 
                     <!-- HEADER VERDE -->
                     <tr>
-                      <td style="background:linear-gradient(135deg,#7c3aed 0%,#a855f7 100%);padding:28px 30px;text-align:center;">
-                        <p style="color:#e9d5ff;margin:0 0 4px 0;font-size:12px;text-transform:uppercase;letter-spacing:2px;">La Clave 981</p>
+                      <td style="background:linear-gradient(135deg,#D97706 0%,#FCD34D 100%);padding:28px 30px;text-align:center;">
+                        <p style="color:#FDE68A;margin:0 0 4px 0;font-size:12px;text-transform:uppercase;letter-spacing:2px;">La Clave 981</p>
                         <h1 style="color:#ffffff;margin:0;font-size:26px;font-weight:bold;letter-spacing:1px;">ENTRADA CONFIRMADA</h1>
                       </td>
                     </tr>
@@ -255,7 +255,7 @@ class EmailService {
                             ` : ''}
                             <!-- Datos evento -->
                             <td style="padding:24px;vertical-align:top;color:#e5e5e5;">
-                              <p style="margin:0 0 4px 0;color:#a855f7;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Evento</p>
+                              <p style="margin:0 0 4px 0;color:#FCD34D;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Evento</p>
                               <h2 style="margin:0 0 16px 0;font-size:20px;color:#ffffff;font-weight:bold;">${event.titulo}</h2>
                               <p style="margin:0 0 8px 0;font-size:14px;color:#aaa;">
                               <strong style="color:#fff;">${fechaEvento}</strong>
@@ -291,7 +291,7 @@ class EmailService {
                             <!-- QR code inline -->
                             <td width="230" style="vertical-align:middle;text-align:center;">
                               ${qrDataURL ? `
-                              <div style="background:#fff;padding:10px;border-radius:10px;display:inline-block;border:3px solid #7c3aed;">
+                              <div style="background:#fff;padding:10px;border-radius:10px;display:inline-block;border:3px solid #D97706;">
                                 <img src="cid:${qrCid}" alt="QR Code" width="200" height="200"
                                   style="display:block;border-radius:4px;">
                               </div>
@@ -305,12 +305,12 @@ class EmailService {
                                 ${user.nombre} ${user.apellidos || ''}
                               </p>
                               <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Código de reserva</p>
-                              <p style="margin:0 0 16px 0;font-size:16px;font-weight:bold;color:#a855f7;font-family:monospace;letter-spacing:2px;">
+                              <p style="margin:0 0 16px 0;font-size:16px;font-weight:bold;color:#FCD34D;font-family:monospace;letter-spacing:2px;">
                                 ${booking.codigo_reserva}
                               </p>
                               <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Coste</p>
                               <p style="margin:0;font-size:14px;color:#fff;">
-                                ${booking.precio_pagado > 0 ? `<strong style="color:#a855f7;">${booking.precio_pagado}€</strong>` : '<strong style="color:#10b981;">Entrada gratuita</strong>'}
+                                ${booking.precio_pagado > 0 ? `<strong style="color:#FCD34D;">${booking.precio_pagado}€</strong>` : '<strong style="color:#10b981;">Entrada gratuita</strong>'}
                               </p>
                             </td>
                           </tr>
@@ -321,8 +321,8 @@ class EmailService {
                     <!-- AVISO IMPORTANTE -->
                     <tr>
                       <td style="padding:0 30px 24px 30px;">
-                        <div style="background:#1a1a2e;border-left:3px solid #7c3aed;border-radius:6px;padding:14px 16px;">
-                          <p style="margin:0 0 6px 0;color:#a855f7;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Información importante</p>
+                        <div style="background:#2a2a2a;border-left:3px solid #D97706;border-radius:6px;padding:14px 16px;">
+                          <p style="margin:0 0 6px 0;color:#FCD34D;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Información importante</p>
                           <p style="margin:0;color:#9ca3af;font-size:13px;line-height:1.7;">
                             • Presenta este QR en la entrada del evento.<br>
                             • Si necesitas cancelar, hazlo con al menos 24h de antelación.<br>
@@ -440,7 +440,7 @@ class EmailService {
                           </div>
                         </div>
                         
-                        <div style="background: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%); padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
+                        <div style="background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
                           <p style="color: #ffffff; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
                             Tu código de reserva
                           </p>
@@ -530,7 +530,7 @@ class EmailService {
                   <table width="600" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-radius: 12px; overflow: hidden;">
                     
                     <tr>
-                      <td style="background: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%); padding: 40px 30px; text-align: center;">
+                      <td style="background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); padding: 40px 30px; text-align: center;">
                         <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">
                           ¡Nuevo Evento Disponible!
                         </h1>
@@ -544,7 +544,7 @@ class EmailService {
                         </p>
                         
                         <div style="background-color: #2a2a2a; padding: 25px; border-radius: 8px; margin: 30px 0;">
-                          <h2 style="color: #8B5CF6; margin: 0 0 20px 0; font-size: 24px;">
+                          <h2 style="color: #F59E0B; margin: 0 0 20px 0; font-size: 24px;">
                             ${event.titulo}
                           </h2>
                           
@@ -555,29 +555,29 @@ class EmailService {
                           ` : ''}
                           
                           <div style="margin: 12px 0;">
-                            <strong style="color: #8B5CF6; margin-right: 8px;">Fecha:</strong>
+                            <strong style="color: #F59E0B; margin-right: 8px;">Fecha:</strong>
                             <span style="font-size: 15px;">${fechaEvento}</span>
                           </div>
                           
                           <div style="margin: 12px 0;">
-                            <strong style="color: #8B5CF6; margin-right: 8px;">Hora:</strong>
+                            <strong style="color: #F59E0B; margin-right: 8px;">Hora:</strong>
                             <span style="font-size: 15px;">${event.hora_evento}</span>
                           </div>
                           
                           <div style="margin: 12px 0;">
-                            <strong style="color: #8B5CF6; margin-right: 8px;">Ubicación:</strong>
+                            <strong style="color: #F59E0B; margin-right: 8px;">Ubicación:</strong>
                             <span style="font-size: 15px;">${event.ubicacion}</span>
                           </div>
 
                           <div style="margin: 12px 0;">
-                            <strong style="color: #8B5CF6; margin-right: 8px;">Precio socios:</strong>
+                            <strong style="color: #F59E0B; margin-right: 8px;">Precio socios:</strong>
                             <span style="font-size: 15px; color: #10b981; font-weight: bold;">${event.precio_socio}€</span>
                           </div>
                         </div>
                         
                         <div style="text-align: center; margin: 30px 0;">
                           <a href="${process.env.FRONTEND_URL}/eventos" 
-                             style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%); 
+                             style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); 
                                     color: white; padding: 16px 40px; text-decoration: none; border-radius: 50px; 
                                     font-weight: bold; font-size: 16px;">
                             Reservar Ahora
@@ -641,7 +641,7 @@ class EmailService {
         
         eventsHTML += `
           <div style="background-color: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-            <h3 style="color: #8B5CF6; margin: 0 0 10px 0; font-size: 18px;">
+            <h3 style="color: #F59E0B; margin: 0 0 10px 0; font-size: 18px;">
               ${event.titulo}
             </h3>
             <p style="margin: 5px 0; color: #d1d5db; font-size: 14px;">
@@ -674,7 +674,7 @@ class EmailService {
                   <table width="600" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-radius: 12px; overflow: hidden;">
                     
                     <tr>
-                      <td style="background: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%); padding: 40px 30px; text-align: center;">
+                      <td style="background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); padding: 40px 30px; text-align: center;">
                         <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">
                           Agenda de ${monthName}
                         </h1>
@@ -691,7 +691,7 @@ class EmailService {
                         
                         <div style="text-align: center; margin: 30px 0;">
                           <a href="${process.env.FRONTEND_URL}/eventos" 
-                            style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #a78bfa 100%); 
+                            style="display: inline-block; background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); 
                                     color: white; padding: 16px 40px; text-decoration: none; border-radius: 50px; 
                                     font-weight: bold; font-size: 16px;">
                             Ver Todos los Eventos
@@ -763,7 +763,7 @@ class EmailService {
                   <table width="600" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-radius: 12px; overflow: hidden;">
                     
                     <tr>
-                      <td style="background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); padding: 40px 30px; text-align: center;">
+                      <td style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 40px 30px; text-align: center;">
                         <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
                           Recuperación de Contraseña
                         </h1>
@@ -785,17 +785,17 @@ class EmailService {
                         </p>
                         
                         <div style="text-align: center; margin: 30px 0;">
-                          <a href="${resetUrl}" style="display: inline-block; background: #8B5CF6; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                          <a href="${resetUrl}" style="display: inline-block; background: #F59E0B; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                             Restablecer mi contraseña
                           </a>
                         </div>
                         
                         <p style="margin: 20px 0 0 0; color: #a0a0a0; font-size: 14px; line-height: 1.6;">
-                          <strong style="color: #d1a3ff;">⏱ Importante:</strong> Este enlace expirará en <strong>1 hora</strong> por motivos de seguridad.
+                          <strong style="color: #FDE68A;">⏱ Importante:</strong> Este enlace expirará en <strong>1 hora</strong> por motivos de seguridad.
                         </p>
                         
                         <p style="margin: 16px 0 0 0; color: #a0a0a0; font-size: 14px; line-height: 1.6;">
-                          <strong style="color: #d1a3ff;">¿No solicitaste este cambio?</strong><br>
+                          <strong style="color: #FDE68A;">¿No solicitaste este cambio?</strong><br>
                           Si no fuiste tú quien solicitó restablecer la contraseña, ignora este email.
                           Tu contraseña actual seguirá siendo válida y nadie podrá acceder a tu cuenta.
                         </p>
@@ -872,22 +872,22 @@ class EmailService {
               <tr><td align="center" style="padding:40px 20px;">
                 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#1a1a1a;border-radius:12px;overflow:hidden;">
                   <tr>
-                    <td style="background:linear-gradient(135deg,#8B5CF6 0%,#a78bfa 100%);padding:40px 30px;text-align:center;">
+                    <td style="background:linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);padding:40px 30px;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:28px;">Solicitud Recibida</h1>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding:40px 30px;color:#e5e5e5;">
-                      <h2 style="color:#8B5CF6;margin:0 0 20px 0;">¡Hola ${solicitud.nombre}!</h2>
+                      <h2 style="color:#F59E0B;margin:0 0 20px 0;">¡Hola ${solicitud.nombre}!</h2>
                       <p style="line-height:1.6;font-size:16px;margin:0 0 20px 0;">
                         Hemos recibido tu solicitud para unirte a <strong>La Clave Asociación</strong>. 
                         Nuestro equipo la revisará en los próximos días y te notificaremos por email con la resolución.
                       </p>
-                      <div style="background-color:#2a2a2a;border-left:4px solid #8B5CF6;padding:20px;margin:30px 0;border-radius:4px;">
-                        <p style="margin:0 0 10px 0;color:#a78bfa;font-weight:bold;"> Datos de tu solicitud:</p>
-                        <p style="margin:5px 0;font-size:14px;"><strong style="color:#8B5CF6;">Nombre:</strong> ${solicitud.nombre} ${solicitud.apellidos}</p>
-                        <p style="margin:5px 0;font-size:14px;"><strong style="color:#8B5CF6;">Email:</strong> ${solicitud.email}</p>
-                        <p style="margin:5px 0;font-size:14px;"><strong style="color:#8B5CF6;">Estado:</strong> <span style="color:#f59e0b;"> Pendiente de revisión</span></p>
+                      <div style="background-color:#2a2a2a;border-left:4px solid #F59E0B;padding:20px;margin:30px 0;border-radius:4px;">
+                        <p style="margin:0 0 10px 0;color:#FBBF24;font-weight:bold;"> Datos de tu solicitud:</p>
+                        <p style="margin:5px 0;font-size:14px;"><strong style="color:#F59E0B;">Nombre:</strong> ${solicitud.nombre} ${solicitud.apellidos}</p>
+                        <p style="margin:5px 0;font-size:14px;"><strong style="color:#F59E0B;">Email:</strong> ${solicitud.email}</p>
+                        <p style="margin:5px 0;font-size:14px;"><strong style="color:#F59E0B;">Estado:</strong> <span style="color:#f59e0b;"> Pendiente de revisión</span></p>
                       </div>
                       <p style="line-height:1.6;font-size:15px;color:#9ca3af;">
                         Mientras tanto, si tienes alguna pregunta puedes contactar con nosotros respondiendo a este email.
@@ -961,7 +961,7 @@ class EmailService {
                         ${formatMotivacionAsQA(solicitud.motivacion)}
                       </div>
                       <div style="text-align:center;margin:30px 0;">
-                        <a href="${adminUrl}" style="display:inline-block;background:#8B5CF6;color:white;padding:14px 35px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;">
+                        <a href="${adminUrl}" style="display:inline-block;background:#F59E0B;color:white;padding:14px 35px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:15px;">
                           Ver Solicitudes Pendientes
                         </a>
                       </div>
@@ -1024,7 +1024,7 @@ class EmailService {
                         <p style="margin:5px 0;font-size:14px;"><strong style="color:#10b981;">Tipo:</strong> Socio activo</p>
                       </div>
                       <div style="text-align:center;margin:30px 0;">
-                        <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#8B5CF6 0%,#a78bfa 100%);color:white;padding:16px 40px;text-decoration:none;border-radius:50px;font-weight:bold;font-size:16px;">
+                        <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);color:white;padding:16px 40px;text-decoration:none;border-radius:50px;font-weight:bold;font-size:16px;">
                           Acceder a mi cuenta
                         </a>
                       </div>
@@ -1185,7 +1185,7 @@ class EmailService {
               <tr><td align="center" style="padding:40px 20px;">
                 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#1a1a1a;border-radius:12px;overflow:hidden;">
                   <tr>
-                    <td style="background:linear-gradient(135deg,#8B5CF6 0%,#a78bfa 100%);padding:30px;text-align:center;">
+                    <td style="background:linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);padding:30px;text-align:center;">
                     <h1 style="color:#fff;margin:0;font-size:22px;">Nuevo Mensaje de Contacto</h1>
                     </td>
                   </tr>
@@ -1195,16 +1195,16 @@ class EmailService {
                         Se ha recibido un nuevo mensaje a través del formulario de contacto.
                       </p>
                       <div style="background-color:#2a2a2a;padding:20px;border-radius:8px;margin:20px 0;">
-                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#8B5CF6;">Nombre:</strong> ${contactData.nombre}</p>
-                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#8B5CF6;">Email:</strong> ${contactData.email}</p>
-                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#8B5CF6;">Asunto:</strong> ${contactData.asunto}</p>
+                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#F59E0B;">Nombre:</strong> ${contactData.nombre}</p>
+                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#F59E0B;">Email:</strong> ${contactData.email}</p>
+                        <p style="margin:6px 0;font-size:14px;"><strong style="color:#F59E0B;">Asunto:</strong> ${contactData.asunto}</p>
                       </div>
-                      <div style="background-color:#1e1e1e;border-left:4px solid #8B5CF6;padding:20px;border-radius:4px;margin:20px 0;">
-                        <p style="margin:0 0 8px 0;color:#a78bfa;font-weight:bold;font-size:13px;text-transform:uppercase;letter-spacing:1px;">Mensaje:</p>
+                      <div style="background-color:#1e1e1e;border-left:4px solid #F59E0B;padding:20px;border-radius:4px;margin:20px 0;">
+                        <p style="margin:0 0 8px 0;color:#FBBF24;font-weight:bold;font-size:13px;text-transform:uppercase;letter-spacing:1px;">Mensaje:</p>
                         <p style="margin:0;font-size:14px;line-height:1.7;color:#d1d5db;">${contactData.mensaje.replace(/\n/g, '<br>')}</p>
                       </div>
                       <p style="font-size:13px;color:#9ca3af;margin:20px 0 0 0;">
-                        Para responder, escribe directamente a: <a href="mailto:${contactData.email}" style="color:#8B5CF6;">${contactData.email}</a>
+                        Para responder, escribe directamente a: <a href="mailto:${contactData.email}" style="color:#F59E0B;">${contactData.email}</a>
                       </p>
                     </td>
                   </tr>

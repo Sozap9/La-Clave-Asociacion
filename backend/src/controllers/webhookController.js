@@ -5,7 +5,7 @@ import Booking from "../models/Booking.js";
 import Event from "../models/Event.js";
 import User from "../models/User.js";
 import EmailService from "../services/emailService.js";
-import { generateQRCode } from "../utils/qrCodeGenerator.js";
+import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
 import logger from "../config/logger.js";
 import { registrarActividad } from "../utils/activityLogger.js";
 
@@ -136,7 +136,8 @@ async function handleCheckoutSessionCompleted(session) {
 
     try {
       const qrData = `LACLAVE-${bookingId}-${bookingWithQR.codigo_acceso}`;
-      const qrCode = await generateQRCode(qrData, bookingId);
+      // Base64 en vez de archivo en disco — ver nota en bookingController.js
+      const qrCode = await generateQRCodeBase64(qrData, bookingId);
       await Booking.saveQRCode(bookingId, qrCode);
     } catch (qrError) {
       logger.error("❌ Error generando QR tras pago confirmado:", qrError);

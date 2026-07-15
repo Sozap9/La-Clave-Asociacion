@@ -8,6 +8,7 @@ import Payment from "../models/Payment.js";
 import Gallery from "../models/Gallery.js";
 import PDFDocument from "pdfkit";
 import EmailService from "../services/emailService.js"; 
+import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
 import logger from "../config/logger.js"; 
 import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
 
@@ -1611,6 +1612,84 @@ export const getBookingDetails = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al obtener detalles de la reserva",
+    });
+  }
+};
+
+/**
+ * Regenerar el QR (en base64, persistente) y reenviar el email de
+ * confirmación con la entrada a un socio.
+ *
+ * Pensado sobre todo para las reservas confirmadas ANTES del cambio a
+ * QR en base64, cuyo qr_code_url sigue apuntando a un PNG en disco que
+ * Railway ya borró en algún reinicio — para esas, el QR nunca va a
+ * cargar en "Mis Entradas" hasta que se regenere aquí.
+ *
+ * POST /api/admin/bookings/:id/reenviar
+ */
+export const resendBookingTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Reserva no encontrada",
+      });
+    }
+
+    if (booking.estado !== "confirmada") {
+      return res.status(400).json({
+        success: false,
+        message: `Solo se puede reenviar una reserva confirmada (esta está "${booking.estado}")`,
+      });
+    }
+
+    const event = await Event.findById(booking.event_id);
+    const socio = await Socio.findById(booking.socio_id);
+    const user = socio ? await User.findById(socio.user_id) : null;
+
+    if (!event || !user) {
+      return res.status(404).json({
+        success: false,
+        message: "No se encontró el evento o el socio de esta reserva",
+      });
+    }
+
+    // Regenerar el QR como base64 (mismo formato que usa el check-in:
+    // LACLAVE-{bookingId}-{codigo_acceso})
+    const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
+    const qrCode = await generateQRCodeBase64(qrData, booking.id);
+    await Booking.saveQRCode(booking.id, qrCode);
+
+    const bookingActualizada = await Booking.findById(booking.id);
+
+    await EmailService.sendBookingConfirmation(bookingActualizada, event, user);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "reenviar",
+      entidadTipo: "reserva",
+      entidadId: booking.id,
+      descripcion: `Entrada reenviada a ${user.email} (reserva #${booking.id}, QR regenerado)`,
+      ipAddress: getIpFromRequest(req),
+    });
+
+    logger.info("📧 Entrada reenviada con QR regenerado:", {
+      bookingId: booking.id,
+      email: user.email,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Entrada reenviada a ${user.email}`,
+    });
+  } catch (error) {
+    logger.error("Error en resendBookingTicket:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al reenviar la entrada",
     });
   }
 };
