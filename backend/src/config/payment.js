@@ -47,9 +47,13 @@ const getStripe = () => {
  * @param {Object} params.event - Evento
  * @param {Object} params.user - Usuario que reserva
  * @param {Number} params.numeroEntradas - Número de entradas
+ * @param {String} [params.cancelPath] - Ruta del frontend a la que volver
+ *   si el socio cancela/le da atrás en Stripe. Por defecto '/eventos'
+ *   (el listado — NO existe una ruta /eventos/:id individual, así que
+ *   nunca hay que apuntar ahí o Stripe redirige a un 404).
  * @returns {Object} Stripe Checkout Session (usar session.url para redirigir)
  */
-export const createCheckoutSession = async ({ booking, event, user, numeroEntradas }) => {
+export const createCheckoutSession = async ({ booking, event, user, numeroEntradas, cancelPath = '/eventos' }) => {
   try {
     const stripe = getStripe();
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -87,7 +91,7 @@ export const createCheckoutSession = async ({ booking, event, user, numeroEntrad
         },
       ],
       success_url: `${frontendUrl}/mis-entradas?pago=exitoso&booking_id=${booking.id}`,
-      cancel_url: `${frontendUrl}/eventos/${event.id}?pago=cancelado`,
+      cancel_url: `${frontendUrl}${cancelPath}?pago=cancelado`,
       expires_at: expiresAt,
       metadata: {
         booking_id: booking.id.toString(),

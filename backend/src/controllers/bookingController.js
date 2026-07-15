@@ -311,6 +311,98 @@ export const createBooking = async (req, res) => {
 };
 
 /**
+ * Reanudar el pago de una reserva que quedó "esperando_pago"
+ * (ej. el socio le dio atrás/cerró la pestaña en el Checkout de Stripe
+ * en vez de completar el pago o cancelar). Crea una Checkout Session
+ * NUEVA para la MISMA reserva — no crea una reserva duplicada ni toca
+ * el aforo, que ya está bloqueado desde que se creó la reserva original.
+ *
+ * La sesión de Stripe original (si sigue viva) simplemente expirará sola
+ * a los 30 min sin efecto, porque el webhook de checkout.session.expired
+ * ya comprueba que la reserva siga en 'esperando_pago' antes de cancelarla.
+ *
+ * POST /api/bookings/:id/pagar
+ */
+export const retryBookingPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Reserva no encontrada",
+      });
+    }
+
+    const socio = await Socio.findByUserId(userId);
+    if (req.user.role !== "admin" && booking.socio_id !== socio?.id) {
+      return res.status(403).json({
+        success: false,
+        message: "No tienes acceso a esta reserva",
+      });
+    }
+
+    if (booking.estado !== "esperando_pago") {
+      return res.status(400).json({
+        success: false,
+        message:
+          booking.estado === "confirmada"
+            ? "Esta reserva ya está pagada"
+            : "Esta reserva ya no está disponible para pagar",
+      });
+    }
+
+    const event = await Event.findById(booking.event_id);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "El evento de esta reserva ya no existe",
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    try {
+      const session = await createCheckoutSession({
+        booking,
+        event,
+        user,
+        numeroEntradas: booking.numero_entradas,
+        cancelPath: '/mis-entradas',
+      });
+
+      logger.info("💳 Checkout Session de reintento creada:", {
+        bookingId: booking.id,
+        sessionId: session.id,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Nueva sesión de pago creada",
+        data: {
+          checkout_url: session.url,
+        },
+      });
+    } catch (stripeError) {
+      logger.error("Error creando Checkout Session de reintento:", stripeError);
+      return res.status(502).json({
+        success: false,
+        message:
+          "No se pudo iniciar el pago en este momento. Inténtalo de nuevo en unos minutos.",
+      });
+    }
+  } catch (error) {
+    logger.error("Error en retryBookingPayment:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al reanudar el pago",
+    });
+  }
+};
+
+/**
  * Obtener mis reservas
  * GET /api/bookings/me
  */

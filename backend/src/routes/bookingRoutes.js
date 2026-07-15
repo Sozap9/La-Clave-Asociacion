@@ -4,7 +4,8 @@ import {
   getMyBookings,
   getBooking,
   cancelBooking,
-  getMyBookingStats
+  getMyBookingStats,
+  retryBookingPayment
 } from '../controllers/bookingController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { isSocio } from '../middleware/roleMiddleware.js';
@@ -64,6 +65,18 @@ router.get(
   bookingIdValidator,         // ← VALIDAR ID
   handleValidationErrors,     // ← MANEJAR ERRORES
   getBooking                  // ← CONTROLLER
+);
+
+// Reanudar el pago de una reserva en estado 'esperando_pago'
+// (ej. el socio le dio atrás en el Checkout de Stripe sin completar el pago)
+// Crea una Checkout Session nueva para la misma reserva
+// POST /api/bookings/:id/pagar
+router.post(
+  '/:id/pagar',
+  isSocio,                    // ← MIDDLEWARE: Solo socios
+  bookingIdValidator,         // ← VALIDAR ID
+  handleValidationErrors,     // ← MANEJAR ERRORES
+  retryBookingPayment         // ← CONTROLLER
 );
 
 // Cancelar mi reserva
