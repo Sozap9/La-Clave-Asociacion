@@ -168,20 +168,24 @@ class EmailService {
         day: 'numeric'
       });
 
-      // ===== PREPARAR IMAGEN DEL CARTEL (INLINE) =====
-      let cartelAttachment = null;
-      let cartelCid = null;
-      
+      // ===== PREPARAR IMAGEN DEL CARTEL (INLINE, BASE64) =====
+      // Antes se adjuntaba por CID (Content-ID), pero la API HTTP de
+      // Brevo (usada desde mailer.js por el bloqueo de puertos SMTP en
+      // Railway) NO soporta imágenes inline vía CID — Brevo lo confirma
+      // en su propia documentación. El HTML llegaba bien pero la imagen
+      // referenciada como cid:... nunca se resolvía, y se veía rota.
+      // Solución: incrustar la imagen directamente como data URI en el
+      // src del <img>, que sí es universalmente compatible.
+      let cartelDataURL = null;
+
       if (event.imagen_cartel_url) {
         try {
           const cartelPath = path.join(__dirname, '../../uploads', event.imagen_cartel_url);
           if (fs.existsSync(cartelPath)) {
-            cartelCid = 'cartel-' + booking.id;
-            cartelAttachment = {
-              filename: 'cartel-evento.jpg',
-              path: cartelPath,
-              cid: cartelCid
-            };
+            const cartelBuffer = fs.readFileSync(cartelPath);
+            const ext = path.extname(cartelPath).replace('.', '').toLowerCase();
+            const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+            cartelDataURL = `data:${mime};base64,${cartelBuffer.toString('base64')}`;
           }
         } catch (err) {
           logger.warn('No se pudo cargar imagen del cartel:', err.message);
@@ -189,33 +193,15 @@ class EmailService {
       }
 
       // ===== GENERAR QR CODE BASE64 PARA INLINE =====
+      // Mismo motivo que el cartel: se incrusta directo como data URI,
+      // sin pasar por attachments/CID.
       let qrDataURL = null;
-      let qrBuffer = null;
       try {
         qrDataURL = await generateQRCodeBase64(booking.codigo_reserva, booking.id);
-        const base64Data = qrDataURL.replace(/^data:image\/png;base64,/, '');
-        qrBuffer = Buffer.from(base64Data, 'base64');
       } catch (qrError) {
         logger.warn('No se pudo generar QR:', qrError.message);
       }
 
-      // ===== PREPARAR ATTACHMENTS =====
-      const attachments = [];
-      if (cartelAttachment) {
-        attachments.push(cartelAttachment);
-      }
-      // QR embebido inline con CID
-      const qrCid = 'qr-' + booking.id;
-      if (qrBuffer) {
-        attachments.push({
-          filename: `qr-${booking.codigo_reserva}.png`,
-          content: qrBuffer,
-          contentType: 'image/png',
-          cid: qrCid
-        });
-      }
-
-      // ===== CONSTRUIR HTML DEL EMAIL =====
       const mailOptions = {
         from: fromNoreply(),
         to: user.email,
@@ -247,9 +233,9 @@ class EmailService {
                         <table width="100%" cellpadding="0" cellspacing="0">
                           <tr>
                             <!-- Cartel evento -->
-                            ${cartelCid ? `
+                            ${cartelDataURL ? `
                             <td width="160" style="padding:24px 0 24px 24px;vertical-align:top;">
-                              <img src="cid:${cartelCid}" alt="${event.titulo}"
+                              <img src="${cartelDataURL}" alt="${event.titulo}"
                                 style="width:140px;height:140px;object-fit:cover;border-radius:10px;border:2px solid #2a2a2a;display:block;">
                             </td>
                             ` : ''}
@@ -292,7 +278,7 @@ class EmailService {
                             <td width="230" style="vertical-align:middle;text-align:center;">
                               ${qrDataURL ? `
                               <div style="background:#fff;padding:10px;border-radius:10px;display:inline-block;border:3px solid #D97706;">
-                                <img src="cid:${qrCid}" alt="QR Code" width="200" height="200"
+                                <img src="${qrDataURL}" alt="QR Code" width="200" height="200"
                                   style="display:block;border-radius:4px;">
                               </div>
                               <p style="margin:8px 0 0 0;color:#666;font-size:11px;">Escanea en la entrada</p>
@@ -348,8 +334,7 @@ class EmailService {
             </table>
           </body>
           </html>
-        `,
-        attachments: attachments
+        `
       };
 
       const info = await noreplyTransporter.sendMail(mailOptions);
@@ -357,8 +342,8 @@ class EmailService {
         to: user.email,
         bookingId: booking.id,
         messageId: info.messageId,
-        hasCartel: !!cartelAttachment,
-        hasQR: !!qrBuffer
+        hasCartel: !!cartelDataURL,
+        hasQR: !!qrDataURL
       });
       
       return { success: true, messageId: info.messageId };
