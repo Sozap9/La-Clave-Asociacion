@@ -38,6 +38,12 @@ const MisEntradas = () => {
     () => searchParams.get("pago") === "exitoso"
   );
 
+  // Si venimos de un enlace del email ("Ver mi entrada online"), trae
+  // ?ver={booking.id} — guardamos el id para abrir directamente el QR
+  // de ESA reserva en cuanto lleguen las reservas, en vez de dejar que
+  // el socio tenga que buscarla a mano en la lista.
+  const [verBookingId] = useState(() => searchParams.get("ver"));
+
   // Modal Evento
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
@@ -76,11 +82,10 @@ const MisEntradas = () => {
     // eslint-disable-next-line
   }, []);
 
-  // Limpiamos el parámetro ?pago=... de la URL en cuanto entramos,
-  // para que no se muestre ningún aviso ni quede visible en la barra
-  // de direcciones.
+  // Limpiamos los parámetros ?pago=... / ?ver=... de la URL en cuanto
+  // entramos, para que no queden visibles en la barra de direcciones.
   useEffect(() => {
-    if (searchParams.get("pago")) {
+    if (searchParams.get("pago") || searchParams.get("ver")) {
       setSearchParams({}, { replace: true });
     }
     // eslint-disable-next-line
@@ -107,6 +112,21 @@ const MisEntradas = () => {
   useEffect(() => {
     applyFilters();
   }, [filter, bookings, searchTerm]);
+
+  // Si llegamos desde el enlace "Ver mi entrada online" del email
+  // (?ver={booking.id}), abrimos directamente el modal del QR de esa
+  // reserva en cuanto tengamos las reservas cargadas, en vez de dejar
+  // que el socio tenga que encontrarla a mano en la lista.
+  useEffect(() => {
+    if (!verBookingId || bookings.length === 0) return;
+
+    const booking = bookings.find((b) => String(b.id) === String(verBookingId));
+    if (booking) {
+      setSelectedBooking(booking);
+      setShowQRModal(true);
+    }
+    // eslint-disable-next-line
+  }, [verBookingId, bookings]);
 
   const fetchBookings = async () => {
     setLoading(true);
