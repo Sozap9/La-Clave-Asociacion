@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getMyBookings, cancelBooking } from "../api/eventsApi";
+import { getMyBookings, cancelBooking, retryBookingPayment } from "../api/eventsApi";
 import {
   Calendar,
   MapPin,
@@ -51,6 +51,10 @@ const MisEntradas = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(false);
+
+  // Reanudar pago de una reserva "esperando_pago"
+  const [payingBookingId, setPayingBookingId] = useState(null);
+  const [payError, setPayError] = useState("");
 
   // Limpiamos el parámetro ?pago=... de la URL en cuanto entramos,
   // para que no se muestre ningún aviso ni quede visible en la barra
@@ -236,6 +240,29 @@ const MisEntradas = () => {
     }
   };
 
+  const handlePayNow = async (booking, e) => {
+    e.stopPropagation();
+    setPayError("");
+    setPayingBookingId(booking.id);
+
+    try {
+      const token = localStorage.getItem("token");
+      const result = await retryBookingPayment(booking.id, token);
+
+      if (result.success && result.data?.checkout_url) {
+        // Redirigimos a la nueva sesión de pago de Stripe, igual que
+        // en la primera compra
+        window.location.href = result.data.checkout_url;
+      } else {
+        setPayError(result.message || "No se pudo iniciar el pago");
+        setPayingBookingId(null);
+      }
+    } catch (err) {
+      setPayError("Error de conexión. Intenta de nuevo.");
+      setPayingBookingId(null);
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("es-ES", {
@@ -374,6 +401,12 @@ const MisEntradas = () => {
           </div>
         )}
 
+        {payError && (
+          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-8">
+            {payError}
+          </div>
+        )}
+
         {/* Loading */}
         {loading && <Loader size="lg" />}
 
@@ -450,6 +483,19 @@ const MisEntradas = () => {
                         >
                           <QrCode size={16} />
                           Ver QR
+                        </button>
+                      )}
+
+                      {booking.estado === "esperando_pago" && (
+                        <button
+                          onClick={(e) => handlePayNow(booking, e)}
+                          disabled={payingBookingId === booking.id}
+                          className="btn btn-primary text-sm px-4 py-2 flex items-center gap-2 disabled:opacity-60"
+                        >
+                          <Clock size={16} />
+                          {payingBookingId === booking.id
+                            ? "Redirigiendo..."
+                            : "Pagar ahora"}
                         </button>
                       )}
 

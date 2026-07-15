@@ -116,6 +116,30 @@ export const getBookingById = async (bookingId, token) => {
 };
 
 /**
+ * ✅ NUEVO: Reanudar el pago de una reserva pendiente
+ * (ej. el socio le dio atrás en el Checkout de Stripe sin pagar)
+ * @param {number} bookingId - ID de la reserva
+ * @param {string} token - Token de autenticación
+ * @returns {Promise<Object>} { success, data: { checkout_url } }
+ */
+export const retryBookingPayment = async (bookingId, token) => {
+  try {
+    const response = await fetch(`${API_URL}/bookings/${bookingId}/pagar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error al reanudar el pago:', error);
+    throw error;
+  }
+};
+
+/**
  * ✅ NUEVO: Cancelar una reserva
  * @param {number} bookingId - ID de la reserva
  * @param {string} token - Token de autenticación
