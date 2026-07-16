@@ -1326,6 +1326,7 @@ export const getEventsStats = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      _debug_version: "getEventsStats-fix-16jul-1", // ← marca temporal, quitar cuando confirmemos que despliega bien
       data: {
         total_eventos: stats.total_eventos,
         publicados: stats.publicados,
