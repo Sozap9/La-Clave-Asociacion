@@ -215,11 +215,11 @@ const EventDetail = ({ event, isOpen, onClose }) => {
               {/* Separador */}
               <div className="border-t border-[#262626]" />
 
-              {/* Precio */}
+              {/* Precio / Donación */}
               {precio_socio > 0 && (
                 <div>
                   <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">
-                    Precio
+                    Donación
                   </p>
                   <p className="text-primary-400 text-2xl font-light">
                     {precio_socio}€
@@ -235,9 +235,13 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                       variant="primary"
                       onClick={() => {
                         onClose();
-                        navigate("/mis-entradas");
+                        if (existingBooking.estado === "confirmada") {
+                          navigate(`/mis-entradas?ver=${existingBooking.id}`);
+                        } else {
+                          navigate("/mis-entradas");
+                        }
                       }}
-                      className="w-full !bg-[#2e1065] hover:!bg-[#3b0764] flex items-center justify-center gap-2"
+                      className="w-full flex items-center justify-center gap-2"
                     >
                       {existingBooking.estado === "confirmada" ? (
                         <CheckCircle size={18} />
@@ -245,7 +249,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                         <AlertCircle size={18} />
                       )}
                       {existingBooking.estado === "confirmada"
-                        ? "Ya tienes tu entrada — Ver detalles"
+                        ? "Ya tienes reserva"
                         : "Pago pendiente — Ver detalles"}
                     </Button>
                   ) : (
@@ -262,7 +266,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                           : isFull
                             ? "Aforo Completo"
                             : precio_socio > 0
-                              ? "Reservar y Pagar"
+                              ? "Reservar y Donar"
                               : "Reservar Plaza"}
                     </Button>
                   )
