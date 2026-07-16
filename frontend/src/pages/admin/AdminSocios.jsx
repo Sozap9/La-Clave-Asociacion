@@ -500,10 +500,9 @@ const AdminSocios = () => {
                 <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
                   Documento de identidad
                 </p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 max-w-[220px] gap-4">
                   {[
                     ["Cara delantera", selectedSocio.user?.dni_front_url],
-                    ["Cara trasera", selectedSocio.user?.dni_back_url],
                   ].map(([label, path]) => {
                     const url = path ? `${BACKEND_URL}/${path}` : null;
                     return (

@@ -27,9 +27,12 @@ const Home = () => {
 
           {/* Nombre del club */}
           <div className="mb-6 md:mb-8">
-            <h1 className="text-white mb-4 animate-fade-in uppercase tracking-[0.04em] sm:tracking-[0.08em] font-bold text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl">
+            <h1 className="text-white mb-3 animate-fade-in uppercase tracking-[0.02em] sm:tracking-[0.05em] font-bold text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl">
               La Clave 981
             </h1>
+            <p className="text-gray-400 mb-4 animate-fade-in uppercase tracking-[0.3em] sm:tracking-[0.4em] font-light text-xs sm:text-sm md:text-base">
+              {t('home.subtitle')}
+            </p>
             <div className="w-16 sm:w-20 md:w-24 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto" />
           </div>
 

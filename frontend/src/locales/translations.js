@@ -36,6 +36,7 @@ export const translations = {
       },
     },
     home: {
+      subtitle: 'Asociación Cultural',
       description:
         'Un espacio para disfrutar del arte y la cultura, abierto a artistas, creadores, promotores y a todas las personas que quieran formar parte de la comunidad.',
       normativa: {
@@ -251,6 +252,7 @@ export const translations = {
       },
     },
     home: {
+      subtitle: 'Cultural Association',
       description:
         'A space to enjoy art and culture, open to artists, creators, promoters and everyone who wants to be part of the community.',
       normativa: {

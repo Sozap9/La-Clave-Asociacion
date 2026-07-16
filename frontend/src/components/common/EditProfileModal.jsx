@@ -53,20 +53,17 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
     fecha_nacimiento: "",
     dni: "",
     avatar_url: "",
-    dni_frente_url: "",
-    dni_dorso_url: "",
+    dni_front_url: "",
   });
 
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [dniFrentePreview, setDniFrentePreview] = useState(null);
-  const [dniDorsoPreview, setDniDorsoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const avatarInputRef = useRef(null);
   const dniFrenteInputRef = useRef(null);
-  const dniDorsoInputRef = useRef(null);
 
   useEffect(() => {
     if (userData && isOpen) {
@@ -80,12 +77,10 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
           : "",
         dni: userData.dni || "",
         avatar_url: userData.avatar_url || "",
-        dni_frente_url: userData.dni_frente_url || "",
-        dni_dorso_url: userData.dni_dorso_url || "",
+        dni_front_url: userData.dni_front_url || "",
       });
       setAvatarPreview(userData.avatar_url || null);
-      setDniFrentePreview(userData.dni_frente_url || null);
-      setDniDorsoPreview(userData.dni_dorso_url || null);
+      setDniFrentePreview(userData.dni_front_url || null);
       setError("");
       setSuccess("");
     }
@@ -124,11 +119,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
             break;
           case "dni_frente":
             setDniFrentePreview(base64);
-            setFormData({ ...formData, dni_frente_url: base64 });
-            break;
-          case "dni_dorso":
-            setDniDorsoPreview(base64);
-            setFormData({ ...formData, dni_dorso_url: base64 });
+            setFormData({ ...formData, dni_front_url: base64 });
             break;
         }
       };
@@ -386,7 +377,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
               <h3 className="text-lg font-semibold text-white mb-4">
                 Documentación DNI
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 max-w-xs gap-6">
                 {/* DNI Frente */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -417,41 +408,6 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleImageChange(e, "dni_frente")}
-                    className="hidden"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Máximo 10MB</p>
-                </div>
-
-                {/* DNI Dorso */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    DNI Dorso
-                  </label>
-                  <div
-                    onClick={() => dniDorsoInputRef.current?.click()}
-                    className="relative cursor-pointer group border-2 border-dashed border-gray-700 rounded-lg p-4 hover:border-primary-500 transition-colors"
-                  >
-                    {dniDorsoPreview ? (
-                      <img
-                        src={dniDorsoPreview}
-                        alt="DNI Dorso"
-                        className="w-full h-32 object-contain rounded"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                        <Upload className="w-8 h-8 mb-2" />
-                        <p className="text-sm">Click para subir DNI dorso</p>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                      <Upload className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                  <input
-                    ref={dniDorsoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageChange(e, "dni_dorso")}
                     className="hidden"
                   />
                   <p className="text-xs text-gray-500 mt-1">Máximo 10MB</p>

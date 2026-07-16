@@ -182,10 +182,9 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Documento de identidad
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 max-w-[220px] gap-4">
               {[
                 ["Cara delantera", solicitud.dni_front_url],
-                ["Cara trasera", solicitud.dni_back_url],
               ].map(([label, path]) => (
                 <div key={label}>
                   <p className="text-gray-500 text-xs mb-2">{label}</p>
