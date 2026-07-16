@@ -91,14 +91,8 @@ const AdminStatsEventos = () => {
 
           {/* Top eventos */}
           <AdminCard
-            title="Top 5 eventos"
+            title="Top eventos"
             subtitle="Eventos con mayor ocupación"
-            badges={[
-              {
-                text: "Ranking",
-                color: "primary",
-              },
-            ]}
           >
             <div className="space-y-3 mt-4">
               {stats.top_eventos?.map((evento, index) => (
@@ -132,14 +126,8 @@ const AdminStatsEventos = () => {
           {/* Próximos eventos */}
           <div className="mt-8">
             <AdminCard
-              title="Próximos eventos"
+              title="Agenda"
               subtitle="Eventos que se celebrarán próximamente"
-              badges={[
-                {
-                  text: "Agenda",
-                  color: "primary",
-                },
-              ]}
             >
               <div className="space-y-3 mt-4">
                 {stats.proximos_eventos?.map((evento) => (
