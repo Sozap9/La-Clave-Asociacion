@@ -13,13 +13,6 @@ import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js
  * Crear reserva de entrada
  * POST /api/bookings
  *
- * IMPORTANTE: esto ya NO confirma la reserva ni cobra nada directamente.
- * Crea la reserva en estado 'esperando_pago' (cuenta para el aforo, ver
- * Event.js) y una Stripe Checkout Session real. El frontend debe
- * redirigir al usuario a `data.checkout_url`. La reserva solo pasa a
- * 'confirmada' cuando Stripe confirma el pago vía webhook
- * (webhookController.js → handleCheckoutSessionCompleted), que es
- * también donde se genera el QR y se envía el email de confirmación.
  */
 export const createBooking = async (req, res) => {
   try {
@@ -100,9 +93,28 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el evento no ha pasado
+    // Verificar que el evento no ha pasado.
+    // fecha_evento es una columna DATE pura (sin hora), así que
+    // new Date(event.fecha_evento) siempre cae en medianoche — comparado
+    // directo contra "ahora", el evento se daba por "pasado" nada más
+    // entrar el día, aunque fuera a las 17:00 esa misma tarde. En vez de
+    // eso, comparamos contra una hora límite configurable del MISMO día
+    // del evento (23:00 por defecto — HORA_LIMITE_COMPRA_MISMO_DIA en
+    // las variables de entorno para cambiarla sin tocar código).
     const fechaEvento = new Date(event.fecha_evento);
-    if (fechaEvento < new Date()) {
+    const horaLimiteCompra = parseInt(
+      process.env.HORA_LIMITE_COMPRA_MISMO_DIA || "23",
+      10,
+    );
+    const limiteCompra = new Date(
+      fechaEvento.getFullYear(),
+      fechaEvento.getMonth(),
+      fechaEvento.getDate(),
+      horaLimiteCompra,
+      0,
+      0,
+    );
+    if (limiteCompra < new Date()) {
       return res.status(400).json({
         success: false,
         message: "No puedes reservar para un evento que ya pasó",
@@ -210,11 +222,7 @@ export const createBooking = async (req, res) => {
       let qrCode = null;
       try {
         const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
-        // Base64 en vez de archivo en disco: Railway tiene sistema de
-        // archivos efímero y borra los PNG escritos en runtime en cada
-        // reinicio del proceso, dejando el QR roto en la web. Guardando
-        // el PNG como data URI directamente en la columna sobrevive a
-        // los reinicios (igual que ya hace el QR del email).
+
         qrCode = await generateQRCodeBase64(qrData, booking.id);
         await query(`UPDATE bookings SET qr_code_url = ? WHERE id = ?`, [
           qrCode,
@@ -316,16 +324,6 @@ export const createBooking = async (req, res) => {
 };
 
 /**
- * Reanudar el pago de una reserva que quedó "esperando_pago"
- * (ej. el socio le dio atrás/cerró la pestaña en el Checkout de Stripe
- * en vez de completar el pago o cancelar). Crea una Checkout Session
- * NUEVA para la MISMA reserva — no crea una reserva duplicada ni toca
- * el aforo, que ya está bloqueado desde que se creó la reserva original.
- *
- * La sesión de Stripe original (si sigue viva) simplemente expirará sola
- * a los 30 min sin efecto, porque el webhook de checkout.session.expired
- * ya comprueba que la reserva siga en 'esperando_pago' antes de cancelarla.
- *
  * POST /api/bookings/:id/pagar
  */
 export const retryBookingPayment = async (req, res) => {
@@ -409,23 +407,6 @@ export const retryBookingPayment = async (req, res) => {
 
 /**
  * Servir el QR de una reserva como imagen PNG real (no data URI).
- *
- * Necesario para los emails: Gmail bloquea deliberadamente las imágenes
- * "data:base64" incrustadas en el HTML del correo (medida de seguridad
- * confirmada por Google), así que aunque el QR esté guardado en base64
- * en la BD y el HTML sea correcto, Gmail nunca lo va a pintar si va
- * incrustado. La única forma fiable es que el <img> del email apunte a
- * una URL HTTPS real que el cliente de correo pueda solicitar — esta.
- *
- * Lee el PNG desde la columna qr_code_url (persistente en BD, no del
- * disco efímero de Railway), así que sigue funcionando aunque el
- * proceso se haya reiniciado desde que se generó.
- *
- * Público a propósito (el email se abre sin sesión iniciada), pero
- * protegido por el codigo_acceso en la URL — sin conocer ese código
- * exacto (el mismo que lleva el QR) no se puede pedir la imagen de
- * la reserva de otra persona.
- *
  * GET /api/bookings/qr/:id/:codigo
  */
 export const getBookingQRImage = async (req, res) => {
@@ -581,11 +562,24 @@ export const cancelBooking = async (req, res) => {
 
     // Verificar que el evento no ha pasado (no aplica si solo estaba
     // pendiente de pago — cancelar una reserva sin pagar nunca depende
-    // de la fecha del evento)
+    // de la fecha del evento). Mismo criterio que al reservar: hora
+    // límite del mismo día, no medianoche — ver createBooking.
     if (booking.estado === "confirmada") {
       const event = await Event.findById(booking.event_id);
       const fechaEvento = new Date(event.fecha_evento);
-      if (fechaEvento < new Date()) {
+      const horaLimiteCancelacion = parseInt(
+        process.env.HORA_LIMITE_COMPRA_MISMO_DIA || "23",
+        10,
+      );
+      const limiteCancelacion = new Date(
+        fechaEvento.getFullYear(),
+        fechaEvento.getMonth(),
+        fechaEvento.getDate(),
+        horaLimiteCancelacion,
+        0,
+        0,
+      );
+      if (limiteCancelacion < new Date()) {
         return res.status(400).json({
           success: false,
           message: "No puedes cancelar una reserva de un evento que ya pasó",
