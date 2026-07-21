@@ -912,14 +912,17 @@ export const createSocioManual = async (req, res) => {
       });
     }
 
-    // Crear el registro de socio. numero_socio y fecha_alta quedan
-    // en NULL a propósito — el trigger before_socio_insert los rellena.
-    // stripe_customer_id no se manda: es nullable (migración 003) porque
-    // un alta manual/gratuita no tiene cliente de Stripe.
+    // Generamos el numero_socio aquí explícitamente (Socio.generarNumeroSocio)
+    // en vez de dejarlo en NULL para el trigger — el trigger calcula el
+    // siguiente número con COUNT(*) en vez de MAX(...), y puede intentar
+    // repetir un número ya usado si alguna vez hubo bajas/eliminaciones
+    // (nos dio un "Duplicate entry" real en producción).
+    const numero_socio = await Socio.generarNumeroSocio();
+
     const insertResult = await query(
-      `INSERT INTO socios (user_id, cuota_mensual, estado, notas_admin)
-       VALUES (?, ?, 'activo', ?)`,
-      [user_id, parseFloat(cuota_mensual), notas_admin || null],
+      `INSERT INTO socios (user_id, numero_socio, cuota_mensual, estado, notas_admin, fecha_alta)
+       VALUES (?, ?, ?, 'activo', ?, CURDATE())`,
+      [user_id, numero_socio, parseFloat(cuota_mensual), notas_admin || null],
     );
 
     // Cambiar el rol del usuario a 'socio'
@@ -3267,11 +3270,14 @@ export const aprobarSolicitud = async (req, res) => {
 
     const newUserId = userResult.insertId;
 
-    // Crear entrada en socios (membresía gratuita)
+    // Crear entrada en socios (membresía gratuita). numero_socio generado
+    // aquí explícitamente — ver nota en Socio.generarNumeroSocio sobre
+    // el bug del trigger (COUNT en vez de MAX).
+    const numeroSocioNuevo = await Socio.generarNumeroSocio();
     await query(
       `INSERT INTO socios (user_id, numero_socio, stripe_customer_id, estado, cuota_mensual, fecha_alta)
-       VALUES (?, NULL, NULL, 'activo', 0.00, CURDATE())`,
-      [newUserId],
+       VALUES (?, ?, NULL, 'activo', 0.00, CURDATE())`,
+      [newUserId, numeroSocioNuevo],
     );
 
     // Marcar solicitud como aprobada
@@ -3460,16 +3466,18 @@ export const updateUserRole = async (req, res) => {
     // En La Clave, un admin siempre es también socio — la jerarquía de
     // roles (basico < socio < admin) da permisos crecientes, pero no debe
     // hacer perder la membresía. Si se promociona a 'admin' y todavía no
-    // tiene fila en `socios`, se la creamos aquí (numero_socio y fecha_alta
-    // los rellena el trigger before_socio_insert). Si ya la tenía, no se
-    // toca — se conserva tal cual (cuota, numero_socio, historial...).
+    // tiene fila en `socios`, se la creamos aquí, con numero_socio generado
+    // explícitamente (ver nota en Socio.generarNumeroSocio sobre el bug
+    // del trigger). Si ya la tenía, no se toca — se conserva tal cual
+    // (cuota, numero_socio, historial...).
     if (role === "admin") {
       const socioExistente = await Socio.findByUserId(id);
       if (!socioExistente) {
+        const numeroSocioAdmin = await Socio.generarNumeroSocio();
         await query(
-          `INSERT INTO socios (user_id, cuota_mensual, estado)
-           VALUES (?, 0.00, 'activo')`,
-          [id],
+          `INSERT INTO socios (user_id, numero_socio, cuota_mensual, estado, fecha_alta)
+           VALUES (?, ?, 0.00, 'activo', CURDATE())`,
+          [id, numeroSocioAdmin],
         );
         logger.info(
           "Fila de socio creada automáticamente al promocionar a admin",

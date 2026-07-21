@@ -65,6 +65,33 @@ class Socio {
   }
 
   /**
+   * Calcula el siguiente número de socio libre (formato LC-YYYY-NNNN).
+   *
+   * Ojo: el trigger `before_socio_insert` que hay en la base de datos
+   * (no versionado en las migraciones) calcula esto con COUNT(*) en vez
+   * de MAX(...) — si alguna vez se ha dado de baja/eliminado un socio,
+   * el conteo baja pero los números ya asignados siguen ahí, y el
+   * trigger puede intentar repetir un numero_socio ya usado (dio un
+   * error real de "Duplicate entry" en producción). Por eso, desde el
+   * código, generamos el número aquí mismo con la lógica correcta
+   * (MAX + 1) y lo pasamos explícito en el INSERT — el trigger solo
+   * actúa si NEW.numero_socio llega vacío, así que evitamos su bug
+   * sin tener que arreglarlo en la base de datos.
+   * @returns {String} numero_socio, ej. "LC-2026-0098"
+   */
+  static async generarNumeroSocio() {
+    const year = new Date().getFullYear();
+    const sql = `
+      SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(numero_socio, '-', -1) AS UNSIGNED)), 0) + 1 as siguiente
+      FROM socios
+      WHERE numero_socio LIKE CONCAT('LC-', ?, '-%')
+    `;
+    const result = await query(sql, [year]);
+    const siguiente = result[0].siguiente;
+    return `LC-${year}-${String(siguiente).padStart(4, "0")}`;
+  }
+
+  /**
    * Crear nuevo socio
    * @param {Object} socioData - Datos del socio
    * @returns {Object} Socio creado
@@ -79,20 +106,25 @@ class Socio {
         cuota_mensual = 10.0,
       } = socioData;
 
-      // El número de socio y fechas se generan automáticamente por triggers
+      // Generamos el numero_socio aquí (ver generarNumeroSocio) en vez
+      // de dejarlo en manos del trigger, que tiene un bug de cálculo.
+      const numero_socio = await this.generarNumeroSocio();
+
       const sql = `
         INSERT INTO socios (
           user_id, 
+          numero_socio,
           stripe_customer_id, 
           stripe_subscription_id, 
           payment_method_id,
           cuota_mensual,
           estado
-        ) VALUES (?, ?, ?, ?, ?, 'activo')
+        ) VALUES (?, ?, ?, ?, ?, ?, 'activo')
       `;
 
       const values = [
         user_id,
+        numero_socio,
         stripe_customer_id,
         stripe_subscription_id,
         payment_method_id,
