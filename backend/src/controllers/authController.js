@@ -23,6 +23,20 @@ import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js
  * POST /api/auth/register/basic
  */
 export const registerBasic = async (req, res) => {
+  // Desactivado a propósito: este endpoint creaba cuentas de verdad
+  // (rol 'basico', con login automático) SIN pasar por la aprobación
+  // del admin — se saltaba por completo el sistema de solicitudes.
+  // El único camino de alta debe ser POST /api/auth/solicitud-socio.
+  return res.status(410).json({
+    success: false,
+    message: 'Este método de registro ya no está disponible. Usa el formulario de solicitud de socio.'
+  });
+};
+
+// Versión original, desactivada — se deja comentada solo como referencia,
+// no se ejecuta.
+/*
+async function registerBasicOriginal(req, res) {
   try {
     const {
       email,
@@ -152,7 +166,8 @@ export const registerBasic = async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
-};
+}
+*/
 
 /**
  * Registro directo como socio
