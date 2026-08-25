@@ -51,9 +51,13 @@ const getStripe = () => {
  *   si el socio cancela/le da atrás en Stripe. Por defecto '/eventos'
  *   (el listado — NO existe una ruta /eventos/:id individual, así que
  *   nunca hay que apuntar ahí o Stripe redirige a un 404).
+ * @param {Number} [params.precioUnitario] - Precio por entrada a cobrar.
+ *   Si no se pasa, cae a event.precio_socio (compatibilidad con
+ *   llamadas antiguas). Con tandas, SIEMPRE debe pasarse ya resuelto
+ *   desde el controller (el precio de la tanda vigente al reservar).
  * @returns {Object} Stripe Checkout Session (usar session.url para redirigir)
  */
-export const createCheckoutSession = async ({ booking, event, user, numeroEntradas, cancelPath = '/eventos' }) => {
+export const createCheckoutSession = async ({ booking, event, user, numeroEntradas, cancelPath = '/eventos', precioUnitario }) => {
   try {
     const stripe = getStripe();
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -73,6 +77,10 @@ export const createCheckoutSession = async ({ booking, event, user, numeroEntrad
     // (ej. Satispay) en su lugar.
     const paymentMethodTypes = ['card'];
 
+    const unitPrice = precioUnitario !== undefined && precioUnitario !== null
+      ? precioUnitario
+      : event.precio_socio;
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: paymentMethodTypes,
@@ -85,7 +93,7 @@ export const createCheckoutSession = async ({ booking, event, user, numeroEntrad
               name: event.titulo,
               description: `Entrada para el evento del ${event.fecha_evento}`,
             },
-            unit_amount: Math.round(event.precio_socio * 100),
+            unit_amount: Math.round(unitPrice * 100),
           },
           quantity: numeroEntradas,
         },

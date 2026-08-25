@@ -1,5 +1,23 @@
 import { pool } from '../config/database.js';
 import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js';
+import EventTicketTier from '../models/EventTicketTier.js';
+
+/**
+ * Las tandas llegan dentro del FormData como un string JSON en el campo
+ * "tandas" (ej: '[{"nombre":"Tanda 1","precio":10,"fecha_hora_inicio":"2026-09-01 20:00:00"}]').
+ * Si no viene, o viene vacío/erróneo, se trata como "sin tandas" en vez
+ * de romper la creación/edición del evento.
+ */
+const parseTandas = (raw) => {
+  if (!raw) return [];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn('No se pudieron parsear las tandas recibidas, se ignoran:', err.message);
+    return [];
+  }
+};
 
 /**
  * VALID STATUS VALUES:
@@ -17,12 +35,12 @@ import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js
  */
 export const createEvent = async (req, res) => {
   try {
-    console.log('📥 ========== CREATING EVENT ==========');
-    console.log('🔍 req.body:', req.body);
-    console.log('🔍 req.file:', req.file);
+    console.log('========== CREATING EVENT ==========');
+    console.log('req.body:', req.body);
+    console.log('req.file:', req.file);
 
     if (!req.body || typeof req.body !== 'object') {
-      console.error('❌ req.body is undefined');
+      console.error('Error: req.body is undefined');
       return res.status(400).json({
         success: false,
         message: 'Error: Form data not received'
@@ -34,6 +52,7 @@ export const createEvent = async (req, res) => {
       descripcion,
       fecha_evento,
       hora_evento,
+      hora_fin,
       ubicacion,
       aforo_maximo,
       precio_socio,
@@ -42,7 +61,7 @@ export const createEvent = async (req, res) => {
     } = req.body;
 
     if (!titulo || !descripcion || !fecha_evento || !hora_evento || !ubicacion || !aforo_maximo) {
-      console.error('❌ Missing required fields');
+      console.error('Error: Missing required fields');
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -53,16 +72,17 @@ export const createEvent = async (req, res) => {
 
     const [result] = await pool.execute(
       `INSERT INTO events (
-        titulo, descripcion, fecha_evento, hora_evento,
+        titulo, descripcion, fecha_evento, hora_evento, hora_fin,
         ubicacion, aforo_maximo, precio_socio, precio_invitado, 
         imagen_cartel_url, permite_invitados, estado, destacado, 
         entradas_disponibles, entradas_reservadas, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, 0, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, 0, ?)`,
       [
         titulo,
         descripcion,
         fecha_evento,
         hora_evento,
+        hora_fin || null,
         ubicacion,
         parseInt(aforo_maximo),
         precio_socio ? parseFloat(precio_socio) : 0,
@@ -74,7 +94,15 @@ export const createEvent = async (req, res) => {
       ]
     );
 
-    console.log('✅ Event created with ID:', result.insertId);
+    console.log('Event created with ID:', result.insertId);
+
+    // Guardar tandas (si el evento no usa tandas, req.body.tandas viene
+    // vacío/ausente y replaceForEvent simplemente no crea ninguna)
+    const tandas = parseTandas(req.body.tandas);
+    if (tandas.length > 0) {
+      await EventTicketTier.replaceForEvent(result.insertId, tandas);
+      console.log('Tandas guardadas:', tandas.length);
+    }
     console.log('========================================');
 
     registrarActividad({
@@ -96,7 +124,7 @@ export const createEvent = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error in createEvent:', error);
+    console.error('Error in createEvent:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Error creating event'
@@ -122,7 +150,7 @@ export const updateEvent = async (req, res) => {
     }
 
     const {
-      titulo, descripcion, fecha_evento, hora_evento,
+      titulo, descripcion, fecha_evento, hora_evento, hora_fin,
       ubicacion, aforo_maximo, precio_socio, precio_invitado, permite_invitados
     } = req.body;
 
@@ -144,15 +172,15 @@ export const updateEvent = async (req, res) => {
     const entradasOcupadas = Math.max(aforoAnterior - disponiblesAnterior, 0);
     const nuevas_entradas_disponibles = Math.max(parseInt(aforo_maximo) - entradasOcupadas, 0);
 
-    await pool.execute(
+        await pool.execute(
       `UPDATE events SET 
-        titulo = ?, descripcion = ?, fecha_evento = ?, hora_evento = ?,
+        titulo = ?, descripcion = ?, fecha_evento = ?, hora_evento = ?, hora_fin = ?,
         ubicacion = ?, aforo_maximo = ?, entradas_disponibles = ?, entradas_reservadas = ?,
         precio_socio = ?, precio_invitado = ?, imagen_cartel_url = ?,
         permite_invitados = ?, updated_at = NOW()
       WHERE id = ?`,
       [
-        titulo, descripcion, fecha_evento, hora_evento,
+        titulo, descripcion, fecha_evento, hora_evento, hora_fin || null,
         ubicacion, parseInt(aforo_maximo), nuevas_entradas_disponibles, entradasOcupadas,
         precio_socio ? parseFloat(precio_socio) : 0,
         precio_invitado ? parseFloat(precio_invitado) : 0,
@@ -162,7 +190,17 @@ export const updateEvent = async (req, res) => {
       ]
     );
 
-    console.log('✅ Event updated:', id);
+    console.log('Event updated:', id);
+
+    // Reemplazar tandas con lo que venga del formulario. Si "tandas" no
+    // viene en el body (undefined), NO se tocan las existentes — permite
+    // seguir editando el evento desde sitios que no envían ese campo.
+    // Si viene como array vacío "[]", sí se borran (el admin quitó todas).
+    if (req.body.tandas !== undefined) {
+      const tandas = parseTandas(req.body.tandas);
+      await EventTicketTier.replaceForEvent(id, tandas);
+      console.log('Tandas actualizadas:', tandas.length);
+    }
 
     registrarActividad({
       userId: req.user?.id || null,
@@ -179,7 +217,7 @@ export const updateEvent = async (req, res) => {
       data: { id, titulo, imagen_cartel_url }
     });
   } catch (error) {
-    console.error('❌ Error in updateEvent:', error);
+    console.error('Error in updateEvent:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -189,7 +227,7 @@ export const updateEvent = async (req, res) => {
  * @route   GET /api/admin/events
  * @access  Admin
  * 
- * ✅ CORREGIDO: No usa placeholders para LIMIT/OFFSET (evita errno 1210)
+ * No usa placeholders para LIMIT/OFFSET (evita errno 1210)
  */
 export const getAllEventsAdmin = async (req, res) => {
   try {
@@ -202,13 +240,14 @@ export const getAllEventsAdmin = async (req, res) => {
     const validLimit = (!isNaN(parsedLimit) && parsedLimit > 0 && parsedLimit <= 100) ? parsedLimit : 10;
     const offset = (validPage - 1) * validLimit;
 
-    console.log('📥 getAllEventsAdmin - Params:', { page: validPage, limit: validLimit, search, estado, destacado });
+    console.log(' getAllEventsAdmin - Params:', { page: validPage, limit: validLimit, search, estado, destacado });
 
-    let query = `
+      let query = `
       SELECT 
         e.*,
         COUNT(DISTINCT b.id) as bookings_count,
-        SUM(CASE WHEN b.estado = 'confirmada' THEN 1 ELSE 0 END) as confirmed_bookings
+        SUM(CASE WHEN b.estado IN ('confirmada','asistida') THEN b.numero_entradas ELSE 0 END) as confirmed_bookings,
+        SUM(CASE WHEN b.estado = 'asistida' THEN b.numero_entradas ELSE 0 END) as entradas_asistidas
       FROM events e 
       LEFT JOIN bookings b ON e.id = b.event_id
       WHERE 1=1
@@ -230,19 +269,17 @@ export const getAllEventsAdmin = async (req, res) => {
       params.push(destacado === 'true' ? 1 : 0); 
     }
 
-    // ✅ CRITICAL FIX: Insert LIMIT and OFFSET directly (NOT as placeholders)
+
     query += ` GROUP BY e.id ORDER BY e.created_at DESC LIMIT ${validLimit} OFFSET ${offset}`;
 
-    console.log('🔍 SQL Query:', query);
-    console.log('🔍 Params:', params);
-    console.log('🔍 LIMIT:', validLimit, 'OFFSET:', offset);
+    console.log('SQL Query:', query);
+    console.log('Params:', params);
+    console.log('LIMIT:', validLimit, 'OFFSET:', offset);
 
-    // Execute query - usar pool.execute si hay params, pool.query si no
     const [events] = params.length > 0
       ? await pool.execute(query, params)
       : await pool.query(query);
 
-    // Count total events
     let countQuery = 'SELECT COUNT(DISTINCT e.id) as total FROM events e WHERE 1=1';
     const countParams = [];
     
@@ -266,7 +303,7 @@ export const getAllEventsAdmin = async (req, res) => {
       
     const total = countResult[0].total;
 
-    console.log('✅ Admin events fetched:', events.length, '/ Total:', total);
+    console.log('Admin events fetched:', events.length, '/ Total:', total);
 
     res.json({
       success: true,
@@ -279,7 +316,7 @@ export const getAllEventsAdmin = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error in getAllEventsAdmin:', error);
+    console.error('Error in getAllEventsAdmin:', error);
     console.error('   Stack:', error.stack);
     res.status(500).json({ 
       success: false, 
@@ -316,7 +353,7 @@ export const deleteEvent = async (req, res) => {
 
     await pool.execute('DELETE FROM events WHERE id = ?', [id]);
     
-    console.log('✅ Event deleted:', id);
+    console.log('Event deleted:', id);
 
     registrarActividad({
       userId: req.user?.id || null,
@@ -329,7 +366,7 @@ export const deleteEvent = async (req, res) => {
 
     res.json({ success: true, message: 'Event deleted successfully' });
   } catch (error) {
-    console.error('❌ Error in deleteEvent:', error);
+    console.error('Error in deleteEvent:', error);
     res.status(500).json({ success: false, message: 'Error deleting event' });
   }
 };
@@ -347,24 +384,80 @@ export const getEventDetails = async (req, res) => {
       `SELECT 
         e.*, 
         COUNT(DISTINCT b.id) as bookings_count, 
-        SUM(CASE WHEN b.estado = 'confirmada' THEN 1 ELSE 0 END) as confirmed_bookings
-       FROM events e 
-       LEFT JOIN bookings b ON e.id = b.event_id 
-       WHERE e.id = ? 
-       GROUP BY e.id`, 
+        SUM(CASE WHEN b.estado IN ('confirmada','asistida') THEN b.numero_entradas ELSE 0 END) as confirmed_bookings,
+        SUM(CASE WHEN b.estado = 'asistida' THEN b.numero_entradas ELSE 0 END) as entradas_asistidas
+        FROM events e 
+        LEFT JOIN bookings b ON e.id = b.event_id 
+        WHERE e.id = ? 
+        GROUP BY e.id`, 
       [id]
     );
     
     if (events.length === 0) {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
-    
-    console.log('✅ Event details fetched:', events[0].titulo);
-    
-    res.json({ success: true, data: events[0] });
+
+    const tandas = await EventTicketTier.getByEvent(id);
+
+    console.log('Event details fetched:', events[0].titulo);
+
+    res.json({ success: true, data: { ...events[0], tandas } });
   } catch (error) {
-    console.error('❌ Error in getEventDetails:', error);
+    console.error('Error in getEventDetails:', error);
     res.status(500).json({ success: false, message: 'Error fetching event details' });
+  }
+};
+
+/**
+ * @desc    Forzar manualmente una tanda como vigente (independiente de
+ *          su fecha_hora_inicio)
+ * @route   PATCH /api/admin/events/:id/tandas/:tierId/activar
+ * @access  Admin
+ */
+export const activateTanda = async (req, res) => {
+  try {
+    const { id, tierId } = req.params;
+    const tandas = await EventTicketTier.activateManually(id, tierId);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'actualizar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Tanda #${tierId} activada manualmente en evento #${id}`,
+      ipAddress: getIpFromRequest(req),
+    });
+
+    res.json({ success: true, message: 'Tanda activada', data: tandas });
+  } catch (error) {
+    console.error('Error in activateTanda:', error);
+    res.status(500).json({ success: false, message: error.message || 'Error activando la tanda' });
+  }
+};
+
+/**
+ * @desc    Quitar el forzado manual, volver al modo automático por fecha/hora
+ * @route   PATCH /api/admin/events/:id/tandas/desactivar
+ * @access  Admin
+ */
+export const deactivateTanda = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tandas = await EventTicketTier.deactivateManual(id);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: 'actualizar',
+      entidadTipo: 'evento',
+      entidadId: Number(id),
+      descripcion: `Forzado manual de tanda desactivado en evento #${id}`,
+      ipAddress: getIpFromRequest(req),
+    });
+
+    res.json({ success: true, message: 'Modo automático restaurado', data: tandas });
+  } catch (error) {
+    console.error('Error in deactivateTanda:', error);
+    res.status(500).json({ success: false, message: 'Error desactivando el forzado manual' });
   }
 };
 
@@ -382,7 +475,7 @@ export const publishEvent = async (req, res) => {
       [id]
     );
     
-    console.log('✅ Event published:', id);
+    console.log('Event published:', id);
 
     registrarActividad({
       userId: req.user?.id || null,
@@ -395,7 +488,7 @@ export const publishEvent = async (req, res) => {
 
     res.json({ success: true, message: 'Event published successfully' });
   } catch (error) {
-    console.error('❌ Error in publishEvent:', error);
+    console.error('Error in publishEvent:', error);
     res.status(500).json({ success: false, message: 'Error publishing event' });
   }
 };
@@ -414,7 +507,7 @@ export const unpublishEvent = async (req, res) => {
       [id]
     );
     
-    console.log('✅ Event unpublished:', id);
+    console.log('Event unpublished:', id);
 
     registrarActividad({
       userId: req.user?.id || null,
@@ -427,7 +520,7 @@ export const unpublishEvent = async (req, res) => {
 
     res.json({ success: true, message: 'Event unpublished successfully' });
   } catch (error) {
-    console.error('❌ Error in unpublishEvent:', error);
+    console.error('Error in unpublishEvent:', error);
     res.status(500).json({ success: false, message: 'Error unpublishing event' });
   }
 };
@@ -455,7 +548,7 @@ export const togglePublishEvent = async (req, res) => {
       [newStatus, id]
     );
     
-    console.log(`✅ Event ${isPublished ? 'unpublished' : 'published'}:`, id);
+    console.log(`Event ${isPublished ? 'unpublished' : 'published'}:`, id);
 
     registrarActividad({
       userId: req.user?.id || null,
@@ -472,7 +565,7 @@ export const togglePublishEvent = async (req, res) => {
       isPublished: !isPublished
     });
   } catch (error) {
-    console.error('❌ Error in togglePublishEvent:', error);
+    console.error('Error in togglePublishEvent:', error);
     res.status(500).json({ success: false, message: 'Error toggling publish status' });
   }
 };
@@ -498,7 +591,7 @@ export const cancelEvent = async (req, res) => {
       [motivo || 'Event cancelled', id]
     );
     
-    console.log('✅ Event cancelled:', id);
+    console.log('Event cancelled:', id);
 
     registrarActividad({
       userId: req.user?.id || null,
@@ -511,7 +604,7 @@ export const cancelEvent = async (req, res) => {
 
     res.json({ success: true, message: 'Event cancelled successfully' });
   } catch (error) {
-    console.error('❌ Error in cancelEvent:', error);
+    console.error('Error in cancelEvent:', error);
     res.status(500).json({ success: false, message: 'Error cancelling event' });
   }
 };
@@ -527,11 +620,11 @@ export const featureEvent = async (req, res) => {
     
     await pool.execute('UPDATE events SET destacado = 1, updated_at = NOW() WHERE id = ?', [id]);
     
-    console.log('✅ Event featured:', id);
+    console.log('Event featured:', id);
     
     res.json({ success: true, message: 'Event featured successfully' });
   } catch (error) {
-    console.error('❌ Error in featureEvent:', error);
+    console.error('Error in featureEvent:', error);
     res.status(500).json({ success: false, message: 'Error featuring event' });
   }
 };
@@ -547,11 +640,11 @@ export const unfeatureEvent = async (req, res) => {
     
     await pool.execute('UPDATE events SET destacado = 0, updated_at = NOW() WHERE id = ?', [id]);
     
-    console.log('✅ Event unfeatured:', id);
+    console.log('Event unfeatured:', id);
     
     res.json({ success: true, message: 'Event unfeatured successfully' });
   } catch (error) {
-    console.error('❌ Error in unfeatureEvent:', error);
+    console.error('Error in unfeatureEvent:', error);
     res.status(500).json({ success: false, message: 'Error unfeaturing event' });
   }
 };
@@ -578,7 +671,7 @@ export const toggleFeatureEvent = async (req, res) => {
       [newState, id]
     );
     
-    console.log(`✅ Event ${newState === 1 ? 'featured' : 'unfeatured'}:`, id);
+    console.log(`Event ${newState === 1 ? 'featured' : 'unfeatured'}:`, id);
     
     res.json({ 
       success: true, 
@@ -586,7 +679,7 @@ export const toggleFeatureEvent = async (req, res) => {
       isFeatured: newState === 1
     });
   } catch (error) {
-    console.error('❌ Error in toggleFeatureEvent:', error);
+    console.error('Error in toggleFeatureEvent:', error);
     res.status(500).json({ success: false, message: 'Error toggling featured status' });
   }
 };
@@ -598,7 +691,7 @@ export const toggleFeatureEvent = async (req, res) => {
  */
 export const getEventsStats = async (req, res) => {
   try {
-    console.log('📊 Fetching events statistics...');
+    console.log('Fetching events statistics...');
 
     const [totalResult] = await pool.execute('SELECT COUNT(*) as total FROM events');
     
@@ -633,14 +726,14 @@ export const getEventsStats = async (req, res) => {
       top_events: topEvents
     };
 
-    console.log('✅ Statistics fetched:', stats);
+    console.log('Fetching events statistics:', stats);
 
     res.json({
       success: true,
       data: stats
     });
   } catch (error) {
-    console.error('❌ Error in getEventsStats:', error);
+    console.error('Error in getEventsStats:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error fetching statistics',

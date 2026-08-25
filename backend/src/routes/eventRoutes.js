@@ -16,7 +16,9 @@ import {
   featureEvent,
   unfeatureEvent,
   toggleFeatureEvent,
-  getEventsStats
+  getEventsStats,
+  activateTanda,
+  deactivateTanda
 } from '../controllers/eventController.js';
 
 const router = express.Router();
@@ -178,5 +180,19 @@ router.patch('/:id/unfeature', unfeatureEvent);
  * @access  Admin
  */
 router.patch('/:id/toggle-feature', toggleFeatureEvent);
+
+/**
+ * @route   PATCH /api/admin/events/:id/tandas/:tierId/activar
+ * @desc    Forzar una tanda como vigente ahora mismo (sin esperar a su hora)
+ * @access  Admin
+ */
+router.patch('/:id/tandas/:tierId/activar', activateTanda);
+
+/**
+ * @route   PATCH /api/admin/events/:id/tandas/desactivar
+ * @desc    Quitar el forzado manual, volver al modo automático
+ * @access  Admin
+ */
+router.patch('/:id/tandas/desactivar', deactivateTanda);
 
 export default router;

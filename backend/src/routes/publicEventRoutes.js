@@ -1,7 +1,23 @@
 import express from 'express';
 import { pool } from '../config/database.js';
+import EventTicketTier from '../models/EventTicketTier.js';
 
 const router = express.Router();
+
+/**
+ * Sustituye precio_socio/precio_invitado por el precio de la tanda
+ * vigente en cada evento, SIN exponer nada de tandas al público — de
+ * cara al frontend público sigue siendo "un precio" normal, igual que
+ * antes de que existieran las tandas.
+ */
+const applyActivePricing = async (events) => {
+  return Promise.all(
+    events.map(async (event) => {
+      const { precio } = await EventTicketTier.resolveActivePrice(event.id, event.precio_socio);
+      return { ...event, precio_socio: precio, precio_invitado: precio };
+    }),
+  );
+};
 
 /**
  * @desc    Get all public events
@@ -73,10 +89,12 @@ router.get('/', async (req, res) => {
 
     console.log('✅ Events found:', events.length);
 
+    const eventsWithPricing = await applyActivePricing(events);
+
     res.json({
       success: true,
-      data: events,
-      count: events.length
+      data: eventsWithPricing,
+      count: eventsWithPricing.length
     });
   } catch (error) {
     console.error('❌ Error in GET /api/events:', error);
@@ -116,10 +134,12 @@ router.get('/featured', async (req, res) => {
 
     console.log('✅ Featured events found:', events.length);
 
+    const eventsWithPricing = await applyActivePricing(events);
+
     res.json({
       success: true,
-      data: events,
-      count: events.length
+      data: eventsWithPricing,
+      count: eventsWithPricing.length
     });
   } catch (error) {
     console.error('❌ Error in GET /api/events/featured:', error);
@@ -173,9 +193,11 @@ router.get('/:id', async (req, res) => {
 
     console.log('✅ Event found:', events[0].titulo);
 
+    const { precio } = await EventTicketTier.resolveActivePrice(events[0].id, events[0].precio_socio);
+
     res.json({
       success: true,
-      data: events[0]
+      data: { ...events[0], precio_socio: precio, precio_invitado: precio }
     });
   } catch (error) {
     console.error('❌ Error in GET /api/events/:id:', error);

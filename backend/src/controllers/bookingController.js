@@ -1,5 +1,6 @@
 import Booking from "../models/Booking.js";
 import Event from "../models/Event.js";
+import EventTicketTier from "../models/EventTicketTier.js";
 import Socio from "../models/Socio.js";
 import User from "../models/User.js";
 import EmailService from "../services/emailService.js";
@@ -168,9 +169,16 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Evento gratuito (precio 0): se confirma directamente, sin pasar
-    // por Stripe — no tiene sentido abrir un Checkout para cobrar 0€
-    const esGratuito = !event.precio_socio || event.precio_socio <= 0;
+    // Precio vigente ahora mismo (tanda activa, o precio base del evento
+    // si no tiene tandas configuradas). Se fija en la propia reserva
+    // (precio_unitario/tier_id) para que no cambie después aunque la
+    // tanda cambie mientras la reserva sigue esperando_pago.
+    const { precio: precioUnitario, tier_id: tierId } =
+      await EventTicketTier.resolveActivePrice(event_id, event.precio_socio);
+
+    // Evento/tanda gratuita (precio 0): se confirma directamente, sin
+    // pasar por Stripe — no tiene sentido abrir un Checkout para cobrar 0€
+    const esGratuito = !precioUnitario || precioUnitario <= 0;
 
     // Crear reserva con campos correctos de la tabla bookings
     const booking = await transaction(async (conn) => {
@@ -186,10 +194,10 @@ export const createBooking = async (req, res) => {
 
       const [result] = await conn.execute(
         `INSERT INTO bookings (
-          socio_id, event_id, numero_entradas, estado,
-          codigo_reserva, codigo_acceso, precio_pagado, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 0.00, NOW())`,
-        [socio.id, event_id, numero_entradas, estadoInicial, codigo_reserva, codigo_acceso],
+          socio_id, event_id, tier_id, numero_entradas, estado,
+          codigo_reserva, codigo_acceso, precio_pagado, precio_unitario, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0.00, ?, NOW())`,
+        [socio.id, event_id, tierId, numero_entradas, estadoInicial, codigo_reserva, codigo_acceso, precioUnitario],
       );
 
       const bookingId = result.insertId;
@@ -276,6 +284,7 @@ export const createBooking = async (req, res) => {
         event,
         user,
         numeroEntradas: numero_entradas,
+        precioUnitario,
       });
 
       logger.info("💳 Checkout Session creada:", {
@@ -367,6 +376,15 @@ export const retryBookingPayment = async (req, res) => {
 
     const user = await User.findById(userId);
 
+    // Se usa el precio ya fijado en la reserva (booking.precio_unitario),
+    // NO el precio vigente ahora — si la reserva se creó en la Tanda 1 y
+    // mientras seguía sin pagar entró en vigor la Tanda 2, el socio sigue
+    // pagando el precio de cuando reservó.
+    const precioUnitario =
+      booking.precio_unitario !== null && booking.precio_unitario !== undefined
+        ? parseFloat(booking.precio_unitario)
+        : parseFloat(event.precio_socio || 0); // reservas antiguas, previas a esta columna
+
     try {
       const session = await createCheckoutSession({
         booking,
@@ -374,6 +392,7 @@ export const retryBookingPayment = async (req, res) => {
         user,
         numeroEntradas: booking.numero_entradas,
         cancelPath: '/mis-entradas',
+        precioUnitario,
       });
 
       logger.info("💳 Checkout Session de reintento creada:", {
