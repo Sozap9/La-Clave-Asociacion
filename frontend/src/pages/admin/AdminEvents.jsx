@@ -210,6 +210,15 @@ const AdminEvents = () => {
     });
   };
 
+  // Mismo criterio que el filtro "Próximos"/"Pasados" de arriba: comparar
+  // fecha_evento contra el inicio del día de hoy.
+  const isEventPast = (event) => {
+    if (!event.fecha_evento) return false;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    return new Date(event.fecha_evento) < startOfToday;
+  };
+
   const getEmptyMessage = () => {
     if (filters.featured) return "No hay eventos destacados disponibles";
     if (filters.status === "upcoming")
@@ -332,6 +341,7 @@ const AdminEvents = () => {
             const isFeatured = event.destacado === 1;
             const isExpanded = expandedEventId === event.id;
             const statusBadge = getStatusBadge(event);
+            const isPast = isEventPast(event);
 
             return (
               <AdminCard
@@ -408,9 +418,9 @@ const AdminEvents = () => {
                   {
                     icon: <Users size={14} className="text-primary-300" />,
                     label: "Asistencia",
-                    value: `${event.confirmed_bookings || 0}/${
-                      event.aforo_maximo || 0
-                    }`,
+                    value: `${
+                      (isPast ? event.entradas_asistidas : event.confirmed_bookings) || 0
+                    }/${event.aforo_maximo || 0}`,
                   },
                 ]}
                 columns={3}

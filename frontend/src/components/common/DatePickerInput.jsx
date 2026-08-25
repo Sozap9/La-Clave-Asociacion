@@ -6,6 +6,25 @@ import "react-datepicker/dist/react-datepicker.css";
 // Registrar locale español
 registerLocale("es", es);
 
+// Input de hora manual, con el mismo estilo que el resto de campos
+// "input" del formulario — evita el selector nativo del navegador
+// (input type="time"), que no se puede re-estilizar y rompe el tema oscuro.
+// Ancho fijo por estilo inline: la clase compartida "input" trae w-full
+// por @apply, que si no se sobreescribe así gana y ocupa todo el hueco.
+const CustomTimeInput = ({ value, onChange }) => (
+  <div className="flex justify-center w-full">
+    <input
+      type="text"
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="00:00"
+      maxLength={5}
+      style={{ width: "5rem" }}
+      className="input text-sm text-center"
+    />
+  </div>
+);
+
 const DatePickerInput = ({
   selected,
   onChange,
@@ -16,9 +35,13 @@ const DatePickerInput = ({
   required = false,
   className = "",
   disabled = false,
-  dateFormat = "dd/MM/yyyy",
+  dateFormat,
   showLabel = false,
   yearDropdownItemNumber = 50,
+  showTimeSelect = false,
+  showTimeInput = false,
+  timeIntervals = 15,
+  timeCaption = "Hora",
 }) => {
   const monthNames = [
     "Enero",
@@ -111,7 +134,7 @@ const DatePickerInput = ({
       selected={selected}
       onChange={onChange}
       locale="es"
-      dateFormat={dateFormat}
+      dateFormat={dateFormat || (showTimeSelect || showTimeInput ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy")}
       minDate={minDate}
       maxDate={maxDate}
       placeholderText={placeholderText || "Seleccionar fecha"}
@@ -121,6 +144,13 @@ const DatePickerInput = ({
       wrapperClassName="w-full"
       renderCustomHeader={renderHeader}
       showPopperArrow={false}
+      showTimeSelect={showTimeSelect}
+      showTimeInput={showTimeInput}
+      customTimeInput={showTimeInput ? <CustomTimeInput /> : undefined}
+      timeIntervals={timeIntervals}
+      timeCaption={timeCaption}
+      timeFormat="HH:mm"
+      timeInputLabel="Hora:"
     />
   );
 

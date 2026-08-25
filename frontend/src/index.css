@@ -380,3 +380,65 @@
 .react-datepicker__input-container input {
   width: 100% !important;
 }
+
+/* Selector de hora (showTimeSelect) — mismo tema oscuro que el calendario */
+.react-datepicker__time-container {
+  border-left: 1px solid #333333 !important;
+  background-color: #1a1a1a !important;
+}
+
+.react-datepicker__time,
+.react-datepicker__time-box {
+  background-color: #1a1a1a !important;
+}
+
+.react-datepicker-time__header {
+  color: #ffffff !important;
+}
+
+.react-datepicker__time-list-item {
+  color: #e5e5e5 !important;
+}
+
+.react-datepicker__time-list-item:hover {
+  background-color: theme("colors.primary.500") !important;
+}
+
+.react-datepicker__time-list-item--selected {
+  background-color: theme("colors.primary.600") !important;
+  color: #ffffff !important;
+}
+
+.react-datepicker__time-list-item--disabled {
+  color: #525252 !important;
+}
+
+/* Selector de hora manual (showTimeInput) — campo de texto en vez de lista */
+.react-datepicker__input-time-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  border-top: 1px solid #333333 !important;
+  color: #ffffff !important;
+}
+
+.react-datepicker-time__input-container {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.react-datepicker-time__input input {
+  background-color: #0f0f0f !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 0.375rem !important;
+  color: #ffffff !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.85rem !important;
+}
+
+.react-datepicker-time__input input:focus {
+  outline: none !important;
+  border-color: theme("colors.primary.500") !important;
+}

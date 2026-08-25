@@ -83,6 +83,46 @@ export const getEventDetailsAdmin = async (id) => {
   }
 };
 
+/**
+ * Forzar manualmente una tanda como vigente ahora mismo, sin esperar
+ * a su fecha_hora_inicio.
+ */
+export const activateEventTier = async (eventId, tierId) => {
+  try {
+    const response = await fetch(
+      `${API_URL}/admin/events/${eventId}/tandas/${tierId}/activar`,
+      {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      },
+    );
+    return await response.json();
+  } catch (error) {
+    console.error("Error activando tanda:", error);
+    throw error;
+  }
+};
+
+/**
+ * Quitar el forzado manual de tanda, volver al modo automático por
+ * fecha/hora.
+ */
+export const deactivateEventTier = async (eventId) => {
+  try {
+    const response = await fetch(
+      `${API_URL}/admin/events/${eventId}/tandas/desactivar`,
+      {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      },
+    );
+    return await response.json();
+  } catch (error) {
+    console.error("Error desactivando tanda manual:", error);
+    throw error;
+  }
+};
+
 export const getEventsStats = async () => {
   try {
     const response = await fetch(`${API_URL}/admin/events/stats`, {

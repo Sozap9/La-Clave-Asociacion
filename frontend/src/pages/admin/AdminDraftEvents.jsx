@@ -128,6 +128,15 @@ const AdminDraftEvents = () => {
     });
   };
 
+  // Mismo criterio que en AdminEvents.jsx: comparar fecha_evento contra
+  // el inicio del día de hoy.
+  const isEventPast = (event) => {
+    if (!event.fecha_evento) return false;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    return new Date(event.fecha_evento) < startOfToday;
+  };
+
   if (loading && events.length === 0) return <Loader fullScreen />;
 
   return (
@@ -205,6 +214,7 @@ const AdminDraftEvents = () => {
           {paginatedEvents.map((event) => {
             const isFeatured = event.destacado === 1;
             const isPublished = event.visible_desde !== null;
+            const isPast = isEventPast(event);
 
             return (
               <AdminCard
@@ -283,9 +293,12 @@ const AdminDraftEvents = () => {
                   {
                     icon: <Users size={14} className="text-primary-300" />,
                     label: "Asistencia",
-                    value: `${event.confirmed_bookings || 0}/${
-                      event.aforo_maximo || 0
-                    }`,
+                    // Evento futuro/en curso: entradas confirmadas hasta
+                    // ahora. Evento ya pasado: quiénes asistieron de
+                    // verdad (check-in por QR).
+                    value: `${
+                      (isPast ? event.entradas_asistidas : event.confirmed_bookings) || 0
+                    }/${event.aforo_maximo || 0}`,
                   },
                 ]}
                 columns={3}
