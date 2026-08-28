@@ -48,12 +48,14 @@ const corsOptions = {
     ].filter(Boolean);
 
     // Permitir sin origin (ej: Postman, curl), orígenes permitidos, y subdominios de
-    // pages.dev / workers.dev (incluye previews con prefijo, ej: preview-nombre.workers.dev)
+    // pages.dev / workers.dev / vercel.app (incluye previews con prefijo, ej:
+    // la-clave-asociacion-bb75ywlks-sozap9s-projects.vercel.app)
     if (
       !origin ||
       allowedOrigins.includes(origin) ||
       /\.pages\.dev$/.test(origin) ||
-      /\.workers\.dev$/.test(origin)
+      /\.workers\.dev$/.test(origin) ||
+      /\.vercel\.app$/.test(origin)
     ) {
       callback(null, true);
     } else {
