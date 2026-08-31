@@ -94,31 +94,34 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el evento no ha pasado.
-    // fecha_evento es una columna DATE pura (sin hora), así que
-    // new Date(event.fecha_evento) siempre cae en medianoche — comparado
-    // directo contra "ahora", el evento se daba por "pasado" nada más
-    // entrar el día, aunque fuera a las 17:00 esa misma tarde. En vez de
-    // eso, comparamos contra una hora límite configurable del MISMO día
-    // del evento (23:00 por defecto — HORA_LIMITE_COMPRA_MISMO_DIA en
-    // las variables de entorno para cambiarla sin tocar código).
+    // Verificar que el evento no haya terminado ya. La venta de entradas
+    // sigue abierta con el evento en marcha, y se cierra al llegar
+    // hora_fin (no al empezar el evento). Si hora_fin es anterior a
+    // hora_evento, el evento cruza la medianoche (ej. empieza 23:30,
+    // termina 06:00) y por tanto termina el día siguiente.
     const fechaEvento = new Date(event.fecha_evento);
-    const horaLimiteCompra = parseInt(
-      process.env.HORA_LIMITE_COMPRA_MISMO_DIA || "23",
-      10,
-    );
-    const limiteCompra = new Date(
+    const [horaInicioH, horaInicioM] = (event.hora_evento || "00:00:00")
+      .split(":")
+      .map(Number);
+    const [horaFinH, horaFinM] = (event.hora_fin || "23:59:59")
+      .split(":")
+      .map(Number);
+    const cruzaMedianoche =
+      horaFinH * 60 + horaFinM < horaInicioH * 60 + horaInicioM;
+
+    const finEvento = new Date(
       fechaEvento.getFullYear(),
       fechaEvento.getMonth(),
-      fechaEvento.getDate(),
-      horaLimiteCompra,
-      0,
+      fechaEvento.getDate() + (cruzaMedianoche ? 1 : 0),
+      horaFinH || 0,
+      horaFinM || 0,
       0,
     );
-    if (limiteCompra < new Date()) {
+
+    if (finEvento <= new Date()) {
       return res.status(400).json({
         success: false,
-        message: "No puedes reservar para un evento que ya pasó",
+        message: "Las entradas para este evento ya no están disponibles: el evento ha finalizado.",
       });
     }
 
@@ -202,21 +205,35 @@ export const createBooking = async (req, res) => {
 
       const bookingId = result.insertId;
 
-      // Actualizar entradas disponibles del evento (si la columna existe)
-      try {
-        await conn.execute(
-          `UPDATE events
-           SET entradas_disponibles = entradas_disponibles - ?,
-               entradas_reservadas = entradas_reservadas + ?
-           WHERE id = ?`,
-          [numero_entradas, numero_entradas, event_id],
-        );
-      } catch (updateError) {
-        logger.warn(
-          "No se pudo actualizar entradas disponibles:",
-          updateError.message,
-        );
-        // No fallar si la columna no existe
+      // El aforo PÚBLICO (entradas_disponibles/entradas_reservadas, lo que
+      // ve la web) solo se descuenta aquí si la reserva queda confirmada
+      // de inmediato (evento gratuito). Si es de pago, la reserva se crea
+      // en "esperando_pago" y el aforo público NO se toca todavía — se
+      // descuenta al confirmarse el pago de verdad (ver
+      // webhookController.handleCheckoutSessionCompleted). Así una
+      // reserva sin pagar nunca "llena" el aforo que ve el público.
+      //
+      // La protección contra sobreventa durante el checkout (que dos
+      // personas no puedan pagar a la vez la última entrada) sigue
+      // intacta y es independiente de esto: vive en
+      // Event.checkAvailability / entradas_reservadas_real, que sí
+      // sigue contando las reservas esperando_pago.
+      if (estadoInicial === "confirmada") {
+        try {
+          await conn.execute(
+            `UPDATE events
+             SET entradas_disponibles = entradas_disponibles - ?,
+                 entradas_reservadas = entradas_reservadas + ?
+             WHERE id = ?`,
+            [numero_entradas, numero_entradas, event_id],
+          );
+        } catch (updateError) {
+          logger.warn(
+            "No se pudo actualizar entradas disponibles:",
+            updateError.message,
+          );
+          // No fallar si la columna no existe
+        }
       }
 
       const [rows] = await conn.execute(`SELECT * FROM bookings WHERE id = ?`, [
@@ -301,20 +318,14 @@ export const createBooking = async (req, res) => {
         },
       });
     } catch (stripeError) {
-      // Si falla la creación del Checkout, deshacemos la reserva y
-      // liberamos el aforo — no dejamos una reserva fantasma sin forma
-      // de pagarla
+      // Si falla la creación del Checkout, deshacemos la reserva. El
+      // aforo público NO se toca aquí (nunca se llegó a descontar para
+      // reservas de pago — solo se descuenta al confirmarse el pago).
       logger.error("Error creando Checkout Session, revirtiendo reserva:", stripeError);
 
       await query(
         `UPDATE bookings SET estado = 'cancelada', motivo_cancelacion = ? WHERE id = ?`,
         ["Error al iniciar el pago", booking.id],
-      );
-      await query(
-        `UPDATE events SET entradas_disponibles = entradas_disponibles + ?,
-                            entradas_reservadas = entradas_reservadas - ?
-         WHERE id = ?`,
-        [numero_entradas, numero_entradas, event_id],
       );
 
       return res.status(502).json({
@@ -581,8 +592,10 @@ export const cancelBooking = async (req, res) => {
 
     // Verificar que el evento no ha pasado (no aplica si solo estaba
     // pendiente de pago — cancelar una reserva sin pagar nunca depende
-    // de la fecha del evento). Mismo criterio que al reservar: hora
-    // límite del mismo día, no medianoche — ver createBooking.
+    // de la fecha del evento). Este límite es independiente del cierre
+    // de venta de entradas (que ahora cierra al empezar el evento, ver
+    // createBooking) — cancelar una reserva ya confirmada sigue
+    // permitido con un margen algo mayor, hasta esta hora configurable.
     if (booking.estado === "confirmada") {
       const event = await Event.findById(booking.event_id);
       const fechaEvento = new Date(event.fecha_evento);
@@ -616,14 +629,18 @@ export const cancelBooking = async (req, res) => {
         [motivo || "Cancelación voluntaria", id],
       );
 
-      // Liberar entradas
-      await conn.execute(
-        `UPDATE events 
-         SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0),
-             entradas_disponibles = entradas_disponibles + ?
-         WHERE id = ?`,
-        [booking.numero_entradas, booking.numero_entradas, booking.event_id],
-      );
+      // Liberar entradas del aforo público SOLO si estaba confirmada (ya
+      // pagada, así que sí lo tenía descontado). Si estaba esperando_pago,
+      // nunca llegó a descontarse — no hay nada que devolver.
+      if (booking.estado === "confirmada") {
+        await conn.execute(
+          `UPDATE events 
+           SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0),
+               entradas_disponibles = entradas_disponibles + ?
+           WHERE id = ?`,
+          [booking.numero_entradas, booking.numero_entradas, booking.event_id],
+        );
+      }
     });
 
     logger.info("✅ Reserva cancelada:", { bookingId: id });

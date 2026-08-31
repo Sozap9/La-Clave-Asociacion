@@ -1850,20 +1850,44 @@ export const getEventPayments = async (req, res) => {
 
     // 2. Stats globales del evento (sin filtros)
     const allEntries = await query(
-      `SELECT b.estado, b.numero_entradas
+      `SELECT b.estado, b.numero_entradas, COALESCE(b.precio_pagado, 0) AS precio_pagado
        FROM bookings b
        WHERE b.event_id = ?`,
       [eventId],
     );
 
+    // "Confirmadas" = ha pagado, haya hecho check-in o no todavía (por
+    // eso cuenta 'confirmada' + 'asistida' — si solo contara 'confirmada',
+    // en cuanto la gente empieza a entrar al evento con el QR el número
+    // bajaría en vez de reflejar quién ha pagado de verdad).
+    const entradasConfirmadas = allEntries.filter(
+      (e) => e.estado === "confirmada" || e.estado === "asistida",
+    );
+    const entradasAsistidas = allEntries.filter((e) => e.estado === "asistida");
+
     const stats = {
-      total_entradas: allEntries.length,
-      pagos_exitosos: allEntries.filter((e) => e.estado === "confirmada")
-        .length,
+      total_entradas: allEntries.reduce(
+        (sum, e) => sum + (e.numero_entradas || 0),
+        0,
+      ),
+      pagos_exitosos: entradasConfirmadas.reduce(
+        (sum, e) => sum + (e.numero_entradas || 0),
+        0,
+      ),
+      entradas_asistidas: entradasAsistidas.reduce(
+        (sum, e) => sum + (e.numero_entradas || 0),
+        0,
+      ),
       pagos_fallidos: allEntries.filter((e) => e.estado === "cancelada").length,
       pagos_pendientes: allEntries.filter((e) => e.estado === "esperando_pago")
         .length,
-      total_ingresos: 0,
+      // Dinero real cobrado: suma de precio_pagado de las reservas que
+      // realmente llegaron a pagarse (confirmada + asistida). Las
+      // esperando_pago/canceladas no han pagado nada, no cuentan.
+      total_ingresos: entradasConfirmadas.reduce(
+        (sum, e) => sum + parseFloat(e.precio_pagado || 0),
+        0,
+      ),
     };
 
     // 3. Query con filtros

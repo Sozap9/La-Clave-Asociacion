@@ -111,6 +111,17 @@ async function handleCheckoutSessionCompleted(session) {
       [(session.amount_total || 0) / 100, bookingId],
     );
 
+    // Este es el momento en que la entrada realmente "ocupa" aforo
+    // público de cara a la web — antes, mientras estaba esperando_pago,
+    // no se descontaba (ver bookingController.createBooking). Así una
+    // reserva sin pagar nunca reduce el número que ve el público.
+    await query(
+      `UPDATE events SET entradas_disponibles = entradas_disponibles - ?,
+                          entradas_reservadas = entradas_reservadas + ?
+       WHERE id = ?`,
+      [booking.numero_entradas, booking.numero_entradas, booking.event_id],
+    );
+
     // Registrar el pago REAL (payment_intent de verdad, no inventado)
     await query(
       `INSERT INTO payments (
@@ -193,13 +204,9 @@ async function handleCheckoutSessionExpired(session) {
 
     await Booking.cancel(bookingId, "Pago no completado a tiempo");
 
-    // Liberar el aforo que esta reserva pendiente tenía bloqueado
-    await query(
-      `UPDATE events SET entradas_disponibles = entradas_disponibles + ?,
-                          entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
-       WHERE id = ?`,
-      [booking.numero_entradas, booking.numero_entradas, booking.event_id],
-    );
+    // El aforo público NUNCA llegó a descontarse para esta reserva
+    // (solo se descuenta al confirmarse el pago, ver
+    // handleCheckoutSessionCompleted) — no hay nada que liberar aquí.
 
     logger.info("⏱️ Reserva cancelada por Checkout Session expirada:", {
       bookingId,

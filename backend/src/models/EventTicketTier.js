@@ -1,6 +1,20 @@
 import { query } from '../config/database.js';
 
-
+/**
+ * Modelo EventTicketTier - Tandas de precio por evento.
+ *
+ * Una tanda solo afecta al PRECIO, nunca al aforo (eso sigue siendo
+ * events.aforo_maximo / entradas_disponibles, sin cambios).
+ *
+ * Resolución del precio vigente (ver resolveActiveTier):
+ *   1) Si alguna tanda del evento está activada_manualmente -> esa gana,
+ *      sin mirar fechas (el admin puede forzarla antes de su hora).
+ *   2) Si no, la tanda con fecha_hora_inicio más reciente que ya haya
+ *      pasado (fecha_hora_inicio <= NOW()).
+ *   3) Si el evento no tiene tandas, o ninguna ha empezado aún -> no hay
+ *      tanda activa, se usa el precio_socio base del evento (fallback,
+ *      compatible con eventos que nunca usan tandas).
+ */
 class EventTicketTier {
   static async getByEvent(eventId) {
     try {
@@ -73,7 +87,7 @@ class EventTicketTier {
         [tierId, eventId],
       );
       if (result.affectedRows === 0) {
-        throw new Error('Tanda no encontrada para este evento');
+        throw new Error('Tramo no encontrado para este evento');
       }
       return await this.getByEvent(eventId);
     } catch (error) {
