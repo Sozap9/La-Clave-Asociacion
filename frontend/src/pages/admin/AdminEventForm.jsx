@@ -219,10 +219,10 @@ const AdminEventForm = () => {
           prev.map((t) => ({ ...t, activada_manualmente: t.id === tandaId })),
         );
       } else {
-        setError(result.message || "Error al activar la tanda");
+        setError(result.message || "Error al activar el tramo");
       }
     } catch (err) {
-      setError("Error de conexión al activar la tanda");
+      setError("Error de conexión al activar el tramo");
     } finally {
       setTandaActionLoading(null);
     }
@@ -452,21 +452,21 @@ const AdminEventForm = () => {
           />
         </div>
 
-        {/* Tandas de precio */}
+        {/* Tramos de precio */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <div>
-              <label className="label mb-0"> Tandas de precio </label>
+              <label className="label mb-0"> Tramos de precio </label>
               <p className="text-gray-500 text-xs mt-1">
-                Si añades tandas, el precio de arriba pasa a ser solo el precio
-                por defecto antes de que empiece la primera tanda. El precio
-                sube automáticamente según la fecha/hora de cada tanda — el
+                Si añades tramos, el precio de arriba pasa a ser solo el precio
+                por defecto antes de que empiece el primer tramo. El precio
+                sube automáticamente según la fecha/hora de cada tramo — el
                 público solo ve un precio, sin avisos.
               </p>
             </div>
             <Button type="button" variant="outline" onClick={handleAddTanda}>
               <span className="flex items-center gap-1.5">
-                <Plus size={16} /> Añadir tanda
+                <Plus size={16} /> Añadir tramo
               </span>
             </Button>
           </div>
@@ -545,7 +545,7 @@ const AdminEventForm = () => {
                       )}
                       <button
                         type="button"
-                        title="Quitar tanda"
+                        title="Quitar tramo"
                         onClick={() => handleRemoveTanda(index)}
                         className="p-2 rounded border border-[#333] text-red-400 hover:bg-red-500/10 transition-colors"
                       >
@@ -554,7 +554,7 @@ const AdminEventForm = () => {
                     </div>
                     {isActiva && (
                       <p className="text-primary-400 text-xs sm:col-span-5 -mt-1">
-                        La tanda está activada manualmente y será la vigente hasta que se desactive.
+                        Forzada como vigente manualmente ahora mismo
                       </p>
                     )}
                   </div>

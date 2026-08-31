@@ -417,9 +417,9 @@ const AdminPayments = () => {
                     : ""}
                 </p>
 
-                {/* Stats: solo Total + Confirmadas */}
+                {/* Stats: Total, Ingresos, Confirmadas y Asistidas */}
                 {eventStats && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div className="bg-[#0a0a0a] rounded-lg p-4">
                       <p className="text-gray-500 text-sm">Total Entradas</p>
                       <p className="text-primary-300 text-2xl font-bold mt-1">
@@ -427,9 +427,21 @@ const AdminPayments = () => {
                       </p>
                     </div>
                     <div className="bg-[#0a0a0a] rounded-lg p-4">
+                      <p className="text-gray-500 text-sm">Ingresos</p>
+                      <p className="text-primary-300 text-2xl font-bold mt-1">
+                        {formatCurrency(eventStats.total_ingresos)}
+                      </p>
+                    </div>
+                    <div className="bg-[#0a0a0a] rounded-lg p-4">
                       <p className="text-gray-500 text-sm">Confirmadas</p>
-                      <p className="text-green-400 text-2xl font-bold mt-1">
+                      <p className="text-primary-300 text-2xl font-bold mt-1">
                         {eventStats.pagos_exitosos || 0}
+                      </p>
+                    </div>
+                    <div className="bg-[#0a0a0a] rounded-lg p-4">
+                      <p className="text-gray-500 text-sm">Asistidas</p>
+                      <p className="text-primary-300 text-2xl font-bold mt-1">
+                        {eventStats.entradas_asistidas || 0}
                       </p>
                     </div>
                   </div>
