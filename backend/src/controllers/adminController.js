@@ -45,10 +45,13 @@ export const getGeneralStats = async (req, res) => {
     `;
     const eventosResult = await query(eventosSql);
 
-    // Contar reservas
+    // Total de entradas vendidas (no filas de reserva): una sola reserva
+    // puede incluir varias entradas (numero_entradas), así que sumamos esa
+    // columna en vez de contar registros, para que este número case con el
+    // "Asistencia" que se ve en cada evento individual.
     const reservasSql = `
       SELECT 
-        COUNT(CASE WHEN estado = 'confirmada' THEN 1 END) as reservas_activas
+        SUM(CASE WHEN estado IN ('confirmada', 'asistida') THEN numero_entradas ELSE 0 END) as reservas_activas
       FROM bookings
     `;
     const reservasResult = await query(reservasSql);
