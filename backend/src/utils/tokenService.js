@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
+const JWT_EXPIRE = process.env.JWT_EXPIRE || '30d';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const JWT_REFRESH_EXPIRE = process.env.JWT_REFRESH_EXPIRE || '30d';
 
@@ -18,7 +18,7 @@ export const generateAccessToken = (payload) => {
   const tokenPayload = {
     id: payload.id,
     email: payload.email,
-    role: payload.role // IMPORTANTE: Incluir el role
+    role: payload.role // Incluir el role
   };
   
   return jwt.sign(tokenPayload, JWT_SECRET, {
@@ -49,7 +49,7 @@ export const verifyAccessToken = (token) => {
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
-      throw new Error('Token expirado');
+      throw new Error('Tu sesión ha expirado. Vuelve a iniciar sesión para continuar.');
     }
     if (error.name === 'JsonWebTokenError') {
       throw new Error('Token inválido');
@@ -68,7 +68,7 @@ export const verifyRefreshToken = (token) => {
     return jwt.verify(token, JWT_REFRESH_SECRET);
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
-      throw new Error('Refresh token expirado');
+      throw new Error('Tu sesión ha expirado. Vuelve a iniciar sesión para continuar.');
     }
     if (error.name === 'JsonWebTokenError') {
       throw new Error('Refresh token inválido');

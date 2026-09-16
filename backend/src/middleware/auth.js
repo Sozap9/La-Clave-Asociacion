@@ -20,9 +20,12 @@ export const authenticateToken = (req, res, next) => {
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
         console.error('Error al verificar token:', err.message);
+        const message = err.name === 'TokenExpiredError'
+          ? 'Tu sesión ha expirado. Vuelve a iniciar sesión para continuar.'
+          : 'Token inválido';
         return res.status(403).json({ 
           success: false,
-          message: 'Token inválido o expirado' 
+          message 
         });
       }
 
