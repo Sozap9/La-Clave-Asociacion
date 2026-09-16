@@ -169,8 +169,9 @@ class EmailService {
    * EMAIL DE CONFIRMACIÓN DE RESERVA CON QR Y CARTEL
    * Imagen del cartel inline y QR 
    */
-  static async sendBookingConfirmation(booking, event, user) {
+  static async sendBookingConfirmation(booking, event, user, esInvitacion = false) {
     try {
+      const tipoEntradaLabel = esInvitacion ? 'Invitación' : 'Entrada';
       const fechaEvento = new Date(event.fecha_evento).toLocaleDateString('es-ES', {
         weekday: 'long',
         year: 'numeric',
@@ -219,7 +220,7 @@ class EmailService {
       const mailOptions = {
         from: fromNoreply(),
         to: user.email,
-        subject: `Entrada confirmada — ${event.titulo}`,
+        subject: `${tipoEntradaLabel} confirmada — ${event.titulo}`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -237,7 +238,7 @@ class EmailService {
                     <tr>
                       <td style="background:linear-gradient(135deg,#D97706 0%,#FCD34D 100%);padding:28px 30px;text-align:center;">
                         <p style="color:#FDE68A;margin:0 0 4px 0;font-size:12px;text-transform:uppercase;letter-spacing:2px;">La Clave 981</p>
-                        <h1 style="color:#ffffff;margin:0;font-size:26px;font-weight:bold;letter-spacing:1px;">ENTRADA CONFIRMADA</h1>
+                        <h1 style="color:#ffffff;margin:0;font-size:26px;font-weight:bold;letter-spacing:1px;">${tipoEntradaLabel.toUpperCase()} CONFIRMADA</h1>
                       </td>
                     </tr>
 
@@ -302,13 +303,13 @@ class EmailService {
                               <p style="margin:0 0 16px 0;font-size:18px;font-weight:bold;color:#fff;">
                                 ${user.nombre} ${user.apellidos || ''}
                               </p>
-                              <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Código de reserva</p>
+                              <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Código de ${esInvitacion ? 'invitación' : 'reserva'}</p>
                               <p style="margin:0 0 16px 0;font-size:16px;font-weight:bold;color:#FCD34D;font-family:monospace;letter-spacing:2px;">
                                 ${booking.codigo_reserva}
                               </p>
                               <p style="margin:0 0 4px 0;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Coste</p>
                               <p style="margin:0;font-size:14px;color:#fff;">
-                                ${booking.precio_pagado > 0 ? `<strong style="color:#FCD34D;">${booking.precio_pagado}€</strong>` : '<strong style="color:#10b981;">Entrada gratuita</strong>'}
+                                ${esInvitacion ? '<strong style="color:#10b981;">Invitación</strong>' : (booking.precio_pagado > 0 ? `<strong style="color:#FCD34D;">${booking.precio_pagado}€</strong>` : '<strong style="color:#10b981;">Entrada gratuita</strong>')}
                               </p>
                             </td>
                           </tr>
@@ -330,7 +331,7 @@ class EmailService {
                         <a href="${process.env.FRONTEND_URL}/mis-entradas?ver=${booking.id}"
                           style="display:inline-block;background:#D97706;color:#fff;text-decoration:none;
                           font-size:13px;font-weight:bold;padding:10px 24px;border-radius:8px;">
-                          Ver mi entrada online
+                          Ver mi ${esInvitacion ? 'invitación' : 'entrada'} online
                         </a>
                       </td>
                     </tr>

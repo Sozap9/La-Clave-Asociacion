@@ -29,6 +29,7 @@ import {
   listAllBookings,
   getBookingDetails,
   cancelBookingAdmin,
+  sendBookingInvitation,
   getBookingsStats,
   resendBookingTicket,
 
@@ -93,7 +94,7 @@ import {
   idParamValidator,
   yearQueryValidator,
 } from "../validators/adminValidator.js";
-import { param } from "express-validator";
+import { param, body } from "express-validator";
 
 const router = express.Router();
 
@@ -291,6 +292,18 @@ router.post(
   resendBookingTicket,
 );
 
+// Enviar una entrada de invitación (coste 0€) a un socio elegido por el admin
+// Body: { socio_id, event_id, numero_entradas? }
+router.post(
+  "/bookings/invitacion",
+  adminStrictLimiter,
+  body("socio_id").isInt({ min: 1 }).withMessage("socio_id debe ser un número entero positivo").toInt(),
+  body("event_id").isInt({ min: 1 }).withMessage("event_id debe ser un número entero positivo").toInt(),
+  body("numero_entradas").optional().isInt({ min: 1, max: 10 }).withMessage("numero_entradas debe ser un número entre 1 y 10").toInt(),
+  handleValidationErrors,
+  sendBookingInvitation,
+);
+
 // Verificar QR y registrar asistencia
 router.post(
   "/bookings/verify-qr",
@@ -416,12 +429,12 @@ router.get("/export/ingresos-mensuales", exportIngresosMensuales);
 
 /**
  * ========================================
- * GESTIÓN DE SOLICITUDES DE SOCIO  ✨ NUEVO
+ * GESTIÓN DE SOLICITUDES DE SOCIO  
  * ========================================
  */
 
 // Contar pendientes (badge sidebar)
-// ⚠️ Debe ir ANTES de /:id para no ser capturada por el parámetro
+// Debe ir ANTES de /:id para no ser capturada por el parámetro
 // GET /api/admin/solicitudes/pendientes/count
 router.get("/solicitudes/pendientes/count", getPendientesCount);
 

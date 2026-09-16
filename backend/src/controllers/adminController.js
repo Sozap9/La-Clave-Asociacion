@@ -1,9 +1,10 @@
-import { query } from "../config/database.js";
+import { query, transaction } from "../config/database.js";
 import User from "../models/User.js";
 import Socio from "../models/Socio.js";
 import SolicitudSocio from "../models/SolicitudSocio.js"; 
 import Event from "../models/Event.js";
 import Booking from "../models/Booking.js";
+import EventTicketTier from "../models/EventTicketTier.js";
 import Payment from "../models/Payment.js";
 import Gallery from "../models/Gallery.js";
 import PDFDocument from "pdfkit";
@@ -1697,6 +1698,219 @@ export const resendBookingTicket = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al reenviar la entrada",
+    });
+  }
+};
+
+/**
+ * Enviar una entrada de invitación (coste 0€) a un socio elegido por el
+ * admin. Crea una reserva "confirmada" igual que una compra normal —
+ * mismo código, mismo QR, mismo check-in — pero forzando precio 0€ sin
+ * importar el precio real del evento/tanda, y SIN comprobar el aforo:
+ * el admin puede invitar aunque el evento esté completo (decisión
+ * explícita: las invitaciones no están sujetas al límite de plazas).
+ * POST /api/admin/bookings/invitacion
+ * Body: { socio_id, event_id, numero_entradas? }
+ */
+export const sendBookingInvitation = async (req, res) => {
+  try {
+    const { socio_id, event_id, numero_entradas = 1 } = req.body;
+
+    if (!socio_id || !event_id) {
+      return res.status(400).json({
+        success: false,
+        message: "socio_id y event_id son obligatorios",
+      });
+    }
+
+    const socio = await Socio.findById(socio_id);
+    if (!socio) {
+      return res.status(404).json({
+        success: false,
+        message: "Socio no encontrado",
+      });
+    }
+
+    const event = await Event.findById(event_id);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Evento no encontrado",
+      });
+    }
+
+    if (event.estado !== "scheduled") {
+      return res.status(400).json({
+        success: false,
+        message: "Este evento no está disponible para enviar invitaciones",
+      });
+    }
+
+    // Mismo cálculo de fin de evento que en la reserva normal (createBooking)
+    // para no poder invitar a un evento que ya ha terminado.
+    const fechaEvento = new Date(event.fecha_evento);
+    const [horaInicioH, horaInicioM] = (event.hora_evento || "00:00:00")
+      .split(":")
+      .map(Number);
+    const [horaFinH, horaFinM] = (event.hora_fin || "23:59:59")
+      .split(":")
+      .map(Number);
+    const cruzaMedianoche =
+      horaFinH * 60 + horaFinM < horaInicioH * 60 + horaInicioM;
+    const finEvento = new Date(
+      fechaEvento.getFullYear(),
+      fechaEvento.getMonth(),
+      fechaEvento.getDate() + (cruzaMedianoche ? 1 : 0),
+      horaFinH || 0,
+      horaFinM || 0,
+      0,
+    );
+    if (finEvento <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Este evento ya ha finalizado",
+      });
+    }
+
+    // Evitar duplicar: si el socio ya tiene una reserva activa para este evento
+    const existingBooking = await Booking.findBySocioAndEvent(socio.id, event_id);
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        message: "Este socio ya tiene una reserva para este evento",
+      });
+    }
+
+    // A propósito NO se llama a Event.checkAvailability: el admin puede
+    // invitar aunque el aforo esté completo.
+
+    // tier_id vigente solo para trazabilidad (a qué tanda pertenecería);
+    // el precio se fuerza a 0 independientemente del precio real.
+    const { tier_id: tierId } = await EventTicketTier.resolveActivePrice(
+      event_id,
+      event.precio_socio,
+    );
+
+    const booking = await transaction(async (conn) => {
+      const codigo_acceso = `ACC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const codigo_reserva = `LCV-${year}${month}-${randomPart}`;
+
+      const [result] = await conn.execute(
+        `INSERT INTO bookings (
+          socio_id, event_id, tier_id, numero_entradas, estado,
+          codigo_reserva, codigo_acceso, precio_pagado, precio_unitario, created_at
+        ) VALUES (?, ?, ?, ?, 'confirmada', ?, ?, 0.00, 0.00, NOW())`,
+        [socio.id, event_id, tierId, numero_entradas, codigo_reserva, codigo_acceso],
+      );
+
+      const bookingId = result.insertId;
+
+      // Se actualiza igual el contador público de aforo (para que la web
+      // muestre bien las plazas restantes), aunque no se haya comprobado
+      // el límite antes de crear la invitación.
+      try {
+        await conn.execute(
+          `UPDATE events
+           SET entradas_disponibles = entradas_disponibles - ?,
+               entradas_reservadas = entradas_reservadas + ?
+           WHERE id = ?`,
+          [numero_entradas, numero_entradas, event_id],
+        );
+      } catch (updateError) {
+        logger.warn(
+          "No se pudo actualizar entradas disponibles (invitación):",
+          updateError.message,
+        );
+      }
+
+      const [rows] = await conn.execute(`SELECT * FROM bookings WHERE id = ?`, [
+        bookingId,
+      ]);
+      return rows[0];
+    });
+
+    // QR igual que en una reserva/entrada normal
+    let bookingWithQR = booking;
+    try {
+      const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
+      const qrCode = await generateQRCodeBase64(qrData, booking.id);
+      await query(`UPDATE bookings SET qr_code_url = ? WHERE id = ?`, [
+        qrCode,
+        booking.id,
+      ]);
+    } catch (qrError) {
+      logger.error("❌ Error generando QR de invitación:", qrError);
+    }
+    bookingWithQR = await Booking.findById(booking.id);
+
+    // Registro como pago de 0€ para que las estadísticas del evento cuadren
+    // igual que con una entrada gratuita normal. Se reutiliza
+    // tipo_pago='entrada_evento' (valor ya probado en producción) y la
+    // distinción de que es una invitación de admin queda en descripcion
+    // y metadata, sin tocar el esquema de la tabla.
+    try {
+      await query(
+        `INSERT INTO payments (
+          socio_id, stripe_payment_intent_id, amount, currency, tipo_pago,
+          descripcion, estado, fecha_pago, metadata, created_at
+        ) VALUES (?, ?, 0.00, 'EUR', 'entrada_evento', ?, 'exitoso', NOW(), ?, NOW())`,
+        [
+          socio.id,
+          `invite-${booking.id}-${Date.now()}`,
+          `Invitación de administrador a ${event.titulo}`,
+          JSON.stringify({
+            event_id,
+            booking_id: booking.id,
+            invitacion: true,
+            otorgado_por: req.user?.id || null,
+          }),
+        ],
+      );
+    } catch (paymentErr) {
+      logger.error("Error al registrar invitación:", paymentErr);
+    }
+
+    // Email al socio: mismo flujo que una reserva normal, con los textos
+    // en modo "invitación" (ver EmailService.sendBookingConfirmation)
+    try {
+      const user = await User.findById(socio.user_id);
+      if (user) {
+        await EmailService.sendBookingConfirmation(bookingWithQR, event, user, true);
+      }
+    } catch (emailError) {
+      logger.error("❌ Error enviando email de invitación:", emailError);
+    }
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "invitar",
+      entidadTipo: "reserva",
+      entidadId: booking.id,
+      descripcion: `Invitación enviada al socio #${socio.id} para "${event.titulo}" (${numero_entradas} entrada${numero_entradas !== 1 ? "s" : ""})`,
+      ipAddress: getIpFromRequest(req),
+    });
+
+    logger.info("🎁 Invitación enviada:", {
+      bookingId: booking.id,
+      socioId: socio.id,
+      eventId: event_id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Invitación enviada correctamente",
+      data: bookingWithQR,
+    });
+  } catch (error) {
+    logger.error("Error en sendBookingInvitation:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al enviar la invitación",
     });
   }
 };
@@ -3786,6 +4000,7 @@ export default {
   listAllBookings,
   getBookingDetails,
   cancelBookingAdmin,
+  sendBookingInvitation,
   getBookingsStats,
   getEventPayments,
   getMonthlyRevenue,
