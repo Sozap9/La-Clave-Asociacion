@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../components/common/Button';
 import { useAuth } from '../hooks/useAuth';
 import { NAV_ROUTES } from '../utils/constants';
@@ -14,6 +14,15 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Si venimos de una redirección por sesión expirada/token inválido, mostrar el motivo
+  useEffect(() => {
+    const authMessage = sessionStorage.getItem('authMessage');
+    if (authMessage) {
+      setError(authMessage);
+      sessionStorage.removeItem('authMessage');
+    }
+  }, []);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -26,8 +35,8 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    console.log('🔐 Iniciando login...');
-    console.log('📧 Email:', formData.email);
+    console.log('Iniciando login...');
+    console.log('Email:', formData.email);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
@@ -38,45 +47,45 @@ const Login = () => {
 
       const data = await response.json();
 
-      console.log('📦 RESPUESTA COMPLETA:', data);
-      console.log('✅ Success:', data.success);
-      console.log('👤 Usuario:', data.data?.user);
-      console.log('🔑 Token recibido:', data.data?.accessToken);
-      console.log('🔑 Tipo de token:', typeof data.data?.accessToken);
+      console.log('RESPUESTA COMPLETA:', data);
+      console.log('Success:', data.success);
+      console.log('Usuario:', data.data?.user);
+      console.log('Token recibido:', data.data?.accessToken);
+      console.log('Tipo de token:', typeof data.data?.accessToken);
 
       if (data.success) {
         if (!data.data?.accessToken) {
-          console.error('❌ ERROR: NO HAY TOKEN EN LA RESPUESTA');
+          console.error('ERROR: NO HAY TOKEN EN LA RESPUESTA');
           setError('Error: No se recibió token');
           return;
         }
 
-        console.log('✅ Token existe, llamando a login()...');
-        console.log('✅ Pasando usuario:', data.data.user);
-        console.log('✅ Pasando token:', data.data.accessToken);
+        console.log('Token existe, llamando a login()...');
+        console.log('Pasando usuario:', data.data.user);
+        console.log('Pasando token:', data.data.accessToken);
 
         login(data.data.user, data.data.accessToken);
 
-        console.log('💾 Verificando localStorage...');
+        console.log('Verificando localStorage...');
         const savedToken = localStorage.getItem('token');
         const savedUser = localStorage.getItem('user');
-        console.log('💾 Token en localStorage:', savedToken);
-        console.log('💾 User en localStorage:', savedUser);
+        console.log('Token en localStorage:', savedToken);
+        console.log('User en localStorage:', savedUser);
 
         if (!savedToken) {
-          console.error('❌ ERROR: Token NO se guardó en localStorage');
+          console.error('ERROR: Token NO se guardó en localStorage');
           alert('Error: No se pudo guardar la sesión');
           return;
         }
 
-        console.log('✅ Todo OK, redirigiendo...');
+        console.log('Todo OK, redirigiendo...');
         window.location.href = data.data.user.role === 'admin' ? NAV_ROUTES.ADMIN : NAV_ROUTES.DASHBOARD;
       } else {
-        console.error('❌ Login fallido:', data.message);
+        console.error('Login fallido:', data.message);
         setError(data.message || 'Error al iniciar sesión');
       }
     } catch (err) {
-      console.error('💥 ERROR EN CATCH:', err);
+      console.error('ERROR EN CATCH:', err);
       setError('Error de conexión. Intenta de nuevo.');
     } finally {
       setLoading(false);

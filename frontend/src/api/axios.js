@@ -28,8 +28,11 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Si el token expiró o es inválido, redirigir al login
+    // Si el token expiró o es inválido, redirigir al login mostrando el motivo
     if (error.response?.status === 401 || error.response?.status === 403) {
+      const message = error.response?.data?.message
+        || 'Tu sesión ha expirado. Vuelve a iniciar sesión para continuar.';
+      sessionStorage.setItem('authMessage', message);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
