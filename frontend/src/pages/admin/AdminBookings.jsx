@@ -22,8 +22,48 @@ const AdminBookings = () => {
   const [filter, setFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState(null);
 
+  // Modal de invitación (entrada gratuita para un socio elegido por el admin)
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [socioSearchTerm, setSocioSearchTerm] = useState('');
+  const [socioResults, setSocioResults] = useState([]);
+  const [loadingSocioSearch, setLoadingSocioSearch] = useState(false);
+  const [selectedSocioForInvite, setSelectedSocioForInvite] = useState(null);
+  const [inviteNumeroEntradas, setInviteNumeroEntradas] = useState(1);
+  const [inviteStatus, setInviteStatus] = useState('idle'); // idle | sending | success | error
+  const [inviteMessage, setInviteMessage] = useState('');
+
   useEffect(() => { fetchEvents(); }, []);
   useEffect(() => { if (selectedEvent) fetchBookings(selectedEvent.id); }, [selectedEvent]);
+
+  // Búsqueda de socio con debounce, reutilizando el mismo endpoint que
+  // usa el resto del panel de admin para buscar socios
+  useEffect(() => {
+    if (!showInviteModal || !socioSearchTerm.trim()) {
+      setSocioResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setLoadingSocioSearch(true);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/admin/socios?search=${encodeURIComponent(socioSearchTerm)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+        if (result.success) {
+          setSocioResults(result.data?.socios || []);
+        } else {
+          setSocioResults([]);
+        }
+      } catch (err) {
+        console.error('Error buscando socios:', err);
+        setSocioResults([]);
+      } finally {
+        setLoadingSocioSearch(false);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [socioSearchTerm, showInviteModal]);
 
   const fetchEvents = async () => {
     setLoadingEvents(true);
@@ -132,6 +172,48 @@ const AdminBookings = () => {
     setResendModalBooking(null);
     setResendStatus('idle');
     setResendMessage('');
+  };
+
+  const closeInviteModal = () => {
+    setShowInviteModal(false);
+    setSocioSearchTerm('');
+    setSocioResults([]);
+    setSelectedSocioForInvite(null);
+    setInviteNumeroEntradas(1);
+    setInviteStatus('idle');
+    setInviteMessage('');
+  };
+
+  const handleSendInvitation = async () => {
+    if (!selectedSocioForInvite || !selectedEvent) return;
+    setInviteStatus('sending');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/admin/bookings/invitacion`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          socio_id: selectedSocioForInvite.id,
+          event_id: selectedEvent.id,
+          numero_entradas: inviteNumeroEntradas
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setInviteStatus('success');
+        setInviteMessage(result.message || 'Invitación enviada');
+        fetchBookings(selectedEvent.id);
+      } else {
+        setInviteStatus('error');
+        setInviteMessage(result.message || 'Error al enviar la invitación');
+      }
+    } catch (err) {
+      setInviteStatus('error');
+      setInviteMessage('Error de conexión');
+    }
   };
 
   const filteredBookings = Array.isArray(bookings) ? bookings.filter(booking => {
@@ -340,6 +422,14 @@ const AdminBookings = () => {
                 placeholder="Buscar por código, nombre o email..."
               />
             </div>
+
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              <User size={18} />
+              Invitar socio
+            </button>
 
             <button
               onClick={() => setShowEventSelector(true)}
@@ -624,6 +714,149 @@ const AdminBookings = () => {
                     className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
                   >
                     Reintentar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Modal invitar socio (entrada gratuita) */}
+      {showInviteModal && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => inviteStatus !== 'sending' && closeInviteModal()}
+        >
+          <div
+            className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(inviteStatus === 'idle') && (
+              <>
+                <h2 className="text-xl font-bold text-white mb-2">Invitar socio</h2>
+                <p className="text-gray-400 text-sm mb-6">
+                  Envía una entrada gratuita para <span className="text-white font-semibold">{selectedEvent?.titulo}</span>, con QR válido para el check-in, igual que una reserva normal.
+                </p>
+
+                {!selectedSocioForInvite ? (
+                  <>
+                    <label className="text-gray-400 text-sm mb-2 block">Buscar socio</label>
+                    <input
+                      type="text"
+                      value={socioSearchTerm}
+                      onChange={(e) => setSocioSearchTerm(e.target.value)}
+                      placeholder="Nombre, email o número de socio..."
+                      className="input w-full mb-3"
+                      autoFocus
+                    />
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {loadingSocioSearch && (
+                        <p className="text-gray-500 text-sm text-center py-4">Buscando...</p>
+                      )}
+                      {!loadingSocioSearch && socioSearchTerm.trim() && socioResults.length === 0 && (
+                        <p className="text-gray-500 text-sm text-center py-4">Sin resultados</p>
+                      )}
+                      {socioResults.map((socio) => (
+                        <button
+                          key={socio.id}
+                          onClick={() => setSelectedSocioForInvite(socio)}
+                          className="w-full bg-[#0a0a0a] border border-[#262626] hover:border-primary-500/50 rounded-lg p-3 text-left transition-colors"
+                        >
+                          <p className="text-white text-sm font-semibold">{socio.nombre} {socio.apellidos}</p>
+                          <p className="text-gray-500 text-xs">{socio.email} {socio.numero_socio ? `• ${socio.numero_socio}` : ''}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-[#0a0a0a] border border-primary-500/50 rounded-lg p-4 mb-4 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-white font-semibold">{selectedSocioForInvite.nombre} {selectedSocioForInvite.apellidos}</p>
+                        <p className="text-gray-500 text-sm">{selectedSocioForInvite.email}</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedSocioForInvite(null)}
+                        className="text-gray-400 hover:text-white text-sm whitespace-nowrap"
+                      >
+                        Cambiar
+                      </button>
+                    </div>
+
+                    <label className="text-gray-400 text-sm mb-2 block">Número de entradas</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={inviteNumeroEntradas}
+                      onChange={(e) => setInviteNumeroEntradas(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                      className="input w-full mb-6"
+                    />
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closeInviteModal}
+                        className="flex-1 px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSendInvitation}
+                        className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                      >
+                        Enviar invitación
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {!selectedSocioForInvite && (
+                  <button
+                    onClick={closeInviteModal}
+                    className="w-full mt-4 px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </>
+            )}
+
+            {inviteStatus === 'sending' && (
+              <div className="py-6 text-center">
+                <Loader size="md" />
+                <p className="text-gray-400 text-sm mt-4">Creando invitación y enviando email...</p>
+              </div>
+            )}
+
+            {inviteStatus === 'success' && (
+              <div className="text-center">
+                <p className="text-green-400 text-lg font-semibold mb-2">Invitación enviada</p>
+                <p className="text-gray-400 text-sm mb-6">{inviteMessage}</p>
+                <button
+                  onClick={closeInviteModal}
+                  className="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            )}
+
+            {inviteStatus === 'error' && (
+              <div className="text-center">
+                <p className="text-red-400 text-lg font-semibold mb-2">No se pudo enviar</p>
+                <p className="text-gray-400 text-sm mb-6">{inviteMessage}</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeInviteModal}
+                    className="flex-1 px-4 py-2 bg-[#262626] hover:bg-[#333333] text-white rounded-lg transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    onClick={() => setInviteStatus('idle')}
+                    className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                  >
+                    Volver a intentar
                   </button>
                 </div>
               </div>
