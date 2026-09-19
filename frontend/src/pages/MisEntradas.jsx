@@ -21,6 +21,34 @@ import Pagination from "../components/UI/Pagination";
 import { usePagination } from "../hooks/usePagination";
 import EmptyState from "../components/common/EmptyState";
 
+/**
+ * Un evento no se considera "pasado" solo por su fecha — la venta/vigencia
+ * de una entrada sigue hasta hora_fin (mismo criterio que usa el backend en
+ * createBooking/sendBookingInvitation). Si hora_fin es anterior a
+ * hora_evento, el evento cruza la medianoche y termina al día siguiente.
+ */
+const esEventoFinalizado = (booking) => {
+  if (!booking?.fecha_evento) return false;
+  const fechaEvento = new Date(booking.fecha_evento);
+  const [horaInicioH, horaInicioM] = (booking.hora_evento || "00:00:00")
+    .split(":")
+    .map(Number);
+  const [horaFinH, horaFinM] = (booking.hora_fin || "23:59:59")
+    .split(":")
+    .map(Number);
+  const cruzaMedianoche =
+    horaFinH * 60 + horaFinM < horaInicioH * 60 + horaInicioM;
+  const finEvento = new Date(
+    fechaEvento.getFullYear(),
+    fechaEvento.getMonth(),
+    fechaEvento.getDate() + (cruzaMedianoche ? 1 : 0),
+    horaFinH || 0,
+    horaFinM || 0,
+    0
+  );
+  return finEvento <= new Date();
+};
+
 const MisEntradas = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -170,7 +198,6 @@ const MisEntradas = () => {
 
   const applyFilters = () => {
     let filtered = [...bookings];
-    const now = new Date();
 
     if (searchTerm.trim()) {
       filtered = filtered.filter((b) =>
@@ -183,14 +210,14 @@ const MisEntradas = () => {
         filtered = filtered.filter(
           (b) =>
             (b.estado === "confirmada" || b.estado === "esperando_pago") &&
-            new Date(b.fecha_evento) >= now
+            !esEventoFinalizado(b)
         );
         break;
       case "past":
         filtered = filtered.filter(
           (b) =>
             b.estado === "asistida" ||
-            (b.estado === "confirmada" && new Date(b.fecha_evento) < now)
+            (b.estado === "confirmada" && esEventoFinalizado(b))
         );
         break;
       case "all":
@@ -365,7 +392,7 @@ const MisEntradas = () => {
   };
 
   const canCancel = (booking) => {
-    const isFuture = new Date(booking.fecha_evento) > new Date();
+    const isFuture = !esEventoFinalizado(booking);
     // Una reserva pendiente de pago se puede cancelar siempre (no depende
     // de si el evento ya pasó — nunca llegó a confirmarse ni a cobrarse)
     if (booking.estado === "esperando_pago") return true;
@@ -377,12 +404,12 @@ const MisEntradas = () => {
     upcoming: bookings.filter(
       (b) =>
         (b.estado === "confirmada" || b.estado === "esperando_pago") &&
-        new Date(b.fecha_evento) >= new Date()
+        !esEventoFinalizado(b)
     ).length,
     past: bookings.filter(
       (b) =>
         b.estado === "asistida" ||
-        (b.estado === "confirmada" && new Date(b.fecha_evento) < new Date())
+        (b.estado === "confirmada" && esEventoFinalizado(b))
     ).length,
   };
 
