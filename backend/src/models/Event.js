@@ -16,7 +16,7 @@ class Event {
           e.*,
           u.nombre as creado_por_nombre,
           SUM(CASE 
-            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' 
+            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real
@@ -116,7 +116,7 @@ class Event {
         SELECT 
           e.*,
           SUM(CASE 
-            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' 
+            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real
@@ -337,7 +337,7 @@ class Event {
         SELECT 
           e.*,
           SUM(CASE 
-            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' 
+            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real

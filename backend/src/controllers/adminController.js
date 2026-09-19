@@ -1707,8 +1707,11 @@ export const resendBookingTicket = async (req, res) => {
  * admin. Crea una reserva "confirmada" igual que una compra normal —
  * mismo código, mismo QR, mismo check-in — pero forzando precio 0€ sin
  * importar el precio real del evento/tanda, y SIN comprobar el aforo:
- * el admin puede invitar aunque el evento esté completo (decisión
- * explícita: las invitaciones no están sujetas al límite de plazas).
+ * el admin puede invitar aunque el evento esté completo. Además, la
+ * invitación es un asiento DE CORTESÍA A MAYORES del aforo de socios:
+ * no resta plazas disponibles para el público (marcada con
+ * es_invitacion=1 en `bookings`, excluida del cálculo de aforo real
+ * en `Event.js`).
  * POST /api/admin/bookings/invitacion
  * Body: { socio_id, event_id, numero_entradas? }
  */
@@ -1803,27 +1806,30 @@ export const sendBookingInvitation = async (req, res) => {
       const [result] = await conn.execute(
         `INSERT INTO bookings (
           socio_id, event_id, tier_id, numero_entradas, estado,
-          codigo_reserva, codigo_acceso, precio_pagado, precio_unitario, created_at
-        ) VALUES (?, ?, ?, ?, 'confirmada', ?, ?, 0.00, 0.00, NOW())`,
+          codigo_reserva, codigo_acceso, precio_pagado, precio_unitario,
+          es_invitacion, created_at
+        ) VALUES (?, ?, ?, ?, 'confirmada', ?, ?, 0.00, 0.00, 1, NOW())`,
         [socio.id, event_id, tierId, numero_entradas, codigo_reserva, codigo_acceso],
       );
 
       const bookingId = result.insertId;
 
-      // Se actualiza igual el contador público de aforo (para que la web
-      // muestre bien las plazas restantes), aunque no se haya comprobado
-      // el límite antes de crear la invitación.
+      // Decisión de negocio: una invitación es un asiento de cortesía A
+      // MAYORES del aforo de socios, no le resta sitio a nadie. Por eso NO
+      // se toca entradas_disponibles (lo que ve la web pública / lo que usa
+      // el check de aforo real en Event.js, que también excluye las filas
+      // con es_invitacion=1). Sí se incrementa entradas_reservadas, que es
+      // solo un contador informativo para las estadísticas del admin.
       try {
         await conn.execute(
           `UPDATE events
-           SET entradas_disponibles = entradas_disponibles - ?,
-               entradas_reservadas = entradas_reservadas + ?
+           SET entradas_reservadas = entradas_reservadas + ?
            WHERE id = ?`,
-          [numero_entradas, numero_entradas, event_id],
+          [numero_entradas, event_id],
         );
       } catch (updateError) {
         logger.warn(
-          "No se pudo actualizar entradas disponibles (invitación):",
+          "No se pudo actualizar entradas_reservadas (invitación):",
           updateError.message,
         );
       }

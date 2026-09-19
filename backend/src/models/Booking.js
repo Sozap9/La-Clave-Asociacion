@@ -254,6 +254,7 @@ class Booking {
           e.descripcion,
           e.fecha_evento,
           e.hora_evento,
+          e.hora_fin,
           e.ubicacion,
           e.aforo_maximo,
           e.entradas_disponibles,

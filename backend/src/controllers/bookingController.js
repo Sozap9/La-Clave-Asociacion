@@ -632,14 +632,27 @@ export const cancelBooking = async (req, res) => {
       // Liberar entradas del aforo público SOLO si estaba confirmada (ya
       // pagada, así que sí lo tenía descontado). Si estaba esperando_pago,
       // nunca llegó a descontarse — no hay nada que devolver.
+      // Las invitaciones (es_invitacion=1) nunca restaron entradas_disponibles
+      // al crearse (son un asiento de cortesía a mayores del aforo), así que
+      // al cancelarlas tampoco se les devuelve — solo se corrige el contador
+      // informativo entradas_reservadas.
       if (booking.estado === "confirmada") {
-        await conn.execute(
-          `UPDATE events 
-           SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0),
-               entradas_disponibles = entradas_disponibles + ?
-           WHERE id = ?`,
-          [booking.numero_entradas, booking.numero_entradas, booking.event_id],
-        );
+        if (booking.es_invitacion) {
+          await conn.execute(
+            `UPDATE events
+             SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
+             WHERE id = ?`,
+            [booking.numero_entradas, booking.event_id],
+          );
+        } else {
+          await conn.execute(
+            `UPDATE events 
+             SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0),
+                 entradas_disponibles = entradas_disponibles + ?
+             WHERE id = ?`,
+            [booking.numero_entradas, booking.numero_entradas, booking.event_id],
+          );
+        }
       }
     });
 
