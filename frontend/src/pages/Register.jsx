@@ -254,6 +254,7 @@ const Register = () => {
                       });
                     }
                   }}
+                  placeholderText=""
                   required
                 />
               </div>
@@ -399,7 +400,6 @@ const Register = () => {
                 value={formData.invitado_por}
                 onChange={handleChange}
                 maxLength={150}
-                placeholder={t("register.invitedByPlaceholder")}
                 className="input w-full"
               />
             </div>

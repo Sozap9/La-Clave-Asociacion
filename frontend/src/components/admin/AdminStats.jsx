@@ -1,4 +1,4 @@
-import { Calendar, Ticket, UserCheck } from "lucide-react";
+import { Calendar, UserCheck } from "lucide-react";
 
 const AdminStats = ({ stats }) => {
   const statsData = [
@@ -12,15 +12,10 @@ const AdminStats = ({ stats }) => {
       value: stats?.totalEventos || 0,
       icon: Calendar,
     },
-    {
-      label: "Total Reservas",
-      value: stats?.totalReservas || 0,
-      icon: Ticket,
-    },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {statsData.map((stat, index) => {
         const Icon = stat.icon;
         return (

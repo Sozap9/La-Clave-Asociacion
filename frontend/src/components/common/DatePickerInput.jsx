@@ -29,7 +29,7 @@ const DatePickerInput = ({
   selected,
   onChange,
   label,
-  placeholderText = "",
+  placeholderText,
   minDate = null,
   maxDate = null,
   required = false,
@@ -137,7 +137,7 @@ const DatePickerInput = ({
       dateFormat={dateFormat || (showTimeSelect || showTimeInput ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy")}
       minDate={minDate}
       maxDate={maxDate}
-      placeholderText={placeholderText || "Seleccionar fecha"}
+      placeholderText={placeholderText ?? "Seleccionar fecha"}
       className="input w-full"
       disabled={disabled}
       required={required}
