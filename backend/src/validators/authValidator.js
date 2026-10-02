@@ -170,6 +170,13 @@ export const solicitudSocioValidator = [
     .optional({ nullable: true, checkFalsy: true })
     .trim()
     .isLength({ max: 500 }).withMessage('La motivación no puede superar 500 caracteres')
+    .escape(),
+
+  // INVITADO POR (opcional) — socio o amigo que invitó al solicitante
+  body('invitado_por')
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 150 }).withMessage('El campo "invitado por" no puede superar 150 caracteres')
     .escape()
 ];
 

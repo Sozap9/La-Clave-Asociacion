@@ -146,7 +146,15 @@ import pushRoutes from "./routes/pushRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 
 // Gallery routes (handles both JSON and FormData via multer)
-app.use("/api/gallery", galleryRoutes);
+// Galería OCULTA (no borrada): solo se monta si GALLERY_ENABLED=true en las
+// variables de entorno de Railway. Sin esa variable, /api/gallery responde 404.
+if (process.env.GALLERY_ENABLED === "true") {
+  app.use("/api/gallery", galleryRoutes);
+} else {
+  app.use("/api/gallery", (req, res) =>
+    res.status(404).json({ success: false, message: "Recurso no disponible" })
+  );
+}
 
 // Main routes (JSON)
 app.use("/api/auth", authRoutes);

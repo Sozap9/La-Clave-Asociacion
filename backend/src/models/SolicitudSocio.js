@@ -48,9 +48,9 @@ class SolicitudSocio {
       }
 
       if (search && search.trim().length >= 2) {
-        conditions.push('(s.nombre LIKE ? OR s.apellidos LIKE ? OR s.email LIKE ? OR s.dni LIKE ?)');
+        conditions.push('(s.nombre LIKE ? OR s.apellidos LIKE ? OR s.email LIKE ? OR s.dni LIKE ? OR s.invitado_por LIKE ?)');
         const like = `%${search.trim()}%`;
-        values.push(like, like, like, like);
+        values.push(like, like, like, like, like);
       }
 
       const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -67,6 +67,7 @@ class SolicitudSocio {
           s.id, s.nombre, s.apellidos, s.email,
           s.telefono, s.fecha_nacimiento, s.dni,
           s.dni_front_url, s.dni_back_url, s.motivacion,
+          s.invitado_por,
           s.estado, s.motivo_rechazo, s.fecha_revision,
           s.ip_solicitud, s.created_at, s.updated_at,
           u.nombre   AS admin_nombre
@@ -142,6 +143,7 @@ class SolicitudSocio {
         dni_front_url = null,
         dni_back_url  = null,
         motivacion    = null,
+        invitado_por  = null,
         ip_solicitud  = null
       } = solicitudData;
 
@@ -153,8 +155,8 @@ class SolicitudSocio {
           nombre, apellidos, email, password_hash,
           telefono, fecha_nacimiento, dni,
           dni_front_url, dni_back_url, motivacion,
-          ip_solicitud
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          invitado_por, ip_solicitud
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const values = [
@@ -168,6 +170,7 @@ class SolicitudSocio {
         dni_front_url,
         dni_back_url,
         motivacion,
+        invitado_por,
         ip_solicitud
       ];
 

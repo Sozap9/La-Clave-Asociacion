@@ -638,7 +638,8 @@ export const crearSolicitud = async (req, res) => {
       telefono,
       fecha_nacimiento,
       dni,
-      motivacion
+      motivacion,
+      invitado_por
     } = req.body;
 
     // ── Validar que llegó al menos la cara delantera del DNI ──────
@@ -698,6 +699,7 @@ export const crearSolicitud = async (req, res) => {
       dni_front_url,
       dni_back_url,
       motivacion:      motivacion || null,
+      invitado_por:    invitado_por ? sanitizeString(invitado_por) : null,
       ip_solicitud:    req.ip || req.connection?.remoteAddress
     });
 

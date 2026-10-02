@@ -28,6 +28,7 @@ import AdminPaymentsMonthly from "./pages/admin/AdminPaymentsMonthly";
 import AdminActivity from "./pages/admin/AdminActivity";
 import AdminStatsDetailed from "./pages/admin/AdminStatsDetailed";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
+import AdminStatsGenerales from "./pages/admin/AdminStatsGenerales";
 import AdminStatsEventos from "./pages/admin/AdminStatsEventos";
 import AdminStatsReservas from "./pages/admin/AdminStatsReservas";
 import AdminStatsPagos from "./pages/admin/AdminStatsPagos";
@@ -39,6 +40,7 @@ import AdminSolicitudes from "./pages/admin/AdminSolicitudes";
 import AdminExportSocios from "./pages/admin/AdminExportSocios";
 import AdminExportEventos from "./pages/admin/AdminExportEventos";
 import AdminExportReservas from "./pages/admin/AdminExportReservas";
+import { FEATURES } from "./utils/constants";
 
 const ComingSoon = ({ title }) => (
   <div className="min-h-screen flex items-center justify-center">
@@ -144,26 +146,31 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
-    path: "/galeria",
-    element: (
-      <ProtectedRoute requireSocio>
-        <Layout>
-          <Gallery />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/galeria/:slug",
-    element: (
-      <ProtectedRoute requireSocio>
-        <Layout>
-          <GalleryAlbum />
-        </Layout>
-      </ProtectedRoute>
-    ),
-  },
+  // Galería pública (oculta mientras FEATURES.GALLERY_ENABLED sea false)
+  ...(FEATURES.GALLERY_ENABLED
+    ? [
+        {
+          path: "/galeria",
+          element: (
+            <ProtectedRoute requireSocio>
+              <Layout>
+                <Gallery />
+              </Layout>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/galeria/:slug",
+          element: (
+            <ProtectedRoute requireSocio>
+              <Layout>
+                <GalleryAlbum />
+              </Layout>
+            </ProtectedRoute>
+          ),
+        },
+      ]
+    : []),
   {
     path: "/mis-entradas",
     element: (
@@ -329,6 +336,16 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/admin/stats/generales",
+    element: (
+      <ProtectedRoute requireAdmin>
+        <AdminLayout>
+          <AdminStatsGenerales />
+        </AdminLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/admin/stats/eventos",
     element: (
       <ProtectedRoute requireAdmin>
@@ -370,27 +387,31 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Galería
-  {
-    path: "/admin/galeria",
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminGallery />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/galeria/:folderId/imagenes",
-    element: (
-      <ProtectedRoute requireAdmin>
-        <AdminLayout>
-          <AdminGalleryImages />
-        </AdminLayout>
-      </ProtectedRoute>
-    ),
-  },
+  // Galería admin (oculta mientras FEATURES.GALLERY_ENABLED sea false)
+  ...(FEATURES.GALLERY_ENABLED
+    ? [
+        {
+          path: "/admin/galeria",
+          element: (
+            <ProtectedRoute requireAdmin>
+              <AdminLayout>
+                <AdminGallery />
+              </AdminLayout>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "/admin/galeria/:folderId/imagenes",
+          element: (
+            <ProtectedRoute requireAdmin>
+              <AdminLayout>
+                <AdminGalleryImages />
+              </AdminLayout>
+            </ProtectedRoute>
+          ),
+        },
+      ]
+    : []),
 
   // Exportaciones
   {
