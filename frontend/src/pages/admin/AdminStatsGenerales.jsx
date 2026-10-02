@@ -11,6 +11,7 @@ import {
   TrendingDown,
   Minus
 } from 'lucide-react';
+import { FEATURES } from '../../utils/constants';
 
 const AdminStatsGenerales = () => {
   const [stats, setStats] = useState(null);
@@ -243,14 +244,20 @@ const AdminStatsGenerales = () => {
           <section>
             <h2 className="text-2xl font-semibold text-white mb-4">Otros Módulos</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-              <StatCard
-                title="Galería"
-                value={`${stats.galeria?.total_imagenes || 0} fotos`}
-                icon={Users}
-                color="pink"
-                subtitle={`${stats.galeria?.total_folders || 0} álbumes`}
-              />
+            <div
+              className={`grid grid-cols-1 ${
+                FEATURES.GALLERY_ENABLED ? "md:grid-cols-3" : "md:grid-cols-2"
+              } gap-4 md:gap-6`}
+            >
+              {FEATURES.GALLERY_ENABLED && (
+                <StatCard
+                  title="Galería"
+                  value={`${stats.galeria?.total_imagenes || 0} fotos`}
+                  icon={Users}
+                  color="pink"
+                  subtitle={`${stats.galeria?.total_folders || 0} álbumes`}
+                />
+              )}
               
               <StatCard
                 title="Venues"

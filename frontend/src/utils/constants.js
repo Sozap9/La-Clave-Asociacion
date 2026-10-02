@@ -39,3 +39,9 @@ export const PERMISSIONS = {
   VIEW_GALLERY: [USER_ROLES.SOCIO, USER_ROLES.ADMIN],
   ACCESS_ADMIN: [USER_ROLES.ADMIN]
 };
+
+// Interruptores de funcionalidades
+// Galería oculta (NO borrada): poner GALLERY_ENABLED a true para volver a mostrarla en toda la web
+export const FEATURES = {
+  GALLERY_ENABLED: false,
+};

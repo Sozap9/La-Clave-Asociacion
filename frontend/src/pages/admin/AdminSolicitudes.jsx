@@ -139,6 +139,7 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
                 ["Email", solicitud.email],
                 ["Teléfono", solicitud.telefono],
                 ["DNI / NIE", solicitud.dni],
+                ["Invitación (socio y evento)", solicitud.invitado_por],
                 [
                   "Fecha nacimiento",
                   solicitud.fecha_nacimiento

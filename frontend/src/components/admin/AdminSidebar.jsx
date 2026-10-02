@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import SidebarSection from "./SidebarSection";
 import { getSolicitudesPendientesCount } from "../../api/adminApi";
+import { FEATURES } from "../../utils/constants";
 
 const AdminSidebar = ({ isOpen, onClose }) => {
   const { logout } = useAuth();
@@ -275,17 +276,19 @@ const AdminSidebar = ({ isOpen, onClose }) => {
               onToggle={() => handleMenuToggle("pagos")}
             />
 
-            <SidebarSection
-              id="galeria"
-              title="Gestión Galería"
-              icon={Image}
-              items={galeriaItems}
-              isOpen={
-                openMenu === "galeria" ||
-                (openMenu === null && activeMenu === "galeria")
-              }
-              onToggle={() => handleMenuToggle("galeria")}
-            />
+            {FEATURES.GALLERY_ENABLED && (
+              <SidebarSection
+                id="galeria"
+                title="Gestión Galería"
+                icon={Image}
+                items={galeriaItems}
+                isOpen={
+                  openMenu === "galeria" ||
+                  (openMenu === null && activeMenu === "galeria")
+                }
+                onToggle={() => handleMenuToggle("galeria")}
+              />
+            )}
 
             <SidebarSection
               id="exports"

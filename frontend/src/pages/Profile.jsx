@@ -7,6 +7,7 @@ import Loader from '../components/common/Loader';
 import EditProfileModal from '../components/common/EditProfileModal';
 import ChangePasswordModal from '../components/common/ChangePasswordModal';
 import { ArrowRight } from 'lucide-react';
+import { FEATURES } from '../utils/constants';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -266,8 +267,8 @@ const Profile = () => {
                   Mejora tu Experiencia
                 </h3>
                 <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                  Convierte en socio por solo 10€/mes y disfruta de acceso completo a todos los eventos, 
-                  galería exclusiva y beneficios especiales de La Clave.
+                  Convierte en socio por solo 10€/mes y disfruta de acceso completo a todos los eventos
+                  {FEATURES.GALLERY_ENABLED ? ", galería exclusiva" : ""} y beneficios especiales de La Clave.
                 </p>
                 <button
                   onClick={handleUpgradeClick}

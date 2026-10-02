@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Check } from 'lucide-react';
 import Button from './Button';
+import { FEATURES } from '../../utils/constants';
 
 /**
  * Banner para incentivar a usuarios básicos a mejorar su cuenta
@@ -11,7 +12,7 @@ const UpgradeBanner = () => {
   const benefits = [
     'Acceso a todos los eventos',
     'Reservas prioritarias',
-    'Galería exclusiva'
+    ...(FEATURES.GALLERY_ENABLED ? ['Galería exclusiva'] : [])
   ];
 
   return (

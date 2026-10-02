@@ -29,6 +29,7 @@ const Register = () => {
     fecha_nacimiento: "",
     dni: "",
     artistQuestion: "",
+    invitado_por: "",
   });
 
   const [dniFront, setDniFront] = useState(null);
@@ -385,6 +386,22 @@ const Register = () => {
                   />
                 </div>
               )}
+            </div>
+
+            {/* ── ¿Quién te invitó? (opcional) ── */}
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">
+                {t("register.invitedBy")}
+              </label>
+              <input
+                type="text"
+                name="invitado_por"
+                value={formData.invitado_por}
+                onChange={handleChange}
+                maxLength={150}
+                placeholder={t("register.invitedByPlaceholder")}
+                className="input w-full"
+              />
             </div>
 
             {/* ── DNI fotos ── */}

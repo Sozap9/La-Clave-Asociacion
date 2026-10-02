@@ -1,7 +1,7 @@
 import { X, LogOut, Shield, Crown, Sparkles, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { NAV_ROUTES } from '../../utils/constants';
+import { NAV_ROUTES, FEATURES } from '../../utils/constants';
 import Button from '../common/Button';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -48,10 +48,15 @@ const MobileMenu = ({ isOpen, onClose }) => {
   ];
 
   const getNavItems = () => {
-    if (!isAuthenticated) return publicItems;
-    if (isAdmin) return adminItems;
-    if (isSocio) return socioItems;
-    return basicItems;
+    let items = basicItems;
+    if (!isAuthenticated) items = publicItems;
+    else if (isAdmin) items = adminItems;
+    else if (isSocio) items = socioItems;
+
+    // Galería oculta: se quita del menú mientras FEATURES.GALLERY_ENABLED sea false
+    return FEATURES.GALLERY_ENABLED
+      ? items
+      : items.filter((item) => item.href !== NAV_ROUTES.GALLERY);
   };
 
   const getRoleBadge = () => {
