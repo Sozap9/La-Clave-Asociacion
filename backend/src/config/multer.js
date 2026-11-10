@@ -8,7 +8,6 @@ const __dirname = path.dirname(__filename);
 
 // Crear directorios si no existen
 const uploadsDir = path.join(__dirname, "../../uploads");
-console.log("📁 [DIAGNÓSTICO] Ruta real de uploads:", uploadsDir);
 const dirs = ["avatars", "dni", "events", "gallery", "solicitudes"];
 
 dirs.forEach((dir) => {

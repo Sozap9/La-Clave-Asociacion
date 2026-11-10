@@ -7,7 +7,6 @@ import { fileURLToPath } from "url";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import logger from "./config/logger.js";
 import httpLogger from "./middleware/httpLogger.js";
-import CronService from "./services/cronService.js";
 
 // __dirname CONFIGURATION FOR ES MODULES
 const __filename = fileURLToPath(import.meta.url);
@@ -216,10 +215,5 @@ app.use((err, req, res, next) => {
     })
   });
 });
-
-// TAREAS PROGRAMADAS (CRON)
-if (process.env.NODE_ENV !== 'test') {
-  CronService.init();
-}
 
 export default app;

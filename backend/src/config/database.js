@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 // Configuración del pool de conexiones
 const pool = mysql.createPool({
@@ -22,8 +22,6 @@ const pool = mysql.createPool({
 const testConnection = async () => {
     try {
         const connection = await pool.getConnection();
-        console.log('✅ Conexión a MySQL establecida correctamente');
-        console.log(`📊 Base de datos: ${process.env.DB_NAME}`);
         connection.release();
         return true;
     } catch (error) {

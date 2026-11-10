@@ -7,7 +7,7 @@ import CronService from './src/services/cronService.js';
 import PushService from './src/services/pushService.js';
 
 // Cargar variables de entorno
-dotenv.config();
+dotenv.config({ quiet: true });
 
 // Validar variables de entorno
 validateEnv();
