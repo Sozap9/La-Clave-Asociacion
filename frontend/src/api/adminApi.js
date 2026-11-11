@@ -315,6 +315,7 @@ export const getAllSocios = async (params = {}) => {
     if (params.limit) queryParams.append("limit", params.limit);
     if (params.search) queryParams.append("search", params.search);
     if (params.estado) queryParams.append("estado", params.estado);
+    if (params.filtro) queryParams.append("filtro", params.filtro);
     const response = await fetch(`${API_URL}/admin/socios?${queryParams}`, {
       headers: getAuthHeaders(),
     });

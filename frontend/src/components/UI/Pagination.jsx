@@ -4,6 +4,7 @@
  * Paginación discreta y consistente para toda la web (admin y público).
  * No se renderiza nada si solo hay 1 página — por diseño, para no
  * ensuciar listados cortos con controles que no hacen falta.
+ * Con muchas páginas muestra solo las cercanas: 1 … 7 8 9 … 20
  *
  * Uso típico (paginación en servidor):
  *   <Pagination page={pagination.page} pages={pagination.pages}
@@ -16,12 +17,28 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+/**
+ * Devuelve la lista de botones a mostrar: siempre la primera y la última
+ * página, la actual y sus vecinas, y "…" para los huecos.
+ * Ej. con 20 páginas y la 8 activa: 1 … 7 8 9 … 20
+ */
+const getPageItems = (page, pages) => {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+
+  const items = [1];
+  const start = Math.max(2, page - 1);
+  const end = Math.min(pages - 1, page + 1);
+
+  if (start > 2) items.push("…");
+  for (let p = start; p <= end; p++) items.push(p);
+  if (end < pages - 1) items.push("…");
+
+  items.push(pages);
+  return items;
+};
+
 const Pagination = ({ page, pages, total, onPageChange, itemLabel = "resultados" }) => {
   if (!pages || pages <= 1) return null;
-
-  // Con pocas páginas mostramos los números; con muchas, solo el
-  // texto "Página X de Y" + flechas, para no saturar.
-  const showNumbers = pages <= 7;
 
   const goTo = (p) => {
     if (p < 1 || p > pages || p === page) return;
@@ -45,23 +62,28 @@ const Pagination = ({ page, pages, total, onPageChange, itemLabel = "resultados"
           <ChevronLeft size={16} />
         </button>
 
-        {showNumbers && (
-          <div className="flex items-center gap-1">
-            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+        <div className="flex items-center gap-1">
+          {getPageItems(page, pages).map((item, i) =>
+            item === "…" ? (
+              <span key={`gap-${i}`} className="px-1 text-gray-600 select-none">
+                …
+              </span>
+            ) : (
               <button
-                key={p}
-                onClick={() => goTo(p)}
+                key={item}
+                onClick={() => goTo(item)}
+                aria-current={item === page ? "page" : undefined}
                 className={`min-w-[2.25rem] h-9 px-2 rounded-lg text-sm font-medium transition-colors ${
-                  p === page
+                  item === page
                     ? "bg-primary-600 text-white"
                     : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
                 }`}
               >
-                {p}
+                {item}
               </button>
-            ))}
-          </div>
-        )}
+            ),
+          )}
+        </div>
 
         <button
           onClick={() => goTo(page + 1)}

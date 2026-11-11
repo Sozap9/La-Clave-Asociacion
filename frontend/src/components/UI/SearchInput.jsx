@@ -1,44 +1,75 @@
 import React, { useEffect, useState, useRef } from "react";
 
+/**
+ * Campo de búsqueda reutilizable.
+ *
+ * - Con debounceMs > 0 avisa al padre cuando el usuario deja de escribir
+ *   durante ese tiempo, en vez de con cada letra.
+ * - Al pulsar Enter avisa al momento, sin esperar.
+ * - El valor que se escribe se guarda dentro del componente, así que no se
+ *   pierden letras aunque el padre tarde en responder.
+ */
 const SearchInput = ({
   value = "",
   onChange,
-  onDebounced, // optional: called after debounce ms with the value
+  onDebounced, // opcional: se llama con el valor tras el debounce o al pulsar Enter
   onClear,
   placeholder = "Buscar...",
   debounceMs = 0,
 }) => {
   const [internal, setInternal] = useState(value);
+  const timeoutRef = useRef(null);
+  // Último valor enviado al padre, para no avisar dos veces del mismo
+  const lastSentRef = useRef(value || "");
 
+  // Si el padre cambia el valor (p. ej. al limpiar filtros), se sincroniza
   useEffect(() => {
     setInternal(value || "");
+    lastSentRef.current = value || "";
   }, [value]);
 
-  const timeoutRef = useRef(null);
+  const send = (val) => {
+    if (val === lastSentRef.current) return;
+    lastSentRef.current = val;
+    onChange && onChange(val);
+    onDebounced && onDebounced(val);
+  };
 
   useEffect(() => {
     if (debounceMs > 0) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
-        onChange && onChange(internal);
-        onDebounced && onDebounced(internal);
+        send(internal);
         timeoutRef.current = null;
       }, debounceMs);
       return () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
     }
-    // no debounce
-    onChange && onChange(internal);
-    onDebounced && onDebounced(internal);
+    // Sin debounce: se avisa con cada cambio
+    send(internal);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [internal, debounceMs]);
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      send(internal);
+    }
+  };
+
   const handleClear = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     setInternal("");
     if (onClear) onClear();
-    if (debounceMs === 0) onChange && onChange("");
-    if (debounceMs === 0) onDebounced && onDebounced("");
+    send("");
   };
 
   return (
@@ -48,6 +79,8 @@ const SearchInput = ({
         placeholder={placeholder}
         value={internal}
         onChange={(e) => setInternal(e.target.value)}
+        onKeyDown={handleKeyDown}
+        enterKeyHint="search"
         className="w-full px-4 py-3 pl-12 pr-12 bg-[#1a1a1a]/60 border border-[#262626] rounded-lg \
                   text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 \
                   focus:ring-2 focus:ring-primary-500/20 backdrop-blur-sm transition-all"
@@ -69,9 +102,10 @@ const SearchInput = ({
 
       {internal && (
         <button
+          type="button"
           onClick={handleClear}
           className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-          aria-label="clear-search"
+          aria-label="Borrar búsqueda"
         >
           ✕
         </button>

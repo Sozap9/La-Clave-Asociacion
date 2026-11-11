@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getAllSocios,
   getSocioDetails,
@@ -20,12 +20,18 @@ import Loader from "../../components/common/Loader";
 import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
 import Pagination from "../../components/UI/Pagination";
-import { usePagination } from "../../hooks/usePagination";
 import AdminCard from "../../components/admin/AdminCard";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
 
-// Filtros disponibles para socios
+// Socios por página. La paginación se hace en el servidor, así que el
+// total y el número de páginas son siempre reales, haya los que haya.
+const PER_PAGE = 20;
+
+// La búsqueda necesita al menos 2 letras (el backend rechaza 1)
+const MIN_SEARCH_LENGTH = 2;
+
+// Filtros disponibles para socios (el valor se envía tal cual al backend)
 const socioFilters = [
   { value: "all", label: "Todos" },
   { value: "socio", label: "Socios Activos" },
@@ -33,59 +39,70 @@ const socioFilters = [
   { value: "admin", label: "Administradores" },
 ];
 
+const emptyMessages = {
+  all: "No hay socios ni administradores para mostrar",
+  socio: "No hay socios activos para mostrar",
+  inactivo: "No hay socios inactivos",
+  admin: "No hay administradores",
+};
+
 const AdminSocios = () => {
   const [socios, setSocios] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 });
+  const [page, setPage] = useState(1);
+  // Lo que hay escrito en el buscador / lo que de verdad se busca
+  const [searchText, setSearchText] = useState("");
   const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("socio");
+  // Primera carga: pantalla de carga completa. Después, solo se atenúa
+  // la lista, para que el buscador no desaparezca mientras se escribe.
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [selectedSocio, setSelectedSocio] = useState(null);
   const [roleSelections, setRoleSelections] = useState({});
-  const [activeFilter, setActiveFilter] = useState("socio");
 
-  const { pageItems: paginatedSocios, page, pages, total, setPage } =
-    usePagination(socios, 20);
+  // Evita que una respuesta antigua (más lenta) pise a una más reciente
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     fetchSocios();
     // eslint-disable-next-line
-  }, [search, activeFilter]);
+  }, [page, search, activeFilter]);
 
   const fetchSocios = async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError("");
     try {
-      const params = {};
+      const result = await getAllSocios({
+        page,
+        limit: PER_PAGE,
+        filtro: activeFilter,
+        search: search || undefined,
+      });
 
-      // Pedimos todos los socios de una vez (límite alto): el filtro
-      // por rol/estado se aplica después en el cliente, así que
-      // paginar en el propio backend aquí daría contadores incorrectos.
-      params.limit = 100;
+      if (requestId !== requestIdRef.current) return;
 
-      if (activeFilter === "socio") {
-        params.estado = "activo";
-      }
-      if (search) {
-        params.search = search;
-      }
-
-      const result = await getAllSocios(params);
       if (result.success) {
-        let sociosData = result.data?.socios || result.data || [];
+        const sociosData = Array.isArray(result.data?.socios)
+          ? result.data.socios
+          : [];
+        const pag = result.data?.pagination || {};
+        const pages = Math.max(1, pag.pages || 1);
 
-        if (activeFilter === "socio") {
-          // Un socio-admin (role='admin' pero con fila activa en `socios`)
-          // debe seguir contando aquí — por eso ya no se filtra por role,
-          // el backend ya filtró por estado='activo' al pedir los datos.
-          sociosData = sociosData;
-        } else if (activeFilter === "inactivo") {
-          sociosData = sociosData.filter((s) => !s.activo);
-        } else if (activeFilter === "admin") {
-          sociosData = sociosData.filter((s) => s.role === "admin");
+        // Si la página actual se ha quedado vacía (p. ej. tras eliminar
+        // al último socio de la última página), se va a la anterior.
+        if (sociosData.length === 0 && page > pages) {
+          setPage(pages);
+          return;
         }
 
-        setSocios(Array.isArray(sociosData) ? sociosData : []);
+        setSocios(sociosData);
+        setPagination({ total: pag.total || 0, page: pag.page || page, pages });
+
         const initialRoles = {};
-        (Array.isArray(sociosData) ? sociosData : []).forEach((s) => {
+        sociosData.forEach((s) => {
           initialRoles[s.user_id] = s.role || "socio";
         });
         setRoleSelections(initialRoles);
@@ -94,12 +111,31 @@ const AdminSocios = () => {
         setSocios([]);
       }
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       console.error("Error en fetchSocios:", err);
       setError("Error de conexión");
       setSocios([]);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setInitialLoading(false);
+      }
     }
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchText(value);
+    const term = value.trim();
+    const effective = term.length >= MIN_SEARCH_LENGTH ? term : "";
+    if (effective !== search) {
+      setSearch(effective);
+      setPage(1);
+    }
+  };
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    setPage(1);
   };
 
   const handleOpenDetails = async (socioId) => {
@@ -212,7 +248,7 @@ const AdminSocios = () => {
     }
   };
 
-  if (loading) return <Loader fullScreen />;
+  if (initialLoading) return <Loader fullScreen />;
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
@@ -222,8 +258,8 @@ const AdminSocios = () => {
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Socios</h1>
           <p className="text-gray-200 text-sm md:text-lg">Administra tu lista de socios</p>
           <p className="text-gray-400 text-sm md:text-lg">
-            {socios.length} socio{socios.length !== 1 ? "s" : ""} registrado
-            {socios.length !== 1 ? "s" : ""}
+            {pagination.total} resultado{pagination.total !== 1 ? "s" : ""}
+            {search ? ` para «${search}»` : ""}
           </p>
         </div>
 
@@ -232,16 +268,15 @@ const AdminSocios = () => {
           <FilterBar
             customFilters={socioFilters}
             activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
+            onFilterChange={handleFilterChange}
           />
 
           <div className="w-full sm:w-80">
             <SearchInput
-              value={search}
-              onChange={setSearch}
-              onClear={() => setSearch("")}
-              placeholder="Buscar por nombre, email..."
-              debounceMs={350}
+              value={searchText}
+              onChange={handleSearchChange}
+              placeholder="Buscar por nombre, email, teléfono o nº..."
+              debounceMs={500}
             />
           </div>
         </div>
@@ -259,12 +294,19 @@ const AdminSocios = () => {
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Users className="mx-auto mb-4 text-gray-600" size={48} />
           <p className="text-gray-400 text-lg">
-            No hay socios activos para mostrar
+            {loading
+              ? "Cargando..."
+              : search
+                ? `No hay resultados para «${search}»`
+                : emptyMessages[activeFilter]}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {paginatedSocios.map((socio) => (
+        <div
+          className={`space-y-4 transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}
+          aria-busy={loading}
+        >
+          {socios.map((socio) => (
             <AdminCard
               key={socio.user_id}
               avatar={
@@ -367,11 +409,14 @@ const AdminSocios = () => {
           ))}
 
           <Pagination
-            page={page}
-            pages={pages}
-            total={total}
-            onPageChange={setPage}
-            itemLabel="socios"
+            page={pagination.page}
+            pages={pagination.pages}
+            total={pagination.total}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            itemLabel="resultados"
           />
         </div>
       )}
@@ -493,6 +538,44 @@ const AdminSocios = () => {
                       : "—"}
                   </p>
                 </div>
+              </div>
+
+              {/* Respuestas del formulario de registro */}
+              <div className="pt-2">
+                <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
+                  Respuestas del registro
+                </p>
+                {selectedSocio.solicitud ? (
+                  <div className="space-y-3">
+                    <div className="bg-[#111] border border-[#262626] rounded-xl p-3">
+                      <p className="text-gray-500 text-xs mb-0.5">
+                        Invitación (socio y evento)
+                      </p>
+                      <p className="text-white break-words">
+                        {selectedSocio.solicitud.invitado_por || "—"}
+                      </p>
+                    </div>
+                    <div className="bg-[#111] border border-[#262626] rounded-xl p-3">
+                      <p className="text-gray-500 text-xs mb-0.5">Motivación</p>
+                      <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line break-words">
+                        {selectedSocio.solicitud.motivacion || "—"}
+                      </p>
+                    </div>
+                    {selectedSocio.solicitud.created_at && (
+                      <p className="text-gray-500 text-xs">
+                        Solicitud enviada el{" "}
+                        {new Date(
+                          selectedSocio.solicitud.created_at,
+                        ).toLocaleDateString("es-ES")}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    Sin respuestas: este socio no se registró con el formulario
+                    de solicitud (alta manual o anterior al formulario).
+                  </p>
+                )}
               </div>
 
               {/* Documento de identidad */}

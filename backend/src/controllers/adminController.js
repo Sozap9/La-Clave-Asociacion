@@ -8,6 +8,7 @@ import EventTicketTier from "../models/EventTicketTier.js";
 import Payment from "../models/Payment.js";
 import Gallery from "../models/Gallery.js";
 import PDFDocument from "pdfkit";
+import { createListPdf, drawTable, finishPdf, STATUS_COLORS } from "../utils/pdfTable.js";
 import EmailService from "../services/emailService.js"; 
 import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
 import logger from "../config/logger.js"; 
@@ -789,35 +790,18 @@ export const getUserDetails = async (req, res) => {
  */
 export const listSocios = async (req, res) => {
   try {
-    const { page = 1, limit = 20, estado, search } = req.query;
+    const { page = 1, limit = 20, estado, filtro, search } = req.query;
 
-    const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-    };
+    // Pestañas del panel de admin. Cualquier otro valor se ignora.
+    const filtrosValidos = ["socio", "inactivo", "admin", "all"];
 
-    if (estado) options.estado = estado;
-
-    const result = await Socio.list(
-      options.page,
-      options.limit,
-      options.estado,
-    );
-
-    if (search) {
-      const searchResults = await Socio.search(search);
-      return res.status(200).json({
-        success: true,
-        data: {
-          socios: searchResults,
-          pagination: {
-            total: searchResults.length,
-            page: 1,
-            pages: 1,
-          },
-        },
-      });
-    }
+    const result = await Socio.list({
+      page,
+      limit,
+      filtro: filtrosValidos.includes(filtro) ? filtro : null,
+      estado: estado || null,
+      search: search || null,
+    });
 
     return res.status(200).json({
       success: true,
@@ -827,6 +811,7 @@ export const listSocios = async (req, res) => {
           total: result.total,
           page: result.page,
           pages: result.pages,
+          limit: result.limit,
         },
       },
     });
@@ -1006,6 +991,34 @@ export const getSocioDetails = async (req, res) => {
     `;
     const bookings = await query(bookingsSql, [id]);
 
+    // Respuestas que dio en el formulario de registro. La solicitud no
+    // guarda el user_id, así que se enlaza por email o DNI con la
+    // solicitud aprobada. Los socios dados de alta a mano no tienen.
+    // Si falla (p. ej. falta una columna en una base de datos antigua),
+    // la ficha se sigue mostrando sin este bloque.
+    let solicitud = null;
+    if (user) {
+      try {
+        const solicitudRows = await query(
+          `
+          SELECT motivacion, invitado_por, created_at
+          FROM solicitudes_socios
+          WHERE estado = 'aprobada'
+            AND (email = ? OR (? <> '' AND dni = ?))
+          ORDER BY fecha_revision DESC, id DESC
+          LIMIT 1
+          `,
+          [user.email, user.dni || "", user.dni || ""],
+        );
+        solicitud = solicitudRows[0] || null;
+      } catch (solicitudError) {
+        logger.warn("No se pudo cargar la solicitud de registro del socio", {
+          socioId: id,
+          error: solicitudError.message,
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data: {
@@ -1013,6 +1026,7 @@ export const getSocioDetails = async (req, res) => {
         user,
         payments,
         bookings,
+        solicitud,
       },
     });
   } catch (error) {
@@ -2506,7 +2520,7 @@ export const exportSocios = async (req, res) => {
     const sql = `
       SELECT 
         s.numero_socio,
-        CONCAT(u.nombre, ' ', u.apellidos) as nombre_completo,
+        CONCAT_WS(' ', u.nombre, u.apellidos) as nombre_completo,
         u.email,
         u.telefono,
         u.dni,
@@ -2527,138 +2541,27 @@ export const exportSocios = async (req, res) => {
       });
     }
 
-    // Crear documento PDF en landscape para 7 columnas
-    const doc = new PDFDocument({
-      size: "A4",
-      layout: "landscape",
-      margins: { top: 50, bottom: 50, left: 40, right: 40 },
+    const doc = createListPdf({
+      res,
+      filename: "socios",
+      title: "Lista de Socios - La Clave Asociación",
+      lines: [`Total de socios: ${socios.length}`],
     });
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=socios_${new Date().toISOString().split("T")[0]}.pdf`,
-    );
-
-    doc.pipe(res);
-
-    // === ENCABEZADO ===
-    doc
-      .fontSize(20)
-      .font("Helvetica-Bold")
-      .text("Lista de Socios - La Clave Asociación", { align: "center" });
-
-    doc.moveDown(0.5);
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
-        align: "center",
-      });
-
-    doc.moveDown(1);
-    doc
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .text(`Total de socios: ${socios.length}`, { align: "center" });
-
-    doc.moveDown(2);
-
-    // === TABLA DE SOCIOS ===
-    const tableTop = doc.y;
-    const tableLeft = 40;
-    const colWidths = {
-      numero:    65,
-      nombre:   135,
-      email:    145,
-      telefono:  75,
-      dni:       75,
-      nacimiento: 75,
-      alta:       62,
-    };
-
-    const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-
-    // Encabezado de tabla
-    doc.fontSize(9).font("Helvetica-Bold");
-    let currentX = tableLeft;
-
-    doc
-      .rect(currentX, tableTop - 5, totalWidth, 20)
-      .fillAndStroke("#6366f1", "#6366f1");
-
-    doc.fillColor("#ffffff").text("Nº Socio", currentX + 5, tableTop, { width: colWidths.numero, align: "center" });
-    currentX += colWidths.numero;
-    doc.text("Nombre completo", currentX + 5, tableTop, { width: colWidths.nombre, align: "left" });
-    currentX += colWidths.nombre;
-    doc.text("Email", currentX + 5, tableTop, { width: colWidths.email, align: "left" });
-    currentX += colWidths.email;
-    doc.text("Teléfono", currentX + 5, tableTop, { width: colWidths.telefono, align: "left" });
-    currentX += colWidths.telefono;
-    doc.text("DNI", currentX + 5, tableTop, { width: colWidths.dni, align: "center" });
-    currentX += colWidths.dni;
-    doc.text("F. Nacimiento", currentX + 5, tableTop, { width: colWidths.nacimiento, align: "center" });
-    currentX += colWidths.nacimiento;
-    doc.text("F. Alta", currentX + 5, tableTop, { width: colWidths.alta, align: "center" });
-
-    doc.moveDown(1.5);
-
-    // Filas de datos
-    doc.font("Helvetica").fontSize(8).fillColor("#000000");
-
-    socios.forEach((socio, index) => {
-      const rowY = doc.y;
-
-      if (rowY > 500) {
-        doc.addPage();
-        doc.y = 50;
-      }
-
-      if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill("#f3f4f6");
-        doc.fillColor("#000000");
-      }
-
-      currentX = tableLeft;
-
-      doc.text(socio.numero_socio || "-", currentX + 5, rowY, { width: colWidths.numero, align: "center" });
-      currentX += colWidths.numero;
-
-      const nombre = socio.nombre_completo || "-";
-      doc.text(nombre.length > 22 ? nombre.substring(0, 19) + "..." : nombre, currentX + 5, rowY, { width: colWidths.nombre, align: "left" });
-      currentX += colWidths.nombre;
-
-      const email = socio.email || "-";
-      doc.text(email.length > 24 ? email.substring(0, 21) + "..." : email, currentX + 5, rowY, { width: colWidths.email, align: "left" });
-      currentX += colWidths.email;
-
-      doc.text(socio.telefono || "-", currentX + 5, rowY, { width: colWidths.telefono, align: "left" });
-      currentX += colWidths.telefono;
-
-      doc.text(socio.dni || "-", currentX + 5, rowY, { width: colWidths.dni, align: "center" });
-      currentX += colWidths.dni;
-
-      doc.text(socio.fecha_nacimiento || "-", currentX + 5, rowY, { width: colWidths.nacimiento, align: "center" });
-      currentX += colWidths.nacimiento;
-
-      doc.text(socio.fecha_alta || "-", currentX + 5, rowY, { width: colWidths.alta, align: "center" });
-
-      doc.moveDown(0.8);
+    drawTable(doc, {
+      rows: socios,
+      columns: [
+        { header: "Nº Socio", width: 55, align: "center", bold: true, value: (s) => s.numero_socio },
+        { header: "Nombre completo", width: 150, value: (s) => s.nombre_completo },
+        { header: "Email", width: 175, value: (s) => s.email },
+        { header: "Teléfono", width: 85, value: (s) => s.telefono },
+        { header: "DNI", width: 80, align: "center", value: (s) => s.dni },
+        { header: "F. Nacimiento", width: 75, align: "center", value: (s) => s.fecha_nacimiento },
+        { header: "F. Alta", width: 70, align: "center", value: (s) => s.fecha_alta },
+      ],
     });
 
-    // === PIE DE PÁGINA ===
-    doc
-      .fontSize(8)
-      .font("Helvetica")
-      .fillColor("#6b7280")
-      .text(
-        "© La Clave Asociación - Documento generado automáticamente",
-        40,
-        540,
-        { align: "center", width: totalWidth },
-      );
-
-    doc.end();
+    finishPdf(doc);
   } catch (error) {
     console.error("Error al exportar socios a PDF:", error);
 
@@ -2698,7 +2601,7 @@ export const exportReservas = async (req, res) => {
     let sql = `
       SELECT 
         b.codigo_acceso as codigo_reserva,
-        CONCAT(u.nombre, ' ', u.apellidos) as nombre_socio,
+        CONCAT_WS(' ', u.nombre, u.apellidos) as nombre_socio,
         u.email as email_socio,
         u.telefono as telefono_contacto,
         b.estado,
@@ -2764,149 +2667,37 @@ export const exportReservas = async (req, res) => {
       });
     }
 
-    const doc = new PDFDocument({
-      size: "A4",
-      layout: "landscape",
-      margins: { top: 50, bottom: 50, left: 50, right: 50 },
+    const doc = createListPdf({
+      res,
+      filename: "reservas",
+      title: eventTitle
+        ? `Reservas - ${eventTitle}`
+        : "Lista de Reservas - La Clave Asociación",
+      lines: [`Total de reservas: ${reservas.length}`],
     });
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=reservas_${new Date().toISOString().split("T")[0]}.pdf`,
-    );
+    const estadoColor = (r) =>
+      r.estado === "confirmada"
+        ? STATUS_COLORS.ok
+        : r.estado === "cancelada"
+          ? STATUS_COLORS.danger
+          : r.estado === "asistida"
+            ? STATUS_COLORS.info
+            : STATUS_COLORS.neutral;
 
-    doc.pipe(res);
-
-    // === ENCABEZADO ===
-    doc
-      .fontSize(20)
-      .font("Helvetica-Bold")
-      .text(eventTitle ? `Reservas - ${eventTitle}` : "Lista de Reservas - La Clave Asociación", { align: "center" });
-
-    doc.moveDown(0.5);
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
-        align: "center",
-      });
-
-    doc.moveDown(1);
-    doc
-      .fontSize(12)
-      .font("Helvetica-Bold")
-      .text(`Total de reservas: ${reservas.length}`, { align: "center" });
-
-    doc.moveDown(2);
-
-    // === TABLA DE RESERVAS ===
-    const tableTop = doc.y;
-    const tableLeft = 50;
-    const colWidths = {
-      codigo:        140,
-      nombre_socio:  145,
-      email:         170,
-      telefono:       90,
-      fecha_reserva:  80,
-      estado:         87,
-    };
-
-    const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-
-    // Encabezado de tabla
-    doc.fontSize(9).font("Helvetica-Bold");
-    let currentX = tableLeft;
-
-    doc
-      .rect(currentX, tableTop - 5, totalWidth, 20)
-      .fillAndStroke("#6366f1", "#6366f1");
-
-    doc.fillColor("#ffffff").text("Código reserva", currentX + 5, tableTop, { width: colWidths.codigo, align: "center" });
-    currentX += colWidths.codigo;
-    doc.text("Nombre socio", currentX + 5, tableTop, { width: colWidths.nombre_socio, align: "left" });
-    currentX += colWidths.nombre_socio;
-    doc.text("Email", currentX + 5, tableTop, { width: colWidths.email, align: "left" });
-    currentX += colWidths.email;
-    doc.text("Teléfono", currentX + 5, tableTop, { width: colWidths.telefono, align: "center" });
-    currentX += colWidths.telefono;
-    doc.text("F. Reserva", currentX + 5, tableTop, { width: colWidths.fecha_reserva, align: "center" });
-    currentX += colWidths.fecha_reserva;
-    doc.text("Estado", currentX + 5, tableTop, { width: colWidths.estado, align: "center" });
-
-    doc.moveDown(1.5);
-
-    // Filas de datos
-    doc.font("Helvetica").fontSize(8).fillColor("#000000");
-
-    reservas.forEach((reserva, index) => {
-      const rowY = doc.y;
-
-      if (rowY > 500) {
-        doc.addPage();
-        doc.y = 50;
-      }
-
-      if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill("#f3f4f6");
-        doc.fillColor("#000000");
-      }
-
-      currentX = tableLeft;
-
-      // Código reserva
-      const codigo = reserva.codigo_reserva || "-";
-      doc.text(codigo.length > 22 ? codigo.substring(0, 19) + "..." : codigo, currentX + 5, rowY, { width: colWidths.codigo, align: "center" });
-      currentX += colWidths.codigo;
-
-      // Nombre socio
-      const nombre = reserva.nombre_socio || "-";
-      doc.text(nombre.length > 20 ? nombre.substring(0, 17) + "..." : nombre, currentX + 5, rowY, { width: colWidths.nombre_socio, align: "left" });
-      currentX += colWidths.nombre_socio;
-
-      // Email
-      const email = reserva.email_socio || "-";
-      doc.text(email.length > 22 ? email.substring(0, 19) + "..." : email, currentX + 5, rowY, { width: colWidths.email, align: "left" });
-      currentX += colWidths.email;
-
-      // Teléfono
-      doc.text(reserva.telefono_contacto || "-", currentX + 5, rowY, { width: colWidths.telefono, align: "center" });
-      currentX += colWidths.telefono;
-
-      // Fecha reserva
-      doc.text(reserva.fecha_reserva || "-", currentX + 5, rowY, { width: colWidths.fecha_reserva, align: "center" });
-      currentX += colWidths.fecha_reserva;
-
-      // Estado con color
-      const estadoColor =
-        reserva.estado === "confirmada"
-          ? "#10b981"
-          : reserva.estado === "cancelada"
-            ? "#ef4444"
-            : reserva.estado === "asistida"
-              ? "#3b82f6"
-              : "#6b7280";
-      doc
-        .fillColor(estadoColor)
-        .text(reserva.estado || "-", currentX + 5, rowY, { width: colWidths.estado, align: "center" })
-        .fillColor("#000000");
-
-      doc.moveDown(0.8);
+    drawTable(doc, {
+      rows: reservas,
+      columns: [
+        { header: "Código reserva", width: 120, align: "center", value: (r) => r.codigo_reserva },
+        { header: "Nombre socio", width: 150, value: (r) => r.nombre_socio },
+        { header: "Email", width: 175, value: (r) => r.email_socio },
+        { header: "Teléfono", width: 85, align: "center", value: (r) => r.telefono_contacto },
+        { header: "F. Reserva", width: 75, align: "center", value: (r) => r.fecha_reserva },
+        { header: "Estado", width: 75, align: "center", bold: true, color: estadoColor, value: (r) => r.estado },
+      ],
     });
 
-    // === PIE DE PÁGINA ===
-    doc
-      .fontSize(8)
-      .font("Helvetica")
-      .fillColor("#6b7280")
-      .text(
-        "© La Clave Asociación - Documento generado automáticamente",
-        50,
-        540,
-        { align: "center", width: totalWidth },
-      );
-
-    doc.end();
+    finishPdf(doc);
   } catch (error) {
     console.error("Error al exportar reservas a PDF:", error);
 
@@ -2923,15 +2714,15 @@ export const exportReservas = async (req, res) => {
 };
 
 /**
- * Exportar lista de usuarios en formato CSV
- * GET /api/admin/export/usuarios?format=csv
+ * Exportar lista de usuarios en formato PDF
+ * GET /api/admin/export/usuarios
  */
 export const exportUsuarios = async (req, res) => {
   try {
     // Consulta para obtener todos los usuarios
     const sql = `
       SELECT 
-        u.nombre,
+        CONCAT_WS(' ', u.nombre, u.apellidos) as nombre,
         u.email,
         u.telefono,
         u.role,
@@ -2957,230 +2748,58 @@ export const exportUsuarios = async (req, res) => {
       });
     }
 
-    // Crear documento PDF
-    const doc = new PDFDocument({
-      size: "A4",
-      layout: "landscape",
-      margins: { top: 50, bottom: 50, left: 50, right: 50 },
-    });
-
-    // Configurar headers para descarga
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=usuarios_${new Date().toISOString().split("T")[0]}.pdf`,
-    );
-
-    // Pipe el PDF directamente a la respuesta
-    doc.pipe(res);
-
-    // === ENCABEZADO ===
-    doc
-      .fontSize(20)
-      .font("Helvetica-Bold")
-      .text("Lista de Usuarios - La Clave Asociación", { align: "center" });
-
-    doc.moveDown(0.5);
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
-        align: "center",
-      });
-
-    doc.moveDown(1);
-
     // Estadísticas rápidas
     const activos = usuarios.filter((u) => u.estado === "Activo").length;
     const socios = usuarios.filter((u) => u.role === "socio").length;
     const admins = usuarios.filter((u) => u.role === "admin").length;
 
-    doc
-      .fontSize(10)
-      .font("Helvetica-Bold")
-      .text(
+    const doc = createListPdf({
+      res,
+      filename: "usuarios",
+      title: "Lista de Usuarios - La Clave Asociación",
+      lines: [
         `Total: ${usuarios.length} usuarios | Activos: ${activos} | Socios: ${socios} | Admins: ${admins}`,
-        { align: "center" },
-      );
-
-    doc.moveDown(2);
-
-    // === TABLA DE USUARIOS ===
-    const tableTop = doc.y;
-    const tableLeft = 50;
-    const colWidths = {
-      nombre: 130,
-      email: 170,
-      telefono: 90,
-      rol: 60,
-      estado: 60,
-      verificado: 60,
-      fecha: 80,
-    };
-
-    // Dibuja encabezados de columnas
-    doc.fontSize(9).font("Helvetica-Bold");
-
-    let currentX = tableLeft;
-    const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-
-    doc
-      .rect(currentX, tableTop - 5, totalWidth, 20)
-      .fillAndStroke("#6366f1", "#6366f1");
-
-    doc.fillColor("#ffffff").text("Nombre", currentX + 5, tableTop, {
-      width: colWidths.nombre,
-      align: "left",
-    });
-    currentX += colWidths.nombre;
-
-    doc.text("Email", currentX + 5, tableTop, {
-      width: colWidths.email,
-      align: "left",
-    });
-    currentX += colWidths.email;
-
-    doc.text("Teléfono", currentX + 5, tableTop, {
-      width: colWidths.telefono,
-      align: "center",
-    });
-    currentX += colWidths.telefono;
-
-    doc.text("Rol", currentX + 5, tableTop, {
-      width: colWidths.rol,
-      align: "center",
-    });
-    currentX += colWidths.rol;
-
-    doc.text("Estado", currentX + 5, tableTop, {
-      width: colWidths.estado,
-      align: "center",
-    });
-    currentX += colWidths.estado;
-
-    doc.text("Verif.", currentX + 5, tableTop, {
-      width: colWidths.verificado,
-      align: "center",
-    });
-    currentX += colWidths.verificado;
-
-    doc.text("Registro", currentX + 5, tableTop, {
-      width: colWidths.fecha,
-      align: "center",
+      ],
     });
 
-    doc.moveDown(1.5);
-
-    // Dibuja filas de datos
-    doc.font("Helvetica").fontSize(8).fillColor("#000000");
-
-    usuarios.forEach((usuario, index) => {
-      const rowY = doc.y;
-
-      // Verifica si necesita nueva página
-      if (rowY > 500) {
-        doc.addPage();
-        doc.y = 50;
-      }
-
-      // Alterna colores de fila
-      if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill("#f3f4f6");
-        doc.fillColor("#000000");
-      }
-
-      currentX = tableLeft;
-
-      // Nombre (truncar si es muy largo)
-      const nombre = usuario.nombre || "-";
-      doc.text(
-        nombre.length > 20 ? nombre.substring(0, 17) + "..." : nombre,
-        currentX + 5,
-        rowY,
-        { width: colWidths.nombre, align: "left" },
-      );
-      currentX += colWidths.nombre;
-
-      // Email (truncar si es muy largo)
-      const email = usuario.email || "-";
-      doc.text(
-        email.length > 26 ? email.substring(0, 23) + "..." : email,
-        currentX + 5,
-        rowY,
-        { width: colWidths.email, align: "left" },
-      );
-      currentX += colWidths.email;
-
-      // Teléfono
-      doc.text(usuario.telefono || "-", currentX + 5, rowY, {
-        width: colWidths.telefono,
-        align: "center",
-      });
-      currentX += colWidths.telefono;
-
-      // Rol
-      const rolColor =
-        usuario.role === "admin"
-          ? "#ef4444"
-          : usuario.role === "socio"
-            ? "#6366f1"
-            : "#6b7280";
-      doc
-        .fillColor(rolColor)
-        .text(usuario.role || "-", currentX + 5, rowY, {
-          width: colWidths.rol,
+    drawTable(doc, {
+      rows: usuarios,
+      columns: [
+        { header: "Nombre", width: 150, value: (u) => u.nombre },
+        { header: "Email", width: 180, value: (u) => u.email },
+        { header: "Teléfono", width: 85, align: "center", value: (u) => u.telefono },
+        {
+          header: "Rol",
+          width: 60,
           align: "center",
-        })
-        .fillColor("#000000");
-      currentX += colWidths.rol;
-
-      // Estado
-      const estadoColor = usuario.estado === "Activo" ? "#10b981" : "#ef4444";
-      doc
-        .fillColor(estadoColor)
-        .text(usuario.estado, currentX + 5, rowY, {
-          width: colWidths.estado,
+          bold: true,
+          color: (u) =>
+            u.role === "admin"
+              ? STATUS_COLORS.danger
+              : u.role === "socio"
+                ? STATUS_COLORS.info
+                : STATUS_COLORS.neutral,
+          value: (u) => u.role,
+        },
+        {
+          header: "Estado",
+          width: 60,
           align: "center",
-        })
-        .fillColor("#000000");
-      currentX += colWidths.estado;
-
-      // Email verificado
-      const verifColor =
-        usuario.email_verificado === "Sí" ? "#10b981" : "#f59e0b";
-      doc
-        .fillColor(verifColor)
-        .text(usuario.email_verificado, currentX + 5, rowY, {
-          width: colWidths.verificado,
+          color: (u) => (u.estado === "Activo" ? STATUS_COLORS.ok : STATUS_COLORS.danger),
+          value: (u) => u.estado,
+        },
+        {
+          header: "Verif.",
+          width: 50,
           align: "center",
-        })
-        .fillColor("#000000");
-      currentX += colWidths.verificado;
-
-      // Fecha registro
-      doc.text(usuario.fecha_registro || "-", currentX + 5, rowY, {
-        width: colWidths.fecha,
-        align: "center",
-      });
-
-      doc.moveDown(0.8);
+          color: (u) => (u.email_verificado === "Sí" ? STATUS_COLORS.ok : STATUS_COLORS.warning),
+          value: (u) => u.email_verificado,
+        },
+        { header: "Registro", width: 70, align: "center", value: (u) => u.fecha_registro },
+      ],
     });
 
-    // === PIE DE PÁGINA ===
-    const bottomY = 540;
-    doc
-      .fontSize(8)
-      .font("Helvetica")
-      .fillColor("#6b7280")
-      .text(
-        "© La Clave Asociación - Documento generado automáticamente",
-        50,
-        bottomY,
-        { align: "center", width: totalWidth },
-      );
-
-    // Finalizar el documento
-    doc.end();
+    finishPdf(doc);
   } catch (error) {
     console.error("Error al exportar usuarios a PDF:", error);
 
@@ -3202,7 +2821,10 @@ export const exportUsuarios = async (req, res) => {
  */
 export const exportEventos = async (req, res) => {
   try {
-    // Nombre evento, fecha, hora, ubicación, aforo, vendidas, asistidas, canceladas
+    // Nombre evento, fecha, hora, ubicación, aforo y entradas por estado.
+    // Se suman ENTRADAS (numero_entradas), no reservas: una reserva puede
+    // incluir varias entradas. "Reservadas" = confirmadas + asistidas, el
+    // mismo criterio que la lista de eventos del panel de admin.
     const sql = `
       SELECT 
         e.titulo,
@@ -3211,15 +2833,15 @@ export const exportEventos = async (req, res) => {
         e.ubicacion,
         e.aforo_maximo,
         COALESCE((
-          SELECT COUNT(*) FROM bookings b 
-          WHERE b.event_id = e.id AND b.estado = 'confirmada'
-        ), 0) as entradas_vendidas,
+          SELECT SUM(b.numero_entradas) FROM bookings b 
+          WHERE b.event_id = e.id AND b.estado IN ('confirmada', 'asistida')
+        ), 0) as entradas_reservadas,
         COALESCE((
-          SELECT COUNT(*) FROM bookings b 
+          SELECT SUM(b.numero_entradas) FROM bookings b 
           WHERE b.event_id = e.id AND b.estado = 'asistida'
         ), 0) as entradas_asistidas,
         COALESCE((
-          SELECT COUNT(*) FROM bookings b 
+          SELECT SUM(b.numero_entradas) FROM bookings b 
           WHERE b.event_id = e.id AND b.estado = 'cancelada'
         ), 0) as entradas_canceladas
       FROM events e
@@ -3235,152 +2857,40 @@ export const exportEventos = async (req, res) => {
       });
     }
 
-    const doc = new PDFDocument({
-      size: "A4",
-      layout: "landscape",
-      margins: { top: 50, bottom: 50, left: 40, right: 40 },
+    const doc = createListPdf({
+      res,
+      filename: "eventos",
+      title: "Lista de Eventos - La Clave Asociación",
+      lines: [`Total: ${eventos.length} eventos`],
     });
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=eventos_${new Date().toISOString().split("T")[0]}.pdf`,
-    );
-
-    doc.pipe(res);
-
-    // === ENCABEZADO ===
-    doc
-      .fontSize(20)
-      .font("Helvetica-Bold")
-      .text("Lista de Eventos - La Clave Asociación", { align: "center" });
-
-    doc.moveDown(0.5);
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text(`Fecha de generación: ${new Date().toLocaleDateString("es-ES")}`, {
-        align: "center",
-      });
-
-    doc.moveDown(1);
-    doc
-      .fontSize(10)
-      .font("Helvetica-Bold")
-      .text(`Total: ${eventos.length} eventos`, { align: "center" });
-
-    doc.moveDown(2);
-
-    // === TABLA DE EVENTOS ===
-    const tableTop = doc.y;
-    const tableLeft = 40;
-    const colWidths = {
-      titulo:     175,
-      fecha:       75,
-      hora:        50,
-      ubicacion:  120,
-      aforo:       50,
-      vendidas:    60,
-      asistidas:   65,
-      canceladas:  67,
-    };
-
-    const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-
-    // Encabezado de tabla
-    doc.fontSize(9).font("Helvetica-Bold");
-    let currentX = tableLeft;
-
-    doc
-      .rect(currentX, tableTop - 5, totalWidth, 20)
-      .fillAndStroke("#6366f1", "#6366f1");
-
-    doc.fillColor("#ffffff").text("Nombre evento", currentX + 5, tableTop, { width: colWidths.titulo, align: "left" });
-    currentX += colWidths.titulo;
-    doc.text("Fecha", currentX + 5, tableTop, { width: colWidths.fecha, align: "center" });
-    currentX += colWidths.fecha;
-    doc.text("Hora", currentX + 5, tableTop, { width: colWidths.hora, align: "center" });
-    currentX += colWidths.hora;
-    doc.text("Ubicación", currentX + 5, tableTop, { width: colWidths.ubicacion, align: "left" });
-    currentX += colWidths.ubicacion;
-    doc.text("Aforo", currentX + 5, tableTop, { width: colWidths.aforo, align: "center" });
-    currentX += colWidths.aforo;
-    doc.text("Vendidas", currentX + 5, tableTop, { width: colWidths.vendidas, align: "center" });
-    currentX += colWidths.vendidas;
-    doc.text("Asistidas", currentX + 5, tableTop, { width: colWidths.asistidas, align: "center" });
-    currentX += colWidths.asistidas;
-    doc.text("Canceladas", currentX + 5, tableTop, { width: colWidths.canceladas, align: "center" });
-
-    doc.moveDown(1.5);
-
-    // Filas de datos
-    doc.font("Helvetica").fontSize(8).fillColor("#000000");
-
-    eventos.forEach((evento, index) => {
-      const rowY = doc.y;
-
-      if (rowY > 500) {
-        doc.addPage();
-        doc.y = 50;
-      }
-
-      if (index % 2 === 0) {
-        doc.rect(tableLeft, rowY - 3, totalWidth, 18).fill("#f3f4f6");
-        doc.fillColor("#000000");
-      }
-
-      currentX = tableLeft;
-
-      // Título
-      const titulo = evento.titulo || "-";
-      doc.text(titulo.length > 26 ? titulo.substring(0, 23) + "..." : titulo, currentX + 5, rowY, { width: colWidths.titulo, align: "left" });
-      currentX += colWidths.titulo;
-
-      // Fecha evento
-      doc.text(evento.fecha_evento || "-", currentX + 5, rowY, { width: colWidths.fecha, align: "center" });
-      currentX += colWidths.fecha;
-
-      // Hora evento
-      doc.text(evento.hora_evento || "-", currentX + 5, rowY, { width: colWidths.hora, align: "center" });
-      currentX += colWidths.hora;
-
-      // Ubicación
-      const ubicacion = evento.ubicacion || "-";
-      doc.text(ubicacion.length > 18 ? ubicacion.substring(0, 15) + "..." : ubicacion, currentX + 5, rowY, { width: colWidths.ubicacion, align: "left" });
-      currentX += colWidths.ubicacion;
-
-      // Aforo
-      doc.text(evento.aforo_maximo?.toString() || "-", currentX + 5, rowY, { width: colWidths.aforo, align: "center" });
-      currentX += colWidths.aforo;
-
-      // Vendidas
-      doc.fillColor("#000000").text(evento.entradas_vendidas?.toString() || "0", currentX + 5, rowY, { width: colWidths.vendidas, align: "center" });
-      currentX += colWidths.vendidas;
-
-      // Asistidas (azul)
-      doc.fillColor("#3b82f6").text(evento.entradas_asistidas?.toString() || "0", currentX + 5, rowY, { width: colWidths.asistidas, align: "center" });
-      currentX += colWidths.asistidas;
-
-      // Canceladas (rojo)
-      doc.fillColor("#ef4444").text(evento.entradas_canceladas?.toString() || "0", currentX + 5, rowY, { width: colWidths.canceladas, align: "center" });
-      doc.fillColor("#000000");
-
-      doc.moveDown(0.8);
+    drawTable(doc, {
+      rows: eventos,
+      columns: [
+        { header: "Nombre evento", width: 190, bold: true, value: (e) => e.titulo },
+        { header: "Fecha", width: 70, align: "center", value: (e) => e.fecha_evento },
+        { header: "Hora", width: 45, align: "center", value: (e) => e.hora_evento },
+        { header: "Ubicación", width: 135, value: (e) => e.ubicacion },
+        { header: "Aforo", width: 50, align: "center", value: (e) => e.aforo_maximo },
+        { header: "Reservadas", width: 65, align: "center", value: (e) => e.entradas_reservadas },
+        {
+          header: "Asistidas",
+          width: 60,
+          align: "center",
+          color: () => STATUS_COLORS.info,
+          value: (e) => e.entradas_asistidas,
+        },
+        {
+          header: "Canceladas",
+          width: 65,
+          align: "center",
+          color: () => STATUS_COLORS.danger,
+          value: (e) => e.entradas_canceladas,
+        },
+      ],
     });
 
-    // === PIE DE PÁGINA ===
-    doc
-      .fontSize(8)
-      .font("Helvetica")
-      .fillColor("#6b7280")
-      .text(
-        "© La Clave Asociación - Documento generado automáticamente",
-        40,
-        540,
-        { align: "center", width: totalWidth },
-      );
-
-    doc.end();
+    finishPdf(doc);
   } catch (error) {
     console.error("Error al exportar eventos a PDF:", error);
 

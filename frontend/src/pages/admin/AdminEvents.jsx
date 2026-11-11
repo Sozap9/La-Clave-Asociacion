@@ -129,29 +129,10 @@ const AdminEvents = () => {
     }
   };
 
-  const handleViewAll = async () => {
-    setFilters({ status: "all", search: "", featured: undefined });
-    setExpandedEventId(null);
-    navigate("/admin/eventos", { replace: true });
-
-    setLoading(true);
-    setError("");
-    setSuccess("");
-    try {
-      const result = await getAllEventsAdmin({});
-      if (result.success) {
-        setEvents(Array.isArray(result.data) ? result.data : []);
-      } else {
-        setError(result.message || "Error al cargar eventos");
-        setEvents([]);
-      }
-    } catch (err) {
-      console.error("Error en handleViewAll:", err);
-      setError("Error de conexión");
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
+  // "Ver todos" lleva a la página pública de eventos, la misma que ven
+  // los socios, para comprobar cómo se muestran.
+  const handleViewAll = () => {
+    navigate("/eventos");
   };
 
   const handleDelete = async (id) => {

@@ -329,22 +329,72 @@ class Socio {
     }
   }
 
-  static async list(page = 1, limit = 20, estado = null) {
+  /**
+   * Listado paginado de socios para el panel de admin.
+   *
+   * Todo el filtrado (pestaña, búsqueda) se hace aquí, en SQL, para que
+   * el total y el número de páginas sean siempre correctos, haya los
+   * socios que haya. El frontend solo pide una página cada vez.
+   *
+   * @param {Object}  opciones
+   * @param {Number}  opciones.page   - Página (empieza en 1)
+   * @param {Number}  opciones.limit  - Elementos por página (máx. 100)
+   * @param {String}  opciones.filtro - 'socio' | 'inactivo' | 'admin' | 'all'
+   * @param {String}  opciones.estado - Filtro antiguo por socios.estado (compatibilidad)
+   * @param {String}  opciones.search - Texto a buscar
+   * @returns {{ socios, total, page, pages, limit }}
+   */
+  static async list({ page = 1, limit = 20, filtro = null, estado = null, search = null } = {}) {
     try {
-      // Validar y sanitizar parámetros
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const offset = (pageNum - 1) * limitNum;
 
       // Arranca desde `users` (LEFT JOIN socios), no desde `socios`.
       // Así un admin SIN fila de socio (ej. la cuenta raíz de gestión)
-      // también aparece en el listado — solo que con todos los campos
-      // de socio a NULL, lo que el frontend usa para no mostrarle el
-      // badge de nº de socio ni las acciones que requieren un socio real.
-      // Un admin CON fila de socio (socio promocionado) sale con todos
-      // sus datos reales, igual que cualquier socio normal.
-      let sql = `
-        SELECT 
+      // también aparece en el listado, con los campos de socio a NULL.
+      const where = ["u.role IN ('socio', 'admin')"];
+      const params = [];
+
+      switch (filtro) {
+        case "socio":
+          // Socios activos. Un admin sin fila de socio queda fuera
+          // porque su s.estado es NULL.
+          where.push("s.estado = 'activo'");
+          break;
+        case "inactivo":
+          where.push("u.activo = 0");
+          break;
+        case "admin":
+          where.push("u.role = 'admin'");
+          break;
+        default:
+          // 'all' o sin filtro: no se añade nada
+          if (estado) {
+            where.push("s.estado = ?");
+            params.push(estado);
+          }
+      }
+
+      const termino = typeof search === "string" ? search.trim() : "";
+      if (termino) {
+        const like = `%${termino}%`;
+        where.push(`(
+          u.email LIKE ? OR
+          u.nombre LIKE ? OR
+          u.apellidos LIKE ? OR
+          CONCAT_WS(' ', u.nombre, u.apellidos) LIKE ? OR
+          u.telefono LIKE ? OR
+          CAST(s.numero_socio AS CHAR) LIKE ?
+        )`);
+        params.push(like, like, like, like, like, like);
+      }
+
+      const whereSql = where.join(" AND ");
+
+      const socios = await query(
+        `
+        SELECT
           u.id AS user_id, u.email, u.nombre, u.apellidos,
           u.telefono, u.role, u.activo,
           s.id, s.numero_socio, s.estado, s.cuota_mensual, s.fecha_alta,
@@ -352,43 +402,30 @@ class Socio {
           s.created_at, s.updated_at
         FROM users u
         LEFT JOIN socios s ON s.user_id = u.id
-        WHERE u.role IN ('socio', 'admin')
-      `;
+        WHERE ${whereSql}
+        ORDER BY COALESCE(s.fecha_alta, u.created_at) DESC, u.id DESC
+        LIMIT ${limitNum} OFFSET ${offset}
+        `,
+        params,
+      );
 
-      const params = [];
-
-      if (estado) {
-        // Si se filtra por estado (ej. 'activo'), un admin sin fila de
-        // socio (s.estado = NULL) queda excluido automáticamente —
-        // justo el comportamiento que se busca para "Socios Activos".
-        sql += " AND s.estado = ?";
-        params.push(estado);
-      }
-
-      sql += ` ORDER BY COALESCE(s.fecha_alta, u.created_at) DESC LIMIT ${limitNum} OFFSET ${offset}`;
-
-      const socios = await query(sql, params);
-
-      // Contar total con el mismo criterio
-      let countSql = `
-        SELECT COUNT(*) as total
+      const countResult = await query(
+        `
+        SELECT COUNT(*) AS total
         FROM users u
         LEFT JOIN socios s ON s.user_id = u.id
-        WHERE u.role IN ('socio', 'admin')
-      `;
-      const countParams = [];
-      if (estado) {
-        countSql += " AND s.estado = ?";
-        countParams.push(estado);
-      }
-      const countResult = await query(countSql, countParams);
-      const total = countResult[0].total;
+        WHERE ${whereSql}
+        `,
+        params,
+      );
+      const total = Number(countResult[0]?.total) || 0;
 
       return {
         socios,
         total,
         page: pageNum,
-        pages: Math.ceil(total / limitNum),
+        pages: Math.max(1, Math.ceil(total / limitNum)),
+        limit: limitNum,
       };
     } catch (error) {
       console.error("Error en list:", error);
