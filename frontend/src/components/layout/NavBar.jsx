@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import MobileMenu from './MobileMenu';
-import logo from '../../assets/laclavelogo.png';
+import KeyLogo from '../common/KeyLogo';
+import { LaClaveWordmark } from '../common/BrandWordmark';
 import { useLanguage } from '../../context/LanguageContext';
 
 const NavBar = () => {
@@ -15,22 +16,18 @@ const NavBar = () => {
           <div className="relative flex items-center justify-between h-20">
 
             {/* Logo */}
+            {/* La llave es un SVG blanco sin fondo: se funde con el navbar */}
             <button
               onClick={() => window.location.href = '/'}
               aria-label={t('nav.goHome')}
+              className="text-white hover:text-primary-400 transition-colors p-1"
             >
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-12 h-12 rounded-full object-cover"
-              />
+              <KeyLogo className="h-10 w-auto" />
             </button>
 
             {/* Título */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <span className="text-lg sm:text-2xl font-display text-white whitespace-nowrap">
-                La Clave 981
-              </span>
+              <LaClaveWordmark className="h-[18px] sm:h-[22px] w-auto text-white" />
             </div>
 
             {/* Menú hamburguesa */}

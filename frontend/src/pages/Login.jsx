@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import Button from '../components/common/Button';
 import { useAuth } from '../hooks/useAuth';
 import { NAV_ROUTES } from '../utils/constants';
@@ -12,6 +13,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   // Si venimos de una redirección por sesión expirada/token inválido, mostrar el motivo
@@ -129,14 +131,26 @@ const Login = () => {
 
             <div>
               <label className="label">{t('login.password')}</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="input"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="input w-full pr-11"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-primary-400 transition-colors"
+                  aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="text-right">

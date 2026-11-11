@@ -29,6 +29,11 @@ export default {
       fontFamily: {
         sans: ['Kodchasan', 'system-ui', 'sans-serif'],
         display: ['Kodchasan', 'sans-serif'],
+        // Fuentes de marca (ver index.css)
+        brand: ['Orbitron', 'sans-serif'],
+        label: ['"Saira Condensed"', 'sans-serif'],
+        num: ['"Saira Condensed"', 'sans-serif'],
+        poster: ['"Fira Sans"', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

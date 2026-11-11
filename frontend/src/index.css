@@ -7,6 +7,19 @@
 @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap");
 
 /* ════════════════════════════════════════════════════════════
+   FUENTES DE MARCA (las del cartel de normas del local)
+   - Orbitron 900: "LACLAVE981" y "NORMAS". Es la gratuita más parecida
+     a la del cartel (A de techo plano, 9 y 8 cuadrados), que la
+     asociación no tiene.
+   - Saira Condensed: subtítulos en mayúsculas espaciadas, frase final,
+     web y números de las normas.
+   - Fira Sans: título y texto de cada norma (la misma que el cartel).
+   Se usan con las clases de Tailwind font-brand, font-label, font-num
+   y font-poster.
+   ════════════════════════════════════════════════════════════ */
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Saira+Condensed:wght@500;600;800&family=Fira+Sans:wght@400;500;600&display=swap");
+
+/* ════════════════════════════════════════════════════════════
    HISTÓRICO DE FUENTES — comentado, no se carga nada de aquí.
    Para revertir a cualquiera de estas etapas anteriores:
    1) Descomenta el @import correspondiente de abajo
@@ -168,6 +181,18 @@
         text-white placeholder-gray-500 
         focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
         transition-all duration-200;
+  }
+
+  /* Autorrelleno del navegador: Chrome pinta los campos guardados con
+     fondo azul claro, y el texto y los iconos (como el ojo de la
+     contraseña) dejaban de verse. Se mantiene el fondo oscuro del .input. */
+  .input:-webkit-autofill,
+  .input:-webkit-autofill:hover,
+  .input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff;
+    -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset;
+    caret-color: #ffffff;
+    transition: background-color 9999s ease-in-out 0s;
   }
 
   .input-error {

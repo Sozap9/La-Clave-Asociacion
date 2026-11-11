@@ -1,5 +1,6 @@
 import Button from '../components/common/Button';
-import FeaturedEventsCarousel from '../components/events/FeaturedEventsCarousel';
+import KeyLogo from '../components/common/KeyLogo';
+import { LaClaveWordmark } from '../components/common/BrandWordmark';
 import main from '../assets/main.png';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -8,81 +9,67 @@ const Home = () => {
 
   return (
     <div className="bg-black">
-
-      {/* ==== Principal ==== */}
-
-      <section className="relative min-h-[85vh] sm:min-h-screen flex items-center justify-center overflow-hidden">
+      {/*
+        Una sola sección que ocupa al menos la pantalla (menos el navbar,
+        que mide h-20) y crece si el contenido no cabe (móviles pequeños).
+        Todo el contenido va en un bloque centrado, así no queda hueco
+        entre la descripción y el "Únete".
+      */}
+      <section className="relative min-h-[calc(100svh-5rem)] py-12 md:py-16 flex items-center justify-center overflow-hidden">
         {/* Imagen de fondo */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black via-black/20 to-black z-10" />
           <img
             src={main}
-            alt="Club background"
+            alt=""
             className="w-full h-full object-cover opacity-20 grayscale"
           />
         </div>
 
-        {/* Contenido principal */}
-        <div className="relative z-20 container-custom text-center px-4 sm:px-6 py-16 md:py-20">
+        <div className="relative z-20 w-full max-w-4xl mx-auto px-5 sm:px-6 text-center">
+          {/* Logo */}
+          <div className="flex justify-center text-white animate-fade-in">
+            <KeyLogo className="h-14 sm:h-16 md:h-20 w-auto" />
+          </div>
 
-          {/* Nombre del club */}
-          <div className="mb-6 md:mb-8">
-            <h1 className="text-white mb-3 animate-fade-in uppercase tracking-[0.02em] sm:tracking-[0.05em] font-bold text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl">
-              La Clave 981
-            </h1>
-            <p className="text-gray-400 mb-4 animate-fade-in uppercase tracking-[0.3em] sm:tracking-[0.4em] font-light text-xs sm:text-sm md:text-base">
+          {/* Nombre de la asociación */}
+          {/* Nombre: mismas letras que el cartel (SVG). El texto oculto es para lectores de pantalla y buscadores */}
+          <h1 className="animate-fade-in mt-6 md:mt-8 flex justify-center text-white">
+            <span className="sr-only">LaClave981</span>
+            <LaClaveWordmark decorative className="h-9 sm:h-14 md:h-[4.5rem] lg:h-20 w-auto max-w-full" />
+          </h1>
+
+          {/* Subtítulo con líneas doradas a los lados, como en el cartel */}
+          <div className="animate-fade-in mt-5 md:mt-7 flex items-center justify-center gap-3 sm:gap-4">
+            <span className="h-px w-6 sm:w-12 md:w-16 bg-gradient-to-r from-transparent to-primary-500" />
+            <p className="font-label font-medium text-gray-400 uppercase tracking-[0.3em] sm:tracking-[0.4em] text-sm sm:text-base md:text-lg">
               {t('home.subtitle')}
             </p>
-            <div className="w-16 sm:w-20 md:w-24 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto" />
+            <span className="h-px w-6 sm:w-12 md:w-16 bg-gradient-to-l from-transparent to-primary-500" />
           </div>
 
           {/* Descripción */}
-          <div className="max-w-3xl lg:max-w-4xl mx-auto space-y-8">
-            <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed animate-slide-up font-light px-2 sm:px-4 md:px-0">
-              {t('home.description')}
-            </p>
+          <p className="font-poster animate-slide-up mt-10 md:mt-12 max-w-3xl mx-auto text-gray-200 font-normal text-[15px] sm:text-base md:text-lg lg:text-xl leading-relaxed">
+            {t('home.description')}
+          </p>
+
+          {/* Únete */}
+          <p className="font-poster animate-slide-up mt-6 md:mt-8 max-w-2xl mx-auto text-gray-400 font-normal text-[13px] sm:text-sm md:text-base leading-relaxed">
+            {t('home.unete.text')}
+          </p>
+
+          {/* Botón con el mismo estilo de siempre */}
+          <div className="animate-slide-up mt-10 md:mt-12 flex justify-center">
+            <Button
+              variant="primary"
+              to="/registro"
+              className="rounded-full px-8 py-3 md:px-12 md:py-4 lg:px-14 lg:py-5 text-sm md:text-base lg:text-lg"
+            >
+              {t('home.socios.button')}
+            </Button>
           </div>
         </div>
       </section>
-
-      {/* ==== Únete ==== */}
-      <section className="relative pt-10 sm:pt-14 md:pt-16 pb-16 sm:pb-20 md:pb-28 lg:pb-32 bg-black overflow-hidden">
-        <div className="relative container-custom px-4 sm:px-6">
-          <div className="max-w-3xl lg:max-w-4xl mx-auto text-center">
-
-            {/* Línea decorativa — mismo estilo, más ancha, igual de fina */}
-            <div className="w-24 sm:w-40 md:w-56 lg:w-72 h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent mx-auto mb-8 sm:mb-10 md:mb-12" />
-
-            {/* Texto descriptivo */}
-            <div className="mb-8 sm:mb-10 md:mb-12">
-              <p className="text-gray-300 text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed font-light">
-                {t('home.unete.text')}
-              </p>
-            </div>
-
-            {/* Botón */}
-            <div className="flex justify-center">
-              <Button
-                variant="primary"
-                to="/registro"
-                className="rounded-full px-8 py-3 md:px-12 md:py-4 lg:px-14 lg:py-5 text-sm md:text-base lg:text-lg"
-              >
-                {t('home.socios.button')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==== CARRUSEL DE EVENTOS DESTACADOS ==== 
-
-      <section className="py-12 md:py-24 bg-black">
-        <div className="container-custom">
-          <FeaturedEventsCarousel />
-        </div>
-      </section>
-      */}
-
     </div>
   );
 };
