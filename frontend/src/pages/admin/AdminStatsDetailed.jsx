@@ -27,7 +27,6 @@ const AdminStatsDetailed = () => {
     setError("");
     try {
       const result = await getDashboardStats();
-      console.debug("getDashboardStats result:", result);
       if (result && result.success) {
         setStats(result.data);
       } else if (result && result.status === 401) {

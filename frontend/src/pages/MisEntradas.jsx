@@ -174,16 +174,6 @@ const MisEntradas = () => {
           (b) => b.estado !== "cancelada"
         );
 
-        console.log("📦 Bookings recibidas:", activeBookings);
-        console.log("📊 Datos de la primera booking:", activeBookings[0]);
-        activeBookings.forEach((b) => {
-          console.log(`Booking #${b.id}:`, {
-            qr_code_url: b.qr_code_url,
-            aforo_maximo: b.aforo_maximo,
-            entradas_disponibles: b.entradas_disponibles,
-          });
-        });
-
         setBookings(activeBookings);
       } else {
         setError(result.message || "Error al cargar tus entradas");
@@ -234,8 +224,6 @@ const MisEntradas = () => {
   };
 
   const handleViewEvent = (booking) => {
-    console.log("🔍 Abriendo evento:", booking);
-
     const eventData = {
       id: booking.event_id,
       titulo: booking.evento_titulo,
@@ -257,17 +245,12 @@ const MisEntradas = () => {
       artistas: booking.artistas,
     };
 
-    console.log("📋 Event data construido:", eventData);
-
     setSelectedEvent(eventData);
     setShowEventModal(true);
   };
 
   const handleViewQR = (booking, e) => {
     e.stopPropagation();
-    console.log("🔍 Abriendo QR para booking:", booking.id);
-    console.log("📍 QR URL:", booking.qr_code_url);
-    console.log("📍 Código reserva:", booking.codigo_reserva);
     setSelectedBooking(booking);
     setShowQRModal(true);
   };

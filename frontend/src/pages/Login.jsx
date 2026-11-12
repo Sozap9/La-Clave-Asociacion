@@ -37,9 +37,6 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    console.log('Iniciando login...');
-    console.log('Email:', formData.email);
-
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: 'POST',
@@ -49,12 +46,6 @@ const Login = () => {
 
       const data = await response.json();
 
-      console.log('RESPUESTA COMPLETA:', data);
-      console.log('Success:', data.success);
-      console.log('Usuario:', data.data?.user);
-      console.log('Token recibido:', data.data?.accessToken);
-      console.log('Tipo de token:', typeof data.data?.accessToken);
-
       if (data.success) {
         if (!data.data?.accessToken) {
           console.error('ERROR: NO HAY TOKEN EN LA RESPUESTA');
@@ -62,17 +53,9 @@ const Login = () => {
           return;
         }
 
-        console.log('Token existe, llamando a login()...');
-        console.log('Pasando usuario:', data.data.user);
-        console.log('Pasando token:', data.data.accessToken);
-
         login(data.data.user, data.data.accessToken);
 
-        console.log('Verificando localStorage...');
         const savedToken = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        console.log('Token en localStorage:', savedToken);
-        console.log('User en localStorage:', savedUser);
 
         if (!savedToken) {
           console.error('ERROR: Token NO se guardó en localStorage');
@@ -80,7 +63,6 @@ const Login = () => {
           return;
         }
 
-        console.log('Todo OK, redirigiendo...');
         window.location.href = data.data.user.role === 'admin' ? NAV_ROUTES.ADMIN : NAV_ROUTES.DASHBOARD;
       } else {
         console.error('Login fallido:', data.message);
