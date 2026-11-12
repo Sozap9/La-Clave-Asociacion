@@ -21,6 +21,7 @@ import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
 import Pagination from "../../components/UI/Pagination";
 import AdminCard from "../../components/admin/AdminCard";
+import { respuestasRegistro } from "../../utils/registroRespuestas";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
 
@@ -547,20 +548,17 @@ const AdminSocios = () => {
                 </p>
                 {selectedSocio.solicitud ? (
                   <div className="space-y-3">
-                    <div className="bg-[#111] border border-[#262626] rounded-xl p-3">
-                      <p className="text-gray-500 text-xs mb-0.5">
-                        Invitación (socio y evento)
-                      </p>
-                      <p className="text-white break-words">
-                        {selectedSocio.solicitud.invitado_por || "—"}
-                      </p>
-                    </div>
-                    <div className="bg-[#111] border border-[#262626] rounded-xl p-3">
-                      <p className="text-gray-500 text-xs mb-0.5">Motivación</p>
-                      <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line break-words">
-                        {selectedSocio.solicitud.motivacion || "—"}
-                      </p>
-                    </div>
+                    {respuestasRegistro(selectedSocio.solicitud).map(([pregunta, respuesta]) => (
+                      <div
+                        key={pregunta}
+                        className="bg-[#111] border border-[#262626] rounded-xl p-3"
+                      >
+                        <p className="text-gray-500 text-xs mb-0.5">{pregunta}</p>
+                        <p className="text-white text-sm leading-relaxed whitespace-pre-line break-words">
+                          {respuesta || "—"}
+                        </p>
+                      </div>
+                    ))}
                     {selectedSocio.solicitud.created_at && (
                       <p className="text-gray-500 text-xs">
                         Solicitud enviada el{" "}

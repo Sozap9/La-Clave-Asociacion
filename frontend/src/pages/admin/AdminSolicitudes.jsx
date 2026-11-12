@@ -23,6 +23,7 @@ import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
 import Pagination from "../../components/UI/Pagination";
 import AdminCard from "../../components/admin/AdminCard";
+import { respuestasRegistro } from "../../utils/registroRespuestas";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
 
@@ -139,7 +140,6 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
                 ["Email", solicitud.email],
                 ["Teléfono", solicitud.telefono],
                 ["DNI / NIE", solicitud.dni],
-                ["Invitación (socio y evento)", solicitud.invitado_por],
                 [
                   "Fecha nacimiento",
                   solicitud.fecha_nacimiento
@@ -166,17 +166,25 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
             </div>
           </section>
 
-          {/* Motivación */}
-          {solicitud.motivacion && (
-            <section>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Motivación
-              </h3>
-              <div className="bg-[#111] border border-[#262626] rounded-xl p-4 text-gray-300 text-sm leading-relaxed">
-                {solicitud.motivacion}
-              </div>
-            </section>
-          )}
+          {/* Respuestas del formulario de registro */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              Respuestas del registro
+            </h3>
+            <div className="space-y-3">
+              {respuestasRegistro(solicitud).map(([pregunta, respuesta]) => (
+                <div
+                  key={pregunta}
+                  className="bg-[#111] border border-[#262626] rounded-xl p-3"
+                >
+                  <p className="text-gray-500 text-xs mb-0.5">{pregunta}</p>
+                  <p className="text-white text-sm leading-relaxed whitespace-pre-line break-words">
+                    {respuesta || "—"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {/* DNI Imágenes */}
           <section>

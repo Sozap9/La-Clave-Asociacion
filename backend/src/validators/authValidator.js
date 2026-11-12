@@ -165,18 +165,27 @@ export const solicitudSocioValidator = [
       return true;
     }),
 
-  // MOTIVACIÓN (opcional)
+  // PREGUNTAS DEL REGISTRO (las tres obligatorias)
+  // ¿Tienes un proyecto artístico o cultural? ¿Formas parte de algún colectivo?
+  // Llega como "pregunta + Sí. detalle" o "pregunta + No".
   body('motivacion')
-    .optional({ nullable: true, checkFalsy: true })
     .trim()
-    .isLength({ max: 500 }).withMessage('La motivación no puede superar 500 caracteres')
+    .notEmpty().withMessage('Responde si tienes un proyecto artístico o cultural o formas parte de algún colectivo')
+    .isLength({ max: 500 }).withMessage('La respuesta sobre tu proyecto no puede superar 500 caracteres')
     .escape(),
 
-  // INVITADO POR (opcional) — socio o amigo que invitó al solicitante
+  // ¿Qué socio te ha invitado?
   body('invitado_por')
-    .optional({ nullable: true, checkFalsy: true })
     .trim()
-    .isLength({ max: 150 }).withMessage('El campo "invitado por" no puede superar 150 caracteres')
+    .notEmpty().withMessage('Indica qué socio te ha invitado')
+    .isLength({ max: 150 }).withMessage('El socio que te ha invitado no puede superar 150 caracteres')
+    .escape(),
+
+  // ¿A qué evento deseas venir?
+  body('evento_interes')
+    .trim()
+    .notEmpty().withMessage('Indica a qué evento deseas venir')
+    .isLength({ max: 150 }).withMessage('El evento no puede superar 150 caracteres')
     .escape()
 ];
 

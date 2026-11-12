@@ -1001,7 +1001,7 @@ export const getSocioDetails = async (req, res) => {
       try {
         const solicitudRows = await query(
           `
-          SELECT motivacion, invitado_por, created_at
+          SELECT motivacion, invitado_por, evento_interes, created_at
           FROM solicitudes_socios
           WHERE estado = 'aprobada'
             AND (email = ? OR (? <> '' AND dni = ?))

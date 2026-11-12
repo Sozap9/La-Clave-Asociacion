@@ -15,6 +15,7 @@ import Button from "../components/common/Button";
 import DatePickerInput from "../components/common/DatePickerInput";
 import { NAV_ROUTES } from "../utils/constants";
 import { useLanguage } from "../context/LanguageContext";
+import { PREGUNTA_PROYECTO } from "../utils/registroRespuestas";
 
 const Register = () => {
   const { t } = useLanguage();
@@ -30,6 +31,7 @@ const Register = () => {
     dni: "",
     artistQuestion: "",
     invitado_por: "",
+    evento_interes: "",
   });
 
   const [dniFront, setDniFront] = useState(null);
@@ -71,6 +73,10 @@ const Register = () => {
       setError(t("register.errorPasswords"));
       return;
     }
+    if (!esArtista) {
+      setError(t("register.errorArtistQuestion"));
+      return;
+    }
     if (!dniFront) {
       setError(t("register.errorDni"));
       return;
@@ -80,9 +86,12 @@ const Register = () => {
 
     try {
       const body = new FormData();
-      const combinedMotivacion = formData.artistQuestion
-        ? `${t("register.artistQuestion")} ${formData.artistQuestion}`
-        : "";
+      // Se guarda pregunta + respuesta en español para que el admin
+      // la lea igual sea cual sea el idioma del formulario.
+      const combinedMotivacion =
+        esArtista === "si"
+          ? `${PREGUNTA_PROYECTO} Sí. ${formData.artistQuestion.trim()}`
+          : `${PREGUNTA_PROYECTO} No`;
 
       Object.entries(formData).forEach(([key, val]) => {
         if (key !== "confirmPassword" && key !== "artistQuestion") {
@@ -383,13 +392,15 @@ const Register = () => {
                     value={formData.artistQuestion}
                     onChange={handleChange}
                     rows={3}
+                    maxLength={400}
                     className="input w-full resize-none"
+                    required
                   />
                 </div>
               )}
             </div>
 
-            {/* ── ¿Quién te invitó? (opcional) ── */}
+            {/* ── ¿Qué socio te ha invitado? (obligatoria) ── */}
             <div>
               <label className="block text-gray-400 text-sm mb-2">
                 {t("register.invitedBy")}
@@ -401,6 +412,23 @@ const Register = () => {
                 onChange={handleChange}
                 maxLength={150}
                 className="input w-full"
+                required
+              />
+            </div>
+
+            {/* ── ¿A qué evento deseas venir? (obligatoria) ── */}
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">
+                {t("register.eventWanted")}
+              </label>
+              <input
+                type="text"
+                name="evento_interes"
+                value={formData.evento_interes}
+                onChange={handleChange}
+                maxLength={150}
+                className="input w-full"
+                required
               />
             </div>
 

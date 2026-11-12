@@ -976,6 +976,7 @@ class EmailService {
                         <p style="margin:5px 0;font-size:14px;"><strong style="color:#f59e0b;">Email:</strong> ${solicitud.email}</p>
                         <p style="margin:5px 0;font-size:14px;"><strong style="color:#f59e0b;">DNI:</strong> ${solicitud.dni}</p>
                         ${solicitud.invitado_por ? `<p style="margin:5px 0;font-size:14px;"><strong style="color:#f59e0b;">Invitado por:</strong> ${solicitud.invitado_por}</p>` : ''}
+                        ${solicitud.evento_interes ? `<p style="margin:5px 0;font-size:14px;"><strong style="color:#f59e0b;">Evento al que desea venir:</strong> ${solicitud.evento_interes}</p>` : ''}
                         ${formatMotivacionAsQA(solicitud.motivacion)}
                       </div>
                       <div style="text-align:center;margin:30px 0;">
