@@ -1284,7 +1284,6 @@ export const getEventsStats = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      _debug_version: "getEventsStats-fix-16jul-1", // temporal, pendiente de quitar
       data: {
         total_eventos: stats.total_eventos,
         publicados: stats.publicados,

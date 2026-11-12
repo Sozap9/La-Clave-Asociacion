@@ -703,8 +703,3 @@ export const getEventsStats = async (req, res) => {
     });
   }
 };
-
-// Alias con los nombres antiguos de las funciones
-export const getEventById = getEventDetails;
-export const getEvents = getAllEventsAdmin;
-export const removeEvent = deleteEvent;
