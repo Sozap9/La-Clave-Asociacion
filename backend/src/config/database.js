@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import logger from './logger.js';
 
 dotenv.config({ quiet: true });
 
@@ -25,7 +26,7 @@ const testConnection = async () => {
         connection.release();
         return true;
     } catch (error) {
-        console.error('❌ Error al conectar con MySQL:', error.message);
+        logger.error('❌ Error al conectar con MySQL:', { error: error.message });
         return false;
     }
 };
@@ -36,7 +37,7 @@ const query = async (sql, params = []) => {
         const [rows] = await pool.execute(sql, params);
         return rows;
     } catch (error) {
-        console.error('Error en query:', error.message);
+        logger.error('Error en query:', { error: error.message });
         throw error;
     }
     };

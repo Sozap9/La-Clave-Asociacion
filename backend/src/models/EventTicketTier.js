@@ -1,4 +1,5 @@
 import { query } from '../config/database.js';
+import logger from '../config/logger.js';
 
 /**
  * Modelo EventTicketTier - Tandas de precio por evento.
@@ -25,7 +26,7 @@ class EventTicketTier {
       `;
       return await query(sql, [eventId]);
     } catch (error) {
-      console.error('Error en EventTicketTier.getByEvent:', error);
+      logger.error('Error en EventTicketTier.getByEvent:', error);
       throw error;
     }
   }
@@ -67,7 +68,7 @@ class EventTicketTier {
 
       return await this.getByEvent(eventId);
     } catch (error) {
-      console.error('Error en EventTicketTier.replaceForEvent:', error);
+      logger.error('Error en EventTicketTier.replaceForEvent:', error);
       throw error;
     }
   }
@@ -91,7 +92,7 @@ class EventTicketTier {
       }
       return await this.getByEvent(eventId);
     } catch (error) {
-      console.error('Error en EventTicketTier.activateManually:', error);
+      logger.error('Error en EventTicketTier.activateManually:', error);
       throw error;
     }
   }
@@ -108,7 +109,7 @@ class EventTicketTier {
       );
       return await this.getByEvent(eventId);
     } catch (error) {
-      console.error('Error en EventTicketTier.deactivateManual:', error);
+      logger.error('Error en EventTicketTier.deactivateManual:', error);
       throw error;
     }
   }
@@ -132,7 +133,7 @@ class EventTicketTier {
       );
       return auto.length > 0 ? auto[0] : null;
     } catch (error) {
-      console.error('Error en EventTicketTier.resolveActiveTier:', error);
+      logger.error('Error en EventTicketTier.resolveActiveTier:', error);
       throw error;
     }
   }

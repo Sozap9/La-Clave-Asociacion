@@ -1,4 +1,5 @@
 import { query } from '../config/database.js';
+import logger from '../config/logger.js';
 
 /**
  * Modelo Artist - Manejo de la tabla artists
@@ -26,7 +27,7 @@ class Artist {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findById:', error);
+      logger.error('Error en findById:', error);
       throw error;
     }
   }
@@ -172,7 +173,7 @@ class Artist {
       };
       
     } catch (error) {
-      console.error('Error en list:', error);
+      logger.error('Error en list:', error);
       throw error;
     }
   }
@@ -220,7 +221,7 @@ class Artist {
       const result = await query(sql, values);
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error('Error en create:', error);
+      logger.error('Error en create:', error);
       throw error;
     }
   }
@@ -259,7 +260,7 @@ class Artist {
       await query(sql, values);
       return true;
     } catch (error) {
-      console.error('Error en update:', error);
+      logger.error('Error en update:', error);
       throw error;
     }
   }
@@ -283,7 +284,7 @@ class Artist {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error('Error en delete:', error);
+      logger.error('Error en delete:', error);
       throw error;
     }
   }
@@ -299,7 +300,7 @@ class Artist {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error('Error en deactivate:', error);
+      logger.error('Error en deactivate:', error);
       throw error;
     }
   }
@@ -315,7 +316,7 @@ static async activate(id) {
     await query(sql, [id]);
     return this.findById(id);
   } catch (error) {
-    console.error('Error en Artist.activate:', error);
+    logger.error('Error en Artist.activate:', error);
     throw error;
   }
 }
@@ -333,7 +334,7 @@ static async activate(id) {
       await query(sql, [featuredValue, id]);
       return true;
     } catch (error) {
-      console.error('Error en setFeatured:', error);
+      logger.error('Error en setFeatured:', error);
       throw error;
     }
   }
@@ -356,7 +357,7 @@ static async activate(id) {
       `;
       return await query(sql);
     } catch (error) {
-      console.error('Error en getActive:', error);
+      logger.error('Error en getActive:', error);
       throw error;
     }
   }
@@ -382,7 +383,7 @@ static async activate(id) {
       
       return await query(sql);
     } catch (error) {
-      console.error('Error en getFeatured:', error);
+      logger.error('Error en getFeatured:', error);
       throw error;
     }
   }
@@ -406,7 +407,7 @@ static async activate(id) {
       const searchPattern = `%${searchTerm}%`;
       return await query(sql, [searchPattern, searchPattern, searchPattern, searchPattern]);
     } catch (error) {
-      console.error('Error en search:', error);
+      logger.error('Error en search:', error);
       throw error;
     }
   }
@@ -439,7 +440,7 @@ static async activate(id) {
       
       return await query(sql, [id]);
     } catch (error) {
-      console.error('Error en getEventos:', error);
+      logger.error('Error en getEventos:', error);
       throw error;
     }
   }
@@ -464,7 +465,7 @@ static async activate(id) {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en getStats:', error);
+      logger.error('Error en getStats:', error);
       throw error;
     }
   }

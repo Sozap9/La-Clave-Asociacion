@@ -1,5 +1,6 @@
 import { query } from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../config/logger.js';
 
 /**
  * Modelo Booking - Manejo de la tabla bookings
@@ -33,7 +34,7 @@ class Booking {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findById:', error);
+      logger.error('Error en findById:', error);
       throw error;
     }
   }
@@ -68,7 +69,7 @@ class Booking {
       const results = await query(sql, [bookingId, codigoAcceso]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findByAccessCode:', error);
+      logger.error('Error en findByAccessCode:', error);
       throw error;
     }
   }
@@ -101,7 +102,7 @@ class Booking {
       const results = await query(sql, [codigoReserva]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findByCode:', error);
+      logger.error('Error en findByCode:', error);
       throw error;
     }
   }
@@ -127,7 +128,7 @@ class Booking {
       const results = await query(sql, [socioId, eventId]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en findBySocioAndEvent:', error);
+      logger.error('Error en findBySocioAndEvent:', error);
       throw error;
     }
   }
@@ -173,7 +174,7 @@ class Booking {
       const result = await query(sql, values);
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error('Error en create:', error);
+      logger.error('Error en create:', error);
       throw error;
     }
   }
@@ -196,7 +197,7 @@ class Booking {
       await query(sql, [motivo, id]);
       return true;
     } catch (error) {
-      console.error('Error en cancel:', error);
+      logger.error('Error en cancel:', error);
       throw error;
     }
   }
@@ -216,7 +217,7 @@ class Booking {
     await query(sql, [id]);
     return true;
   } catch (error) {
-    console.error('Error en markAsAttended:', error);
+    logger.error('Error en markAsAttended:', error);
     throw error;
   }
 }
@@ -233,7 +234,7 @@ class Booking {
       await query(sql, [qrUrl, id]);
       return true;
     } catch (error) {
-      console.error('Error en saveQRCode:', error);
+      logger.error('Error en saveQRCode:', error);
       throw error;
     }
   }
@@ -279,7 +280,7 @@ class Booking {
 
       return await query(sql, params);
     } catch (error) {
-      console.error('Error en getBySocio:', error);
+      logger.error('Error en getBySocio:', error);
       throw error;
     }
   }
@@ -317,7 +318,7 @@ class Booking {
 
       return await query(sql, params);
     } catch (error) {
-      console.error('Error en getByEvent:', error);
+      logger.error('Error en getByEvent:', error);
       throw error;
     }
   }
@@ -337,7 +338,7 @@ class Booking {
       const results = await query(sql, [eventId]);
       return results[0].total;
     } catch (error) {
-      console.error('Error en countConfirmedByEvent:', error);
+      logger.error('Error en countConfirmedByEvent:', error);
       throw error;
     }
   }
@@ -362,7 +363,7 @@ class Booking {
       const results = await query(sql, [socioId]);
       return results[0];
     } catch (error) {
-      console.error('Error en getSocioStats:', error);
+      logger.error('Error en getSocioStats:', error);
       throw error;
     }
   }
@@ -397,7 +398,7 @@ class Booking {
         event_id: eventId
       };
     } catch (error) {
-      console.error('Error en addToWaitingList:', error);
+      logger.error('Error en addToWaitingList:', error);
       throw error;
     }
   }
@@ -418,7 +419,7 @@ class Booking {
       const results = await query(sql, [socioId, eventId]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en checkWaitingList:', error);
+      logger.error('Error en checkWaitingList:', error);
       throw error;
     }
   }
@@ -445,7 +446,7 @@ class Booking {
       `;
       return await query(sql, [eventId]);
     } catch (error) {
-      console.error('Error en getWaitingListByEvent:', error);
+      logger.error('Error en getWaitingListByEvent:', error);
       throw error;
     }
   }
@@ -465,7 +466,7 @@ class Booking {
       await query(sql, [socioId, eventId]);
       return true;
     } catch (error) {
-      console.error('Error en removeFromWaitingList:', error);
+      logger.error('Error en removeFromWaitingList:', error);
       throw error;
     }
   }

@@ -2,6 +2,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import logger from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -181,7 +182,7 @@ export const deleteFile = (filePath) => {
     }
     return false;
   } catch (error) {
-    console.error("Error eliminando archivo:", error);
+    logger.error("Error eliminando archivo:", error);
     return false;
   }
 };

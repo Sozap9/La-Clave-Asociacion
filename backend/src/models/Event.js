@@ -1,4 +1,5 @@
 import { query } from '../config/database.js';
+import logger from '../config/logger.js';
 
 /**
  * Modelo Event - Manejo de la tabla events
@@ -41,7 +42,7 @@ class Event {
       
       return null;
     } catch (error) {
-      console.error('Error en findById:', error);
+      logger.error('Error en findById:', error);
       throw error;
     }
   }
@@ -153,7 +154,7 @@ class Event {
         pages: Math.ceil(total / validLimit)
       };
     } catch (error) {
-      console.error('Error en list:', error);
+      logger.error('Error en list:', error);
       throw error;
     }
   }
@@ -225,7 +226,7 @@ class Event {
       const result = await query(sql, values);
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error('Error en create:', error);
+      logger.error('Error en create:', error);
       throw error;
     }
   }
@@ -263,7 +264,7 @@ class Event {
 
       return await this.findById(id);
     } catch (error) {
-      console.error('Error en update:', error);
+      logger.error('Error en update:', error);
       throw error;
     }
   }
@@ -277,7 +278,7 @@ class Event {
       await query(sql, [id]);
       return { success: true };
     } catch (error) {
-      console.error('Error en delete:', error);
+      logger.error('Error en delete:', error);
       throw error;
     }
   }
@@ -295,7 +296,7 @@ class Event {
       const disponibles = event.entradas_disponibles_real || 0;
       return disponibles >= numeroEntradas;
     } catch (error) {
-      console.error('Error en checkAvailability:', error);
+      logger.error('Error en checkAvailability:', error);
       throw error;
     }
   }
@@ -313,7 +314,7 @@ class Event {
         orderDir: 'ASC'
       });
     } catch (error) {
-      console.error('Error en getFeatured:', error);
+      logger.error('Error en getFeatured:', error);
       throw error;
     }
   }
@@ -391,7 +392,7 @@ class Event {
         pages: Math.ceil(total / validLimit)
       };
     } catch (error) {
-      console.error('Error en search:', error);
+      logger.error('Error en search:', error);
       throw error;
     }
   }

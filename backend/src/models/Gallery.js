@@ -1,4 +1,5 @@
 import { query } from '../config/database.js';
+import logger from '../config/logger.js';
 
 /**
  * Modelo Gallery - Gestión COMPLETA de carpetas, imágenes y artistas
@@ -51,7 +52,7 @@ class Gallery {
       const results = await query(sql, params);
       return results;
     } catch (error) {
-      console.error('Error en Gallery.listFolders:', error);
+      logger.error('Error en Gallery.listFolders:', error);
       throw error;
     }
   }
@@ -80,7 +81,7 @@ class Gallery {
       const results = await query(sql, [value]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en Gallery.findFolderBy:', error);
+      logger.error('Error en Gallery.findFolderBy:', error);
       throw error;
     }
   }
@@ -152,7 +153,7 @@ class Gallery {
         ...folderData
       };
     } catch (error) {
-      console.error('Error en Gallery.createFolder:', error);
+      logger.error('Error en Gallery.createFolder:', error);
       throw error;
     }
   }
@@ -193,7 +194,7 @@ class Gallery {
       await query(sql, values);
       return this.findFolderBy('id', id);
     } catch (error) {
-      console.error('Error en Gallery.updateFolder:', error);
+      logger.error('Error en Gallery.updateFolder:', error);
       throw error;
     }
   }
@@ -204,7 +205,7 @@ class Gallery {
       const results = await query(sql, [id]);
       return results.affectedRows > 0;
     } catch (error) {
-      console.error('Error en Gallery.deleteFolder:', error);
+      logger.error('Error en Gallery.deleteFolder:', error);
       throw error;
     }
   }
@@ -236,7 +237,7 @@ class Gallery {
       const results = await query(sql, params);
       return results;
     } catch (error) {
-      console.error('Error en Gallery.listImages:', error);
+      logger.error('Error en Gallery.listImages:', error);
       throw error;
     }
   }
@@ -259,16 +260,13 @@ class Gallery {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en Gallery.findImageById:', error);
+      logger.error('Error en Gallery.findImageById:', error);
       throw error;
     }
   }
 
   static async addImage(imageData) {
   try {
-    console.log('=== INICIO addImage ===');
-    console.log('imageData recibido:', JSON.stringify(imageData, null, 2));
-    
     const {
       folder_id,
       imagen_url,
@@ -283,17 +281,10 @@ class Gallery {
       uploaded_by
     } = imageData;
 
-    console.log('Datos después de destructuring:', {
-      folder_id, imagen_url, thumbnail_url, titulo, descripcion,
-      ancho, alto, tamano_kb, visible, destacado, uploaded_by
-    });
-
     const orderSql = 'SELECT COALESCE(MAX(orden), 0) + 1 as next_orden FROM gallery_images WHERE folder_id = ?';
-    console.log('Query de orden:', orderSql);
     
     const orderResult = await query(orderSql, [folder_id]);
     const nextOrden = orderResult[0].next_orden;
-    console.log('nextOrden:', nextOrden);
 
     const sql = `
       INSERT INTO gallery_images (
@@ -302,22 +293,6 @@ class Gallery {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
-    console.log('SQL INSERT:', sql);
-    console.log('Valores para INSERT:', [
-      folder_id,
-      imagen_url,
-      thumbnail_url,
-      titulo,
-      descripcion,
-      ancho,
-      alto,
-      tamano_kb,
-      visible ? 1 : 0,
-      destacado ? 1 : 0,
-      nextOrden,
-      uploaded_by
-    ]);
-
     const results = await query(sql, [
       folder_id,
       imagen_url,
@@ -333,8 +308,7 @@ class Gallery {
       uploaded_by
     ]);
 
-    console.log('INSERT exitoso, insertId:', results.insertId);
-    console.log('=== FIN addImage ===');
+    logger.debug('Imagen añadida a la galería', { imageId: results.insertId, folderId: folder_id });
 
     return {
       id: results.insertId,
@@ -342,9 +316,9 @@ class Gallery {
       orden: nextOrden
     };
   } catch (error) {
-    console.error('=== ERROR en addImage ===');
-    console.error('Error completo:', error);
-    console.error('Stack:', error.stack);
+    logger.error('=== ERROR en addImage ===');
+    logger.error('Error completo:', error);
+    logger.error('Stack:', { stack: error.stack });
     throw error;
   }
 }
@@ -382,7 +356,7 @@ static async updateImage(id, updateData) {
     await query(sql, values);
     return this.findImageById(id);
   } catch (error) {
-    console.error('Error en Gallery.updateImage:', error);
+    logger.error('Error en Gallery.updateImage:', error);
     throw error;
   }
 }
@@ -393,7 +367,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql, [id]);
       return results.affectedRows > 0;
     } catch (error) {
-      console.error('Error en Gallery.deleteImage:', error);
+      logger.error('Error en Gallery.deleteImage:', error);
       throw error;
     }
   }
@@ -415,7 +389,7 @@ static async updateImage(id, updateData) {
 
       return true;
     } catch (error) {
-      console.error('Error en Gallery.reorderImages:', error);
+      logger.error('Error en Gallery.reorderImages:', error);
       throw error;
     }
   }
@@ -466,7 +440,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql, params);
       return results;
     } catch (error) {
-      console.error('Error en Gallery.getAllImages:', error);
+      logger.error('Error en Gallery.getAllImages:', error);
       throw error;
     }
   }
@@ -482,7 +456,7 @@ static async updateImage(id, updateData) {
       await query(sql, [newFolderId, imageId]);
       return this.findImageById(imageId);
     } catch (error) {
-      console.error('Error en Gallery.moveImageToFolder:', error);
+      logger.error('Error en Gallery.moveImageToFolder:', error);
       throw error;
     }
   }
@@ -508,7 +482,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql);
       return results;
     } catch (error) {
-      console.error('Error en Gallery.getFeaturedImages:', error);
+      logger.error('Error en Gallery.getFeaturedImages:', error);
       throw error;
     }
   }
@@ -538,7 +512,7 @@ static async updateImage(id, updateData) {
         tipo: 'artista'
       }));
     } catch (error) {
-      console.error('Error en Gallery.getFolderArtists:', error);
+      logger.error('Error en Gallery.getFolderArtists:', error);
       throw error;
     }
   }
@@ -557,7 +531,7 @@ static async updateImage(id, updateData) {
       
       return { success: true };
     } catch (error) {
-      console.error('Error en Gallery.addArtistToFolder:', error);
+      logger.error('Error en Gallery.addArtistToFolder:', error);
       throw error;
     }
   }
@@ -575,7 +549,7 @@ static async updateImage(id, updateData) {
 
       return { success: true };
     } catch (error) {
-      console.error('Error en Gallery.updateFolderArtists:', error);
+      logger.error('Error en Gallery.updateFolderArtists:', error);
       throw error;
     }
   }
@@ -586,7 +560,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql, [folderId, artistId]);
       return results.affectedRows > 0;
     } catch (error) {
-      console.error('Error en Gallery.removeArtistFromFolder:', error);
+      logger.error('Error en Gallery.removeArtistFromFolder:', error);
       throw error;
     }
   }
@@ -635,7 +609,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql, params);
       return results;
     } catch (error) {
-      console.error('Error en Gallery.getAllImagesWithArtists:', error);
+      logger.error('Error en Gallery.getAllImagesWithArtists:', error);
       throw error;
     }
   }
@@ -659,7 +633,7 @@ static async updateImage(id, updateData) {
         tipo: 'artista'
       }));
     } catch (error) {
-      console.error('Error en Gallery.getImageArtists:', error);
+      logger.error('Error en Gallery.getImageArtists:', error);
       throw error;
     }
   }
@@ -678,7 +652,7 @@ static async updateImage(id, updateData) {
       
       return { success: true };
     } catch (error) {
-      console.error('Error en Gallery.addArtistToImage:', error);
+      logger.error('Error en Gallery.addArtistToImage:', error);
       throw error;
     }
   }
@@ -696,7 +670,7 @@ static async updateImage(id, updateData) {
 
       return { success: true };
     } catch (error) {
-      console.error('Error en Gallery.updateImageArtists:', error);
+      logger.error('Error en Gallery.updateImageArtists:', error);
       throw error;
     }
   }
@@ -707,7 +681,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql, [imageId, artistId]);
       return results.affectedRows > 0;
     } catch (error) {
-      console.error('Error en Gallery.removeArtistFromImage:', error);
+      logger.error('Error en Gallery.removeArtistFromImage:', error);
       throw error;
     }
   }
@@ -746,7 +720,7 @@ static async updateImage(id, updateData) {
         images
       };
     } catch (error) {
-      console.error('Error en Gallery.getContentByArtist:', error);
+      logger.error('Error en Gallery.getContentByArtist:', error);
       throw error;
     }
   }
@@ -773,7 +747,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql);
       return results[0];
     } catch (error) {
-      console.error('Error en Gallery.getStats:', error);
+      logger.error('Error en Gallery.getStats:', error);
       throw error;
     }
   }
@@ -800,7 +774,7 @@ static async updateImage(id, updateData) {
       const results = await query(sql);
       return results;
     } catch (error) {
-      console.error('Error en Gallery.getFeaturedFolders:', error);
+      logger.error('Error en Gallery.getFeaturedFolders:', error);
       throw error;
     }
   }

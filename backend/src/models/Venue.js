@@ -1,4 +1,5 @@
 import { query } from "../config/database.js";
+import logger from '../config/logger.js';
 
 /**
  * Modelo Venue - Manejo de la tabla venues
@@ -25,7 +26,7 @@ class Venue {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en findById:", error);
+      logger.error("Error en findById:", error);
       throw error;
     }
   }
@@ -124,12 +125,6 @@ class Venue {
         " OFFSET " +
         offset;
 
-      console.log("═══════════════════════════════════════");
-      console.log("DEBUG - SQL Query:");
-      console.log(sql);
-      console.log("DEBUG - Parámetros WHERE:", params);
-      console.log("═══════════════════════════════════════");
-
       const venues = await query(sql, params);
 
       // Contar total
@@ -144,7 +139,7 @@ class Venue {
         pages: Math.ceil(total / limitNum),
       };
     } catch (error) {
-      console.error("Error en list:", error);
+      logger.error("Error en list:", error);
       throw error;
     }
   }
@@ -210,7 +205,7 @@ class Venue {
       const result = await query(sql, values);
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error("Error en create:", error);
+      logger.error("Error en create:", error);
       throw error;
     }
   }
@@ -265,7 +260,7 @@ class Venue {
       await query(sql, values);
       return true;
     } catch (error) {
-      console.error("Error en update:", error);
+      logger.error("Error en update:", error);
       throw error;
     }
   }
@@ -290,7 +285,7 @@ class Venue {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error("Error en delete:", error);
+      logger.error("Error en delete:", error);
       throw error;
     }
   }
@@ -306,7 +301,7 @@ class Venue {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error("Error en deactivate:", error);
+      logger.error("Error en deactivate:", error);
       throw error;
     }
   }
@@ -322,7 +317,7 @@ static async activate(id) {
     await query(sql, [id]);
     return this.findById(id);
   } catch (error) {
-    console.error('Error en Venue.activate:', error);
+    logger.error('Error en Venue.activate:', error);
     throw error;
   }
 }
@@ -345,7 +340,7 @@ static async activate(id) {
       `;
       return await query(sql);
     } catch (error) {
-      console.error("Error en getActive:", error);
+      logger.error("Error en getActive:", error);
       throw error;
     }
   }
@@ -365,7 +360,7 @@ static async activate(id) {
       `;
       return await query(sql, [`%${ciudad}%`]);
     } catch (error) {
-      console.error("Error en findByCiudad:", error);
+      logger.error("Error en findByCiudad:", error);
       throw error;
     }
   }
@@ -393,7 +388,7 @@ static async activate(id) {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en getStats:", error);
+      logger.error("Error en getStats:", error);
       throw error;
     }
   }

@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import logger from './logger.js';
 
 dotenv.config({ quiet: true });
 
@@ -110,7 +111,7 @@ export const createCheckoutSession = async ({ booking, event, user, numeroEntrad
 
     return session;
   } catch (error) {
-    console.error('Error creando Checkout Session:', error);
+    logger.error('Error creando Checkout Session:', error);
     throw error;
   }
 };
@@ -130,7 +131,7 @@ export const createStripeCustomer = async (userData) => {
     });
     return customer;
   } catch (error) {
-    console.error('Error creando cliente Stripe:', error);
+    logger.error('Error creando cliente Stripe:', error);
     throw error;
   }
 };
@@ -149,7 +150,7 @@ export const attachPaymentMethod = async (paymentMethodId, customerId) => {
     });
     return paymentMethod;
   } catch (error) {
-    console.error('Error adjuntando método de pago:', error);
+    logger.error('Error adjuntando método de pago:', error);
     throw error;
   }
 };
@@ -178,7 +179,7 @@ export const createSubscription = async (customerId, amount = 10.0) => {
     });
     return subscription;
   } catch (error) {
-    console.error('Error creando suscripción:', error);
+    logger.error('Error creando suscripción:', error);
     throw error;
   }
 };
@@ -190,7 +191,7 @@ export const cancelSubscription = async (subscriptionId) => {
   try {
     return await getStripe().subscriptions.cancel(subscriptionId);
   } catch (error) {
-    console.error('Error cancelando suscripción:', error);
+    logger.error('Error cancelando suscripción:', error);
     throw error;
   }
 };
@@ -206,7 +207,7 @@ export const updatePaymentMethod = async (customerId, paymentMethodId) => {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
   } catch (error) {
-    console.error('Error actualizando método de pago:', error);
+    logger.error('Error actualizando método de pago:', error);
     throw error;
   }
 };
@@ -218,7 +219,7 @@ export const getSubscription = async (subscriptionId) => {
   try {
     return await getStripe().subscriptions.retrieve(subscriptionId);
   } catch (error) {
-    console.error('Error obteniendo suscripción:', error);
+    logger.error('Error obteniendo suscripción:', error);
     throw error;
   }
 };
@@ -231,7 +232,7 @@ export const getInvoices = async (customerId, limit = 10) => {
     const invoices = await getStripe().invoices.list({ customer: customerId, limit });
     return invoices.data;
   } catch (error) {
-    console.error('Error obteniendo facturas:', error);
+    logger.error('Error obteniendo facturas:', error);
     throw error;
   }
 };
@@ -246,7 +247,7 @@ export const createSetupIntent = async (customerId) => {
       payment_method_types: ['card'],
     });
   } catch (error) {
-    console.error('Error creando setup intent:', error);
+    logger.error('Error creando setup intent:', error);
     throw error;
   }
 };
@@ -259,7 +260,7 @@ export const verifyWebhook = (payload, signature) => {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     return getStripe().webhooks.constructEvent(payload, signature, webhookSecret);
   } catch (error) {
-    console.error('Error verificando webhook:', error);
+    logger.error('Error verificando webhook:', error);
     throw error;
   }
 };
@@ -271,7 +272,7 @@ export const refundPayment = async (paymentIntentId) => {
   try {
     return await getStripe().refunds.create({ payment_intent: paymentIntentId });
   } catch (error) {
-    console.error('Error creando reembolso:', error);
+    logger.error('Error creando reembolso:', error);
     throw error;
   }
 };

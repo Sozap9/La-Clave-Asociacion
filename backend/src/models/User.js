@@ -1,5 +1,6 @@
 import { query } from "../config/database.js";
 import bcrypt from "bcryptjs";
+import logger from '../config/logger.js';
 
 /**
  * Modelo User - Manejo de la tabla users
@@ -16,7 +17,7 @@ class User {
       const results = await query(sql, [email]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en findByEmail:", error);
+      logger.error("Error en findByEmail:", error);
       throw error;
     }
   }
@@ -32,7 +33,7 @@ class User {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en findById:", error);
+      logger.error("Error en findById:", error);
       throw error;
     }
   }
@@ -90,7 +91,7 @@ class User {
         pages: Math.ceil(total / limitNum),
       };
     } catch (error) {
-      console.error("Error en User.list:", error);
+      logger.error("Error en User.list:", error);
       throw error;
     }
   }
@@ -158,7 +159,7 @@ class User {
       // Retornar el usuario creado (sin contraseña)
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error("Error en create:", error);
+      logger.error("Error en create:", error);
       throw error;
     }
   }
@@ -208,7 +209,7 @@ class User {
 
       return true;
     } catch (error) {
-      console.error("Error en update:", error);
+      logger.error("Error en update:", error);
       throw error;
     }
   }
@@ -226,7 +227,7 @@ class User {
       await query(sql, [password_hash, id]);
       return true;
     } catch (error) {
-      console.error("Error en updatePassword:", error);
+      logger.error("Error en updatePassword:", error);
       throw error;
     }
   }
@@ -241,7 +242,7 @@ class User {
     try {
       return await bcrypt.compare(plainPassword, hashedPassword);
     } catch (error) {
-      console.error("Error en verifyPassword:", error);
+      logger.error("Error en verifyPassword:", error);
       throw error;
     }
   }
@@ -257,7 +258,7 @@ class User {
       const results = await query(sql, [email]);
       return results.length > 0;
     } catch (error) {
-      console.error("Error en emailExists:", error);
+      logger.error("Error en emailExists:", error);
       throw error;
     }
   }
@@ -273,7 +274,7 @@ class User {
       const results = await query(sql, [dni.toUpperCase()]);
       return results.length > 0;
     } catch (error) {
-      console.error("Error en dniExists:", error);
+      logger.error("Error en dniExists:", error);
       throw error;
     }
   }
@@ -289,7 +290,7 @@ class User {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error("Error en deactivate:", error);
+      logger.error("Error en deactivate:", error);
       throw error;
     }
   }
@@ -306,7 +307,7 @@ class User {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error("Error en softDelete:", error);
+      logger.error("Error en softDelete:", error);
       throw error;
     }
   }
@@ -322,7 +323,7 @@ class User {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error("Error en delete:", error);
+      logger.error("Error en delete:", error);
       throw error;
     }
   }
@@ -338,7 +339,7 @@ class User {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error("Error en activate:", error);
+      logger.error("Error en activate:", error);
       throw error;
     }
   }
@@ -358,7 +359,7 @@ class User {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error("Error en verifyEmail:", error);
+      logger.error("Error en verifyEmail:", error);
       throw error;
     }
   }
@@ -375,7 +376,7 @@ class User {
       await query(sql, [token, id]);
       return true;
     } catch (error) {
-      console.error("Error en saveEmailVerificationToken:", error);
+      logger.error("Error en saveEmailVerificationToken:", error);
       throw error;
     }
   }
@@ -398,7 +399,7 @@ class User {
       await query(sql, [hashedToken, expiresAt, userId]);
       return true;
     } catch (error) {
-      console.error("Error en savePasswordResetToken:", error);
+      logger.error("Error en savePasswordResetToken:", error);
       throw error;
     }
   }
@@ -421,7 +422,7 @@ class User {
       const results = await query(sql, [hashedToken]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en findByValidResetToken:", error);
+      logger.error("Error en findByValidResetToken:", error);
       throw error;
     }
   }
@@ -442,7 +443,7 @@ class User {
       await query(sql, [userId]);
       return true;
     } catch (error) {
-      console.error("Error en clearPasswordResetToken:", error);
+      logger.error("Error en clearPasswordResetToken:", error);
       throw error;
     }
   }

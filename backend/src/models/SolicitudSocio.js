@@ -1,5 +1,6 @@
 import { query } from '../config/database.js';
 import bcrypt from 'bcryptjs';
+import logger from '../config/logger.js';
 
 /**
  * Modelo SolicitudSocio - Manejo de la tabla solicitudes_socios
@@ -24,7 +25,7 @@ class SolicitudSocio {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error('Error en SolicitudSocio.findById:', error);
+      logger.error('Error en SolicitudSocio.findById:', error);
       throw error;
     }
   }
@@ -89,7 +90,7 @@ class SolicitudSocio {
         }
       };
     } catch (error) {
-      console.error('Error en SolicitudSocio.findAll:', error);
+      logger.error('Error en SolicitudSocio.findAll:', error);
       throw error;
     }
   }
@@ -103,7 +104,7 @@ class SolicitudSocio {
       const results = await query(sql);
       return Number(results[0].total);
     } catch (error) {
-      console.error('Error en SolicitudSocio.countPendientes:', error);
+      logger.error('Error en SolicitudSocio.countPendientes:', error);
       throw error;
     }
   }
@@ -121,7 +122,7 @@ class SolicitudSocio {
       const results = await query(sql, [email, dni.toUpperCase()]);
       return results.length > 0;
     } catch (error) {
-      console.error('Error en SolicitudSocio.existePendiente:', error);
+      logger.error('Error en SolicitudSocio.existePendiente:', error);
       throw error;
     }
   }
@@ -179,7 +180,7 @@ class SolicitudSocio {
       const result = await query(sql, values);
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error('Error en SolicitudSocio.create:', error);
+      logger.error('Error en SolicitudSocio.create:', error);
       throw error;
     }
   }
@@ -199,7 +200,7 @@ class SolicitudSocio {
       await query(sql, [adminId, id]);
       return await this.findById(id);
     } catch (error) {
-      console.error('Error en SolicitudSocio.aprobar:', error);
+      logger.error('Error en SolicitudSocio.aprobar:', error);
       throw error;
     }
   }
@@ -220,7 +221,7 @@ class SolicitudSocio {
       await query(sql, [adminId, motivoRechazo, id]);
       return await this.findById(id);
     } catch (error) {
-      console.error('Error en SolicitudSocio.rechazar:', error);
+      logger.error('Error en SolicitudSocio.rechazar:', error);
       throw error;
     }
   }
@@ -234,7 +235,7 @@ class SolicitudSocio {
       await query(sql, [id]);
       return true;
     } catch (error) {
-      console.error('Error en SolicitudSocio.delete:', error);
+      logger.error('Error en SolicitudSocio.delete:', error);
       throw error;
     }
   }

@@ -2,6 +2,7 @@ import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import logger from '../config/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,7 +48,7 @@ export const generateQRCode = async (codigoReserva, bookingId) => {
     // Retornar ruta relativa
     return `/uploads/qrcodes/${filename}`;
   } catch (error) {
-    console.error('Error generando QR code:', error);
+    logger.error('Error generando QR code:', error);
     throw error;
   }
 };
@@ -80,7 +81,7 @@ export const generateQRCodeBase64 = async (codigoReserva, bookingId) => {
 
     return qrCodeDataURL;
   } catch (error) {
-    console.error('Error generando QR code base64:', error);
+    logger.error('Error generando QR code base64:', error);
     throw error;
   }
 };
@@ -100,7 +101,7 @@ export const verifyQRCode = (qrData) => {
 
     return data;
   } catch (error) {
-    console.error('Error verificando QR code:', error);
+    logger.error('Error verificando QR code:', error);
     throw new Error('QR code inválido o corrupto');
   }
 };
@@ -119,7 +120,7 @@ export const deleteQRCode = (qrPath) => {
     }
     return false;
   } catch (error) {
-    console.error('Error eliminando QR code:', error);
+    logger.error('Error eliminando QR code:', error);
     return false;
   }
 };

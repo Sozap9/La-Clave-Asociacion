@@ -1,4 +1,5 @@
 import { query, transaction } from "../config/database.js";
+import logger from '../config/logger.js';
 
 /**
  * Modelo Payment - Gestión de pagos
@@ -50,7 +51,7 @@ class Payment {
         ...paymentData,
       };
     } catch (error) {
-      console.error("Error en Payment.create:", error);
+      logger.error("Error en Payment.create:", error);
       throw error;
     }
   }
@@ -68,7 +69,7 @@ class Payment {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en Payment.findById:", error);
+      logger.error("Error en Payment.findById:", error);
       throw error;
     }
   }
@@ -86,7 +87,7 @@ class Payment {
       const results = await query(sql, [stripePaymentId]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en Payment.findByStripePaymentId:", error);
+      logger.error("Error en Payment.findByStripePaymentId:", error);
       throw error;
     }
   }
@@ -152,7 +153,7 @@ class Payment {
         pages: Math.ceil(total / limit),
       };
     } catch (error) {
-      console.error("Error en Payment.findBySocio:", error);
+      logger.error("Error en Payment.findBySocio:", error);
       throw error;
     }
   }
@@ -192,7 +193,7 @@ class Payment {
 
       return this.findById(id);
     } catch (error) {
-      console.error("Error en Payment.updateStatus:", error);
+      logger.error("Error en Payment.updateStatus:", error);
       throw error;
     }
   }
@@ -217,7 +218,7 @@ class Payment {
       const results = await query(sql);
       return results;
     } catch (error) {
-      console.error("Error en Payment.findPending:", error);
+      logger.error("Error en Payment.findPending:", error);
       throw error;
     }
   }
@@ -245,7 +246,7 @@ class Payment {
       const results = await query(sql, [meses]);
       return results;
     } catch (error) {
-      console.error("Error en Payment.getMonthlySummary:", error);
+      logger.error("Error en Payment.getMonthlySummary:", error);
       throw error;
     }
   }
@@ -297,7 +298,7 @@ class Payment {
 
       return summary;
     } catch (error) {
-      console.error("Error en Payment.getIncomeSummary:", error);
+      logger.error("Error en Payment.getIncomeSummary:", error);
       throw error;
     }
   }
@@ -322,7 +323,7 @@ class Payment {
       const results = await query(sql);
       return results;
     } catch (error) {
-      console.error("Error en Payment.getFailedForRetry:", error);
+      logger.error("Error en Payment.getFailedForRetry:", error);
       throw error;
     }
   }
@@ -346,7 +347,7 @@ class Payment {
       await query(sql, [minutosDelay, id]);
       return this.findById(id);
     } catch (error) {
-      console.error("Error en Payment.incrementRetry:", error);
+      logger.error("Error en Payment.incrementRetry:", error);
       throw error;
     }
   }
@@ -362,7 +363,7 @@ class Payment {
       const results = await query(sql, [id]);
       return results.affectedRows > 0;
     } catch (error) {
-      console.error("Error en Payment.delete:", error);
+      logger.error("Error en Payment.delete:", error);
       throw error;
     }
   }
@@ -387,7 +388,7 @@ class Payment {
       const results = await query(sql, [socioId, desde, hasta]);
       return results;
     } catch (error) {
-      console.error("Error en Payment.getCompletedByPeriod:", error);
+      logger.error("Error en Payment.getCompletedByPeriod:", error);
       throw error;
     }
   }

@@ -1,4 +1,5 @@
 import { query } from "../config/database.js";
+import logger from '../config/logger.js';
 
 /**
  * Modelo Socio - Manejo de la tabla socios
@@ -21,7 +22,7 @@ class Socio {
       const results = await query(sql, [id]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en findById:", error);
+      logger.error("Error en findById:", error);
       throw error;
     }
   }
@@ -43,7 +44,7 @@ class Socio {
       const results = await query(sql, [userId]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en findByUserId:", error);
+      logger.error("Error en findByUserId:", error);
       throw error;
     }
   }
@@ -59,7 +60,7 @@ class Socio {
       const results = await query(sql, [numeroSocio]);
       return results.length > 0 ? results[0] : null;
     } catch (error) {
-      console.error("Error en findByNumeroSocio:", error);
+      logger.error("Error en findByNumeroSocio:", error);
       throw error;
     }
   }
@@ -136,7 +137,7 @@ class Socio {
       // Obtener el socio recién creado
       return await this.findById(result.insertId);
     } catch (error) {
-      console.error("Error en create:", error);
+      logger.error("Error en create:", error);
       throw error;
     }
   }
@@ -179,7 +180,7 @@ class Socio {
 
       return await this.findById(id);
     } catch (error) {
-      console.error("Error en update:", error);
+      logger.error("Error en update:", error);
       throw error;
     }
   }
@@ -199,7 +200,7 @@ class Socio {
       await query(sql, [id]);
       return await this.findById(id);
     } catch (error) {
-      console.error("Error en cancel:", error);
+      logger.error("Error en cancel:", error);
       throw error;
     }
   }
@@ -243,7 +244,7 @@ class Socio {
 
       return await this.findById(id);
     } catch (error) {
-      console.error("Error en darDeBaja:", error);
+      logger.error("Error en darDeBaja:", error);
       throw error;
     }
   }
@@ -278,7 +279,7 @@ class Socio {
 
       return await this.findById(id);
     } catch (error) {
-      console.error("Error en reactivar:", error);
+      logger.error("Error en reactivar:", error);
       throw error;
     }
   }
@@ -295,7 +296,7 @@ class Socio {
       // En este caso, no eliminamos físicamente, solo cancelamos
       return true;
     } catch (error) {
-      console.error("Error en delete:", error);
+      logger.error("Error en delete:", error);
       throw error;
     }
   }
@@ -324,7 +325,7 @@ class Socio {
       `;
       return await query(sql);
     } catch (error) {
-      console.error('Error en getAllActive:', error);
+      logger.error('Error en getAllActive:', error);
       throw error;
     }
   }
@@ -428,7 +429,7 @@ class Socio {
         limit: limitNum,
       };
     } catch (error) {
-      console.error("Error en list:", error);
+      logger.error("Error en list:", error);
       throw error;
     }
   }
@@ -471,7 +472,7 @@ class Socio {
 
       return results;
     } catch (error) {
-      console.error("Error en search:", error);
+      logger.error("Error en search:", error);
       throw error;
     }
   }
@@ -496,7 +497,7 @@ class Socio {
       const results = await query(sql);
       return results;
     } catch (error) {
-      console.error("Error en getMorosos:", error);
+      logger.error("Error en getMorosos:", error);
       throw error;
     }
   }
@@ -515,7 +516,7 @@ class Socio {
       const total = result[0]?.total || 0;
       return total < limite;
     } catch (error) {
-      console.error("Error en puedeCrearNuevoSocio:", error);
+      logger.error("Error en puedeCrearNuevoSocio:", error);
       throw error;
     }
   }
@@ -541,7 +542,7 @@ class Socio {
 
       return this.findById(id);
     } catch (error) {
-      console.error("Error en registrarPagoExitoso:", error);
+      logger.error("Error en registrarPagoExitoso:", error);
       throw error;
     }
   }
@@ -578,7 +579,7 @@ class Socio {
 
       return this.findById(id);
     } catch (error) {
-      console.error("Error en incrementarPagosFallidos:", error);
+      logger.error("Error en incrementarPagosFallidos:", error);
       throw error;
     }
   }
@@ -602,7 +603,7 @@ class Socio {
 
       return this.findById(id);
     } catch (error) {
-      console.error("Error en marcarComoMoroso:", error);
+      logger.error("Error en marcarComoMoroso:", error);
       throw error;
     }
   }
@@ -639,7 +640,7 @@ class Socio {
         message: `Actualizado estado de morosidad de ${result.affectedRows} socios`,
       };
     } catch (error) {
-      console.error("Error en updateMorosidad:", error);
+      logger.error("Error en updateMorosidad:", error);
       throw error;
     }
   }
