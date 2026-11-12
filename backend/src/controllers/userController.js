@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import logger from '../config/logger.js';
 
 /**
- * @desc    Obtener perfil del usuario autenticado
+ * @desc    Mi perfil
  * @route   GET /api/users/profile
  * @access  Private
  */
@@ -33,7 +33,7 @@ export const getUserProfile = async (req, res) => {
       data: rows[0]
     });
   } catch (error) {
-    logger.error('❌ Error al obtener perfil:', error);
+    logger.error('Error al obtener perfil:', error);
     res.status(500).json({ 
       success: false,
       message: 'Error al obtener el perfil del usuario' 
@@ -42,7 +42,7 @@ export const getUserProfile = async (req, res) => {
 };
 
 /**
- * @desc    Actualizar perfil del usuario
+ * @desc    Editar mi perfil
  * @route   PUT /api/users/profile
  * @access  Private
  */
@@ -61,7 +61,7 @@ export const updateUserProfile = async (req, res) => {
       dni_back_url 
     } = req.body;
 
-    // Construir actualización dinámica
+    // Solo se actualizan los campos que llegan
     const fieldsToUpdate = [];
     const values = [];
 
@@ -155,7 +155,7 @@ export const updateUserProfile = async (req, res) => {
       data: updatedUser[0]
     });
   } catch (error) {
-    logger.error('❌ Error al actualizar perfil:', error);
+    logger.error('Error al actualizar perfil:', error);
     res.status(500).json({ 
       success: false,
       message: error.message || 'Error al actualizar el perfil' 
@@ -164,7 +164,7 @@ export const updateUserProfile = async (req, res) => {
 };
 
 /**
- * @desc    Cambiar contraseña del usuario
+ * @desc    Cambiar mi contraseña
  * @route   PUT /api/users/change-password
  * @access  Private
  */

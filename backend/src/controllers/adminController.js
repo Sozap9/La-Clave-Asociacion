@@ -14,11 +14,7 @@ import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
 import logger from "../config/logger.js"; 
 import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
 
-/**
- * ========================================
- * ESTADÍSTICAS Y DASHBOARD
- * ========================================
- */
+// Estadísticas y dashboard
 
 /**
  * Obtener estadísticas generales del sistema
@@ -26,7 +22,7 @@ import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js
  */
 export const getGeneralStats = async (req, res) => {
   try {
-    // Contar usuarios (SIN el admin — totalUsuarios solo cuenta básicos + socios)
+    // totalUsuarios no cuenta admins
     const usersSql = `
       SELECT 
         COUNT(CASE WHEN role = 'basico' THEN 1 END) as total_usuarios_basicos,
@@ -36,9 +32,6 @@ export const getGeneralStats = async (req, res) => {
     `;
     const usersResult = await query(usersSql);
 
-    // Contar eventos
-    // ── Arreglado: CCOUNT (typo) → COUNT, y fecha → fecha_evento
-    //    (la columna real en la tabla events se llama fecha_evento)
     const eventosSql = `
       SELECT 
         COUNT(CASE WHEN fecha_evento >= CURDATE() THEN 1 END) as eventos_proximos,
@@ -47,10 +40,8 @@ export const getGeneralStats = async (req, res) => {
     `;
     const eventosResult = await query(eventosSql);
 
-    // Total de entradas vendidas (no filas de reserva): una sola reserva
-    // puede incluir varias entradas (numero_entradas), así que sumamos esa
-    // columna en vez de contar registros, para que este número case con el
-    // "Asistencia" que se ve en cada evento individual.
+    // Se suman entradas (numero_entradas), no reservas, para cuadrar con la
+    // asistencia de cada evento
     const reservasSql = `
       SELECT 
         SUM(CASE WHEN estado IN ('confirmada', 'asistida') THEN numero_entradas ELSE 0 END) as reservas_activas
@@ -58,13 +49,8 @@ export const getGeneralStats = async (req, res) => {
     `;
     const reservasResult = await query(reservasSql);
 
-    // Total de socios y socios activos — se leen de la tabla `socios`,
-    // que es la fuente de verdad de la membresía, INDEPENDIENTEMENTE
-    // del role actual del usuario. En La Clave un admin puede seguir
-    // siendo socio a la vez (jerarquía de permisos, no exclusión de
-    // membresía) — por eso NO se filtra por role aquí. Ver updateUserRole:
-    // al promocionar a alguien a admin, se garantiza que conserve (o se
-    // le cree) su fila en `socios`, así nunca deja de contar como socio.
+    // Socios desde la tabla socios, sin filtrar por rol: un admin también es
+    // socio (ver updateUserRole)
     const sociosSql = `
       SELECT 
         COUNT(*) as total_socios,
@@ -79,7 +65,7 @@ export const getGeneralStats = async (req, res) => {
         totalEventos:
           eventosResult[0].eventos_proximos +
           eventosResult[0].eventos_realizados,
-        // Excluye admins a propósito — solo cuenta usuarios básicos y socios
+        // Sin admins
         totalUsuarios:
           usersResult[0].total_usuarios_basicos +
           usersResult[0].total_socios_role,
@@ -104,7 +90,7 @@ export const getGeneralStats = async (req, res) => {
  */
 export const getDashboardStats = async (req, res) => {
   try {
-    // 1. USUARIOS Y SOCIOS
+    // Usuarios y socios
     const usersSql = `
       SELECT 
         COUNT(CASE WHEN role = 'basico' THEN 1 END) as total_usuarios_basicos,
@@ -129,7 +115,7 @@ export const getDashboardStats = async (req, res) => {
 
     const solicitudesPendientes = await SolicitudSocio.countPendientes();
 
-    // 2. EVENTOS
+    // Eventos
     const eventosSql = `
       SELECT 
         COUNT(*) as total_eventos,
@@ -166,7 +152,7 @@ export const getDashboardStats = async (req, res) => {
     `;
     const proximosEventos = await query(proximosEventosSql);
 
-    // 3. RESERVAS
+    // Reservas
     const reservasSql = `
       SELECT 
         COUNT(*) as total_reservas,
@@ -181,7 +167,7 @@ export const getDashboardStats = async (req, res) => {
     `;
     const reservasStats = await query(reservasSql);
 
-    // 4. INGRESOS
+    // Ingresos
     const ingresosSql = `
       SELECT 
         SUM(CASE WHEN MONTH(fecha_pago) = MONTH(CURDATE()) AND YEAR(fecha_pago) = YEAR(CURDATE()) THEN amount ELSE 0 END) as ingresos_mes_actual,
@@ -217,7 +203,7 @@ export const getDashboardStats = async (req, res) => {
     `;
     const ingresosDiarios = await query(ingresosDiariosSql);
 
-    // 5. GALERÍA
+    // Galería
     let galeriaStats = [
       {
         total_folders: 0,
@@ -244,7 +230,7 @@ export const getDashboardStats = async (req, res) => {
       logger.debug("Tablas de galería no existen, usando valores por defecto");
     }
 
-    // 6. VENUES Y ARTISTS
+    // Salas y artistas
     let venuesStats = [{ total_venues: 0, venues_activos: 0 }];
     let artistsStats = [
       {
@@ -281,7 +267,7 @@ export const getDashboardStats = async (req, res) => {
       logger.debug("Tabla artists no existe");
     }
 
-    // 7. ACTIVIDAD RECIENTE
+    // Actividad reciente
     const tableCheckSql = `SHOW TABLES LIKE 'activity_log'`;
     const tableExists = await query(tableCheckSql);
 
@@ -710,15 +696,9 @@ export const getAdminMenu = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * GESTIÓN DE USUARIOS
- * ========================================
- */
+// Gestión de usuarios
 
-/**
- * Obtener detalles de un usuario específico
- */
+// Detalle de un usuario
 export const getUserDetails = async (req, res) => {
   try {
     const { id } = req.params;
@@ -746,7 +726,7 @@ export const getUserDetails = async (req, res) => {
 
     const user = users[0];
 
-    // Si es socio, obtener estadísticas de reservas
+    // Si es socio, añade sus estadísticas de reservas
     let bookingStats = null;
     if (user.socio_id) {
       const statsSql = `
@@ -778,11 +758,7 @@ export const getUserDetails = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * GESTIÓN DE SOCIOS
- * ========================================
- */
+// Gestión de socios
 
 /**
  * Listar todos los socios
@@ -792,7 +768,7 @@ export const listSocios = async (req, res) => {
   try {
     const { page = 1, limit = 20, estado, filtro, search } = req.query;
 
-    // Pestañas del panel de admin. Cualquier otro valor se ignora.
+    // Pestañas del panel; cualquier otro valor se ignora
     const filtrosValidos = ["socio", "inactivo", "admin", "all"];
 
     const result = await Socio.list({
@@ -860,14 +836,7 @@ export const listUsers = async (req, res) => {
 };
 
 /**
- * Crear socio manualmente a partir de un usuario básico existente
- * Sin pago previo — pensado para altas administrativas (invitados,
- * casos especiales, etc.)
- *
- * numero_socio y fecha_alta los rellena automáticamente el trigger
- * before_socio_insert de la tabla `socios` — aquí NO se generan a mano
- * para no duplicar esa lógica ni arriesgarnos a que choquen.
- *
+ * Alta manual de socio a partir de un usuario básico, sin pago
  * POST /api/admin/socios
  * Body: { user_id, cuota_mensual?, notas_admin? }
  */
@@ -875,8 +844,7 @@ export const createSocioManual = async (req, res) => {
   try {
     const { user_id, cuota_mensual = 10.0, notas_admin } = req.body;
 
-    // El usuario debe existir y ser 'basico' — no tiene sentido
-    // "convertir en socio" a alguien que ya es socio o admin
+    // Solo usuarios básicos
     const user = await User.findById(user_id);
     if (!user) {
       return res.status(404).json({
@@ -891,8 +859,7 @@ export const createSocioManual = async (req, res) => {
       });
     }
 
-    // user_id es UNIQUE en socios — comprobar antes para dar un mensaje
-    // claro en vez de un error crudo de MySQL
+    // user_id es UNIQUE en socios: se comprueba antes para dar un error claro
     const socioExistente = await Socio.findByUserId(user_id);
     if (socioExistente) {
       return res.status(409).json({
@@ -901,11 +868,8 @@ export const createSocioManual = async (req, res) => {
       });
     }
 
-    // Generamos el numero_socio aquí explícitamente (Socio.generarNumeroSocio)
-    // en vez de dejarlo en NULL para el trigger — el trigger calcula el
-    // siguiente número con COUNT(*) en vez de MAX(...), y puede intentar
-    // repetir un número ya usado si alguna vez hubo bajas/eliminaciones
-    // (nos dio un "Duplicate entry" real en producción).
+    // numero_socio se genera aquí: el trigger usa COUNT(*) y repetía números
+    // tras bajas (Duplicate entry en producción)
     const numero_socio = await Socio.generarNumeroSocio();
 
     const insertResult = await query(
@@ -914,12 +878,11 @@ export const createSocioManual = async (req, res) => {
       [user_id, numero_socio, parseFloat(cuota_mensual), notas_admin || null],
     );
 
-    // Cambiar el rol del usuario a 'socio'
     await query("UPDATE users SET role = 'socio' WHERE id = ?", [user_id]);
 
     const nuevoSocio = await Socio.findById(insertResult.insertId);
 
-    // Email de bienvenida (no bloquea la respuesta si falla ni si tarda)
+    // Email de bienvenida sin bloquear la respuesta
     User.findById(user_id).then((updatedUser) => {
       EmailService.sendSolicitudAprobada(updatedUser).catch((emailError) => {
         logger.error(
@@ -991,11 +954,8 @@ export const getSocioDetails = async (req, res) => {
     `;
     const bookings = await query(bookingsSql, [id]);
 
-    // Respuestas que dio en el formulario de registro. La solicitud no
-    // guarda el user_id, así que se enlaza por email o DNI con la
-    // solicitud aprobada. Los socios dados de alta a mano no tienen.
-    // Si falla (p. ej. falta una columna en una base de datos antigua),
-    // la ficha se sigue mostrando sin este bloque.
+    // Respuestas del registro. La solicitud no guarda user_id: se enlaza por
+    // email o DNI. Si falla, la ficha se muestra sin este bloque.
     let solicitud = null;
     if (user) {
       try {
@@ -1105,8 +1065,7 @@ export const deleteSocio = async (req, res) => {
 
     await Socio.darDeBaja(id, motivo || "Baja administrativa");
 
-    // El usuario ya se inactiva dentro de Socio.darDeBaja(); este paso es redundante
-    // pero lo dejamos con muro de protección por si la lógica cambia.
+    // Redundante con Socio.darDeBaja(), por si esa lógica cambia
     if (socio.user_id) {
       try {
         await User.deactivate(socio.user_id);
@@ -1115,7 +1074,7 @@ export const deleteSocio = async (req, res) => {
       }
     }
 
-    // No detener la desactivación si no hay reservas o hay problema de consulta
+    // Un fallo aquí no detiene la baja
     try {
       await query(
         `
@@ -1162,10 +1121,10 @@ export const deleteSocioPermanent = async (req, res) => {
       });
     }
 
-    // Eliminar el registro de socio (cascade en pagos/reservas)
+    // Borra el socio (cascade en pagos y reservas)
     await query("DELETE FROM socios WHERE id = ?", [id]);
 
-    // Intentar eliminar el usuario completo (puede fallar por FK)
+    // Puede fallar por FK; entonces se hace soft delete
     try {
       await User.delete(socio.user_id);
     } catch (deleteError) {
@@ -1225,24 +1184,18 @@ export const reactivateSocio = async (req, res) => {
 };
 
 /**
- * Listar socios morosos con filtros
- * GET /api/admin/socios/morosos
- *
- * Query params:
- * - search: búsqueda por nombre, apellidos, email, número socio
- * - severidad: 'leve' | 'moderado' | 'grave' | 'all'
+ * Listar socios morosos
+ * GET /api/admin/socios/morosos?search=&severidad=leve|moderado|grave|all
  */
 export const listMorosos = async (req, res) => {
   try {
     const { search, severidad } = req.query;
 
-    // Construir condiciones WHERE
     const conditions = [
       "(s.estado = 'moroso' OR DATEDIFF(CURDATE(), s.ultimo_pago) > 30)",
     ];
     const params = [];
 
-    // Filtro por búsqueda (nombre, email, número socio)
     if (search && search.trim()) {
       conditions.push(
         "(u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ? OR s.numero_socio LIKE ?)",
@@ -1251,10 +1204,8 @@ export const listMorosos = async (req, res) => {
       params.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
-    // Construir WHERE clause
     const whereClause = "WHERE " + conditions.join(" AND ");
 
-    // Query principal con TODOS los campos necesarios
     const sql = `
       SELECT 
         s.id, 
@@ -1279,7 +1230,6 @@ export const listMorosos = async (req, res) => {
 
     let morosos = await query(sql, params);
 
-    // Filtro por severidad
     if (severidad && severidad !== "all") {
       morosos = morosos.filter((socio) => {
         const dias = socio.dias_morosidad || 0;
@@ -1309,11 +1259,7 @@ export const listMorosos = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * GESTIÓN DE EVENTOS
- * ========================================
- */
+// Gestión de eventos
 
 /**
  * Obtener estadísticas de eventos
@@ -1338,7 +1284,7 @@ export const getEventsStats = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      _debug_version: "getEventsStats-fix-16jul-1", // ← marca temporal, quitar cuando confirmemos que despliega bien
+      _debug_version: "getEventsStats-fix-16jul-1", // temporal, pendiente de quitar
       data: {
         total_eventos: stats.total_eventos,
         publicados: stats.publicados,
@@ -1359,7 +1305,7 @@ export const getEventsStats = async (req, res) => {
 };
 
 /**
- * Listar TODOS los eventos (admin - sin filtro de estado)
+ * Listar todos los eventos, sin filtrar por estado
  * GET /api/admin/events
  */
 export const listAllEvents = async (req, res) => {
@@ -1493,14 +1439,10 @@ export const getEventDetailsAdmin = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * GESTIÓN DE RESERVAS
- * ========================================
- */
+// Gestión de reservas
 
 /**
- * Listar TODAS las reservas (admin)
+ * Listar todas las reservas
  * GET /api/admin/bookings
  */
 export const listAllBookings = async (req, res) => {
@@ -1630,14 +1572,8 @@ export const getBookingDetails = async (req, res) => {
 };
 
 /**
- * Regenerar el QR (en base64, persistente) y reenviar el email de
- * confirmación con la entrada a un socio.
- *
- * Pensado sobre todo para las reservas confirmadas ANTES del cambio a
- * QR en base64, cuyo qr_code_url sigue apuntando a un PNG en disco que
- * Railway ya borró en algún reinicio — para esas, el QR nunca va a
- * cargar en "Mis Entradas" hasta que se regenere aquí.
- *
+ * Regenerar el QR en base64 y reenviar la entrada por email.
+ * Para reservas antiguas cuyo PNG en disco borró Railway.
  * POST /api/admin/bookings/:id/reenviar
  */
 export const resendBookingTicket = async (req, res) => {
@@ -1670,8 +1606,7 @@ export const resendBookingTicket = async (req, res) => {
       });
     }
 
-    // Regenerar el QR como base64 (mismo formato que usa el check-in:
-    // LACLAVE-{bookingId}-{codigo_acceso})
+    // Mismo formato que el check-in: LACLAVE-{bookingId}-{codigo_acceso}
     const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
     const qrCode = await generateQRCodeBase64(qrData, booking.id);
     await Booking.saveQRCode(booking.id, qrCode);
@@ -1689,7 +1624,7 @@ export const resendBookingTicket = async (req, res) => {
       ipAddress: getIpFromRequest(req),
     });
 
-    logger.info("📧 Entrada reenviada con QR regenerado:", {
+    logger.info("Entrada reenviada con QR regenerado:", {
       bookingId: booking.id,
       userId: user.id,
     });
@@ -1708,15 +1643,8 @@ export const resendBookingTicket = async (req, res) => {
 };
 
 /**
- * Enviar una entrada de invitación (coste 0€) a un socio elegido por el
- * admin. Crea una reserva "confirmada" igual que una compra normal —
- * mismo código, mismo QR, mismo check-in — pero forzando precio 0€ sin
- * importar el precio real del evento/tanda, y SIN comprobar el aforo:
- * el admin puede invitar aunque el evento esté completo. Además, la
- * invitación es un asiento DE CORTESÍA A MAYORES del aforo de socios:
- * no resta plazas disponibles para el público (marcada con
- * es_invitacion=1 en `bookings`, excluida del cálculo de aforo real
- * en `Event.js`).
+ * Invitación (0 €) para un socio: reserva confirmada normal, sin mirar el
+ * aforo y sin restar plazas (es_invitacion=1, excluida en Event.js).
  * POST /api/admin/bookings/invitacion
  * Body: { socio_id, event_id, numero_entradas? }
  */
@@ -1754,8 +1682,7 @@ export const sendBookingInvitation = async (req, res) => {
       });
     }
 
-    // Mismo cálculo de fin de evento que en la reserva normal (createBooking)
-    // para no poder invitar a un evento que ya ha terminado.
+    // Mismo fin de evento que createBooking: no se invita a eventos terminados
     const fechaEvento = new Date(event.fecha_evento);
     const [horaInicioH, horaInicioM] = (event.hora_evento || "00:00:00")
       .split(":")
@@ -1780,7 +1707,7 @@ export const sendBookingInvitation = async (req, res) => {
       });
     }
 
-    // Evitar duplicar: si el socio ya tiene una reserva activa para este evento
+    // Una sola reserva activa por socio y evento
     const existingBooking = await Booking.findBySocioAndEvent(socio.id, event_id);
     if (existingBooking) {
       return res.status(409).json({
@@ -1789,11 +1716,9 @@ export const sendBookingInvitation = async (req, res) => {
       });
     }
 
-    // A propósito NO se llama a Event.checkAvailability: el admin puede
-    // invitar aunque el aforo esté completo.
+    // Sin Event.checkAvailability: se puede invitar con el aforo completo
 
-    // tier_id vigente solo para trazabilidad (a qué tanda pertenecería);
-    // el precio se fuerza a 0 independientemente del precio real.
+    // tier_id solo para saber la tanda; el precio es siempre 0
     const { tier_id: tierId } = await EventTicketTier.resolveActivePrice(
       event_id,
       event.precio_socio,
@@ -1819,12 +1744,8 @@ export const sendBookingInvitation = async (req, res) => {
 
       const bookingId = result.insertId;
 
-      // Decisión de negocio: una invitación es un asiento de cortesía A
-      // MAYORES del aforo de socios, no le resta sitio a nadie. Por eso NO
-      // se toca entradas_disponibles (lo que ve la web pública / lo que usa
-      // el check de aforo real en Event.js, que también excluye las filas
-      // con es_invitacion=1). Sí se incrementa entradas_reservadas, que es
-      // solo un contador informativo para las estadísticas del admin.
+      // No se toca entradas_disponibles (la invitación no ocupa plaza);
+      // entradas_reservadas es solo informativo
       try {
         await conn.execute(
           `UPDATE events
@@ -1845,7 +1766,6 @@ export const sendBookingInvitation = async (req, res) => {
       return rows[0];
     });
 
-    // QR igual que en una reserva/entrada normal
     let bookingWithQR = booking;
     try {
       const qrData = `LACLAVE-${booking.id}-${booking.codigo_acceso}`;
@@ -1855,15 +1775,12 @@ export const sendBookingInvitation = async (req, res) => {
         booking.id,
       ]);
     } catch (qrError) {
-      logger.error("❌ Error generando QR de invitación:", qrError);
+      logger.error("Error generando QR de invitación:", qrError);
     }
     bookingWithQR = await Booking.findById(booking.id);
 
-    // Registro como pago de 0€ para que las estadísticas del evento cuadren
-    // igual que con una entrada gratuita normal. Se reutiliza
-    // tipo_pago='entrada_evento' (valor ya probado en producción) y la
-    // distinción de que es una invitación de admin queda en descripcion
-    // y metadata, sin tocar el esquema de la tabla.
+    // Pago de 0 € para que cuadren las estadísticas. Se marca como invitación
+    // en descripcion y metadata, sin cambiar el esquema.
     try {
       await query(
         `INSERT INTO payments (
@@ -1886,15 +1803,14 @@ export const sendBookingInvitation = async (req, res) => {
       logger.error("Error al registrar invitación:", paymentErr);
     }
 
-    // Email al socio: mismo flujo que una reserva normal, con los textos
-    // en modo "invitación" (ver EmailService.sendBookingConfirmation)
+    // Mismo email que una reserva, con textos de invitación
     try {
       const user = await User.findById(socio.user_id);
       if (user) {
         await EmailService.sendBookingConfirmation(bookingWithQR, event, user, true);
       }
     } catch (emailError) {
-      logger.error("❌ Error enviando email de invitación:", emailError);
+      logger.error("Error enviando email de invitación:", emailError);
     }
 
     registrarActividad({
@@ -1906,7 +1822,7 @@ export const sendBookingInvitation = async (req, res) => {
       ipAddress: getIpFromRequest(req),
     });
 
-    logger.info("🎁 Invitación enviada:", {
+    logger.info("Invitación enviada:", {
       bookingId: booking.id,
       socioId: socio.id,
       eventId: event_id,
@@ -2016,20 +1932,10 @@ export const getBookingsStats = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * GESTIÓN DE PAGOS
- * ========================================
- */
+// Gestión de pagos
 
 /**
- * Obtener pagos (entradas) de un evento específico
- * GET /api/admin/events/:eventId/payments
- *
- * Nueva lógica: lista todas las entradas vendidas del evento con sus pagos
- */
-/**
- * Obtener pagos (entradas) de un evento específico
+ * Entradas vendidas de un evento con sus pagos
  * GET /api/admin/events/:eventId/payments
  */
 export const getEventPayments = async (req, res) => {
@@ -2043,7 +1949,6 @@ export const getEventPayments = async (req, res) => {
       });
     }
 
-    // Paginación y filtros
     const pageNum = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limitNum = Math.min(
       100,
@@ -2060,7 +1965,6 @@ export const getEventPayments = async (req, res) => {
       limit: limitNum,
     });
 
-    // 1. Verificar que el evento existe
     const eventResult = await query(
       "SELECT id, titulo, fecha_evento, precio_socio FROM events WHERE id = ?",
       [eventId],
@@ -2075,7 +1979,7 @@ export const getEventPayments = async (req, res) => {
 
     const event = eventResult[0];
 
-    // 2. Stats globales del evento (sin filtros)
+    // Estadísticas del evento, sin filtros
     const allEntries = await query(
       `SELECT b.estado, b.numero_entradas, COALESCE(b.precio_pagado, 0) AS precio_pagado
        FROM bookings b
@@ -2083,10 +1987,7 @@ export const getEventPayments = async (req, res) => {
       [eventId],
     );
 
-    // "Confirmadas" = ha pagado, haya hecho check-in o no todavía (por
-    // eso cuenta 'confirmada' + 'asistida' — si solo contara 'confirmada',
-    // en cuanto la gente empieza a entrar al evento con el QR el número
-    // bajaría en vez de reflejar quién ha pagado de verdad).
+    // Confirmadas = confirmada + asistida, para que no baje al hacer check-in
     const entradasConfirmadas = allEntries.filter(
       (e) => e.estado === "confirmada" || e.estado === "asistida",
     );
@@ -2108,21 +2009,17 @@ export const getEventPayments = async (req, res) => {
       pagos_fallidos: allEntries.filter((e) => e.estado === "cancelada").length,
       pagos_pendientes: allEntries.filter((e) => e.estado === "esperando_pago")
         .length,
-      // Dinero real cobrado: suma de precio_pagado de las reservas que
-      // realmente llegaron a pagarse (confirmada + asistida). Las
-      // esperando_pago/canceladas no han pagado nada, no cuentan.
+      // Cobrado = precio_pagado de confirmadas y asistidas
       total_ingresos: entradasConfirmadas.reduce(
         (sum, e) => sum + parseFloat(e.precio_pagado || 0),
         0,
       ),
     };
 
-    // 3. Query con filtros
     const conditions = ["b.event_id = ?"];
     const params = [eventId];
 
-    // El frontend manda directamente el estado del booking:
-    //   "confirmada" | "cancelada" | "esperando_pago" | "en_lista_espera"
+    // estado: confirmada | cancelada | esperando_pago | en_lista_espera
     if (estado && estado !== "all") {
       conditions.push("b.estado = ?");
       params.push(estado);
@@ -2200,7 +2097,6 @@ export const getMonthlyRevenue = async (req, res) => {
     const currentMonth = now.getMonth() + 1; // 1-12
     const currentYear = now.getFullYear();
 
-    // Datos mensuales del año solicitado
     const sqlMonthly = `
       SELECT
         DATE_FORMAT(fecha_pago, '%Y-%m-01') as mes,
@@ -2302,16 +2198,14 @@ export const listPayments = async (req, res) => {
   try {
     const { page = 1, limit = 20, search, estado, tipo_pago } = req.query;
 
-    // Validar paginación
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const offset = (pageNum - 1) * limitNum;
 
-    // Construir condiciones WHERE
     const conditions = [];
     const params = [];
 
-    // Búsqueda general (payment intent ID, invoice ID, nombre, email)
+    // Busca en payment intent, factura, nombre y email
     if (search && search.trim()) {
       conditions.push(
         "(p.stripe_payment_intent_id LIKE ? OR p.stripe_invoice_id LIKE ? OR u.nombre LIKE ? OR u.apellidos LIKE ? OR u.email LIKE ?)",
@@ -2326,13 +2220,11 @@ export const listPayments = async (req, res) => {
       );
     }
 
-    // Filtro por estado (exitoso, fallido, pendiente)
     if (estado) {
       conditions.push("p.estado = ?");
       params.push(estado);
     }
 
-    // Filtro por tipo_pago/tipo (cuota_mensual, renovacion, evento, etc.)
     if (tipo_pago) {
       conditions.push("p.tipo_pago = ?");
       params.push(tipo_pago);
@@ -2341,7 +2233,6 @@ export const listPayments = async (req, res) => {
     const whereClause =
       conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
 
-    // SQL con columnas CORRECTAS según tu BD
     const sql = `
       SELECT 
         p.id, 
@@ -2369,7 +2260,6 @@ export const listPayments = async (req, res) => {
 
     const payments = await query(sql, params);
 
-    // Contar total con los mismos filtros
     const countSql = `SELECT COUNT(*) as total FROM payments p ${whereClause}`;
     const countResult = await query(countSql, params);
     const total = countResult[0].total;
@@ -2397,11 +2287,7 @@ export const listPayments = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * GALERÍA Y ACTIVIDAD
- * ========================================
- */
+// Galería y actividad
 
 /**
  * Obtener estadísticas de galería
@@ -2432,7 +2318,7 @@ export const getRecentActivity = async (req, res) => {
   try {
     const { limit = 50 } = req.query;
 
-    // Validar y sanitizar el limit (entre 1 y 200)
+    // limit entre 1 y 200
     const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
 
     const sql = `
@@ -2464,16 +2350,11 @@ export const getRecentActivity = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * EXPORTACIONES CSV
- * ========================================
- */
+// Exportaciones PDF
 
 /**
- * Obtener lista de eventos para el selector del export de reservas
+ * Eventos para el selector de la exportación de reservas, sin paginar
  * GET /api/admin/export/events-selector
- * Devuelve id, titulo, fecha_evento ordenados por fecha_evento DESC sin cap de paginación
  */
 export const getEventsForExportSelector = async (req, res) => {
   try {
@@ -2497,7 +2378,6 @@ export const getEventsForExportSelector = async (req, res) => {
  */
 export const exportSocios = async (req, res) => {
   try {
-    // Nº socio, nombre completo, email, teléfono, DNI, fecha nacimiento, fecha alta
     const sql = `
       SELECT 
         s.numero_socio,
@@ -2566,7 +2446,7 @@ export const exportReservas = async (req, res) => {
   try {
     const { event_id } = req.query;
 
-    // Si hay event_id, obtener el título del evento para el encabezado del PDF
+    // Con event_id, el título del evento va en la cabecera
     let eventTitle = null;
     if (event_id) {
       const eventRows = await query('SELECT titulo FROM events WHERE id = ?', [event_id]);
@@ -2575,10 +2455,8 @@ export const exportReservas = async (req, res) => {
       }
     }
 
-    // Una única línea por socio+evento: la de mayor prioridad de estado.
-    // Prioridad: asistida(3) > confirmada(2) > pendiente(1) > cancelada(0).
-    // Si hay empate de prioridad, se toma la reserva más reciente (mayor id).
-    // Orden final del PDF: activas primero, canceladas al final.
+    // Una fila por socio y evento: asistida > confirmada > pendiente > cancelada;
+    // si empatan, la más reciente
     let sql = `
       SELECT 
         b.codigo_acceso as codigo_reserva,
@@ -2636,7 +2514,7 @@ export const exportReservas = async (req, res) => {
       params.push(event_id);
     }
 
-    // Activas primero, canceladas al final; dentro de cada grupo por fecha evento desc
+    // Activas primero, canceladas al final; por fecha descendente
     sql += " ORDER BY CASE b.estado WHEN 'cancelada' THEN 1 ELSE 0 END ASC, e.fecha_evento DESC, b.created_at DESC";
 
     const reservas = await query(sql, params);
@@ -2700,7 +2578,6 @@ export const exportReservas = async (req, res) => {
  */
 export const exportUsuarios = async (req, res) => {
   try {
-    // Consulta para obtener todos los usuarios
     const sql = `
       SELECT 
         CONCAT_WS(' ', u.nombre, u.apellidos) as nombre,
@@ -2729,7 +2606,6 @@ export const exportUsuarios = async (req, res) => {
       });
     }
 
-    // Estadísticas rápidas
     const activos = usuarios.filter((u) => u.estado === "Activo").length;
     const socios = usuarios.filter((u) => u.role === "socio").length;
     const admins = usuarios.filter((u) => u.role === "admin").length;
@@ -2802,10 +2678,7 @@ export const exportUsuarios = async (req, res) => {
  */
 export const exportEventos = async (req, res) => {
   try {
-    // Nombre evento, fecha, hora, ubicación, aforo y entradas por estado.
-    // Se suman ENTRADAS (numero_entradas), no reservas: una reserva puede
-    // incluir varias entradas. "Reservadas" = confirmadas + asistidas, el
-    // mismo criterio que la lista de eventos del panel de admin.
+    // Se suman entradas, no reservas. Reservadas = confirmadas + asistidas.
     const sql = `
       SELECT 
         e.titulo,
@@ -2887,17 +2760,7 @@ export const exportEventos = async (req, res) => {
   }
 };
 
-/**
- * ========================================
- * GESTIÓN DE ROLES Y APROBACIONES
- * ========================================
- */
-
-/**
- * ========================================
- * GESTIÓN DE SOLICITUDES DE SOCIO        ✨ NUEVO
- * ========================================
- */
+// Gestión de solicitudes de socio
 
 /**
  * Listar solicitudes con filtros y paginación
@@ -2949,7 +2812,7 @@ export const getSolicitudDetails = async (req, res) => {
 };
 
 /**
- * Aprobar solicitud → crea usuario socio + entrada en socios
+ * Aprobar solicitud: crea el usuario y su fila en socios
  * PUT /api/admin/solicitudes/:id/aprobar
  */
 export const aprobarSolicitud = async (req, res) => {
@@ -2970,7 +2833,6 @@ export const aprobarSolicitud = async (req, res) => {
       });
     }
 
-    // Comprobar duplicados en users
     const emailExiste = await User.emailExists(solicitud.email);
     if (emailExiste) {
       return res.status(409).json({
@@ -2980,11 +2842,10 @@ export const aprobarSolicitud = async (req, res) => {
       });
     }
 
-   // Generar username automáticamente a partir del email (mismo criterio
-    // que User.create()), ya que la columna sigue siendo NOT NULL UNIQUE
+    // username es NOT NULL UNIQUE: se genera del email, como en User.create()
     const username = `${solicitud.email.split('@')[0]}_${Date.now().toString(36)}`;
 
-    // Crear usuario directamente con el password_hash ya generado
+    // La solicitud ya trae el password_hash
     const createUserSql = `
       INSERT INTO users (
         username, email, password_hash, nombre, apellidos,
@@ -3008,9 +2869,7 @@ export const aprobarSolicitud = async (req, res) => {
 
     const newUserId = userResult.insertId;
 
-    // Crear entrada en socios (membresía gratuita). numero_socio generado
-    // aquí explícitamente — ver nota en Socio.generarNumeroSocio sobre
-    // el bug del trigger (COUNT en vez de MAX).
+    // Membresía gratuita; numero_socio generado aquí (ver Socio.generarNumeroSocio)
     const numeroSocioNuevo = await Socio.generarNumeroSocio();
     await query(
       `INSERT INTO socios (user_id, numero_socio, stripe_customer_id, estado, cuota_mensual, fecha_alta)
@@ -3018,10 +2877,9 @@ export const aprobarSolicitud = async (req, res) => {
       [newUserId, numeroSocioNuevo],
     );
 
-    // Marcar solicitud como aprobada
     await SolicitudSocio.aprobar(parseInt(id), adminId);
 
-    // Email de bienvenida al nuevo socio (no bloquea la respuesta)
+    // Email de bienvenida sin bloquear la respuesta
     const newUser = await User.findById(newUserId);
     EmailService.sendSolicitudAprobada(newUser).catch((emailError) => {
       logger.error("Error al enviar email solicitud-aprobada:", emailError);
@@ -3160,7 +3018,7 @@ export const deleteSolicitud = async (req, res) => {
 };
 
 /**
- * Contar solicitudes pendientes (badge sidebar)
+ * Solicitudes pendientes (contador del menú)
  * GET /api/admin/solicitudes/pendientes/count
  */
 export const getPendientesCount = async (req, res) => {
@@ -3201,13 +3059,8 @@ export const updateUserRole = async (req, res) => {
       });
     }
 
-    // En La Clave, un admin siempre es también socio — la jerarquía de
-    // roles (basico < socio < admin) da permisos crecientes, pero no debe
-    // hacer perder la membresía. Si se promociona a 'admin' y todavía no
-    // tiene fila en `socios`, se la creamos aquí, con numero_socio generado
-    // explícitamente (ver nota en Socio.generarNumeroSocio sobre el bug
-    // del trigger). Si ya la tenía, no se toca — se conserva tal cual
-    // (cuota, numero_socio, historial...).
+    // Un admin también es socio: al promocionarlo se le crea la fila en
+    // socios si no la tiene; si ya existe, no se toca
     if (role === "admin") {
       const socioExistente = await Socio.findByUserId(id);
       if (!socioExistente) {
@@ -3250,7 +3103,7 @@ export const exportIngresosMensuales = async (req, res) => {
     const year  = parseInt(req.query.year  || now.getFullYear(),  10);
     const month = parseInt(req.query.month || (now.getMonth() + 1), 10);
 
-    // --- 1. Resumen del mes ---
+    // Resumen del mes
     const sqlResumen = `
       SELECT
         SUM(COALESCE(amount, 0)) as total_ingresos,
@@ -3260,7 +3113,7 @@ export const exportIngresosMensuales = async (req, res) => {
     `;
     const [resumen] = await query(sqlResumen, [month, year]);
 
-    // --- 2. Desglose por evento ---
+    // Desglose por evento
     const sqlEventos = `
       SELECT
         e.titulo,
@@ -3285,7 +3138,6 @@ export const exportIngresosMensuales = async (req, res) => {
     const formatCurrency = (v) =>
       new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(parseFloat(v) || 0);
 
-    // === PDF ===
     const doc = new PDFDocument({
       size: 'A4',
       layout: 'portrait',
@@ -3299,9 +3151,9 @@ export const exportIngresosMensuales = async (req, res) => {
     );
     doc.pipe(res);
 
-    const pageWidth = doc.page.width - 100; // left + right margins = 100
+    const pageWidth = doc.page.width - 100; // márgenes de 50
 
-    // === ENCABEZADO ===
+    // Cabecera
     doc
       .fontSize(20)
       .font('Helvetica-Bold')
@@ -3324,13 +3176,12 @@ export const exportIngresosMensuales = async (req, res) => {
         { align: 'center' },
       );
 
-    // Línea separadora
     doc.moveDown(0.8);
     const lineY = doc.y;
     doc.moveTo(50, lineY).lineTo(50 + pageWidth, lineY).strokeColor('#6366f1').lineWidth(1.5).stroke();
     doc.moveDown(1.2);
 
-    // === RESUMEN DEL MES ===
+    // Resumen
     doc
       .fontSize(13)
       .font('Helvetica-Bold')
@@ -3339,7 +3190,6 @@ export const exportIngresosMensuales = async (req, res) => {
 
     doc.moveDown(0.6);
 
-    // Caja resumen
     const boxY = doc.y;
     const boxH = 54;
     doc.rect(50, boxY, pageWidth, boxH).fill('#f5f3ff');
@@ -3366,7 +3216,7 @@ export const exportIngresosMensuales = async (req, res) => {
     doc.y = boxY + boxH + 20;
     doc.moveDown(0.8);
 
-    // === DESGLOSE POR EVENTO ===
+    // Tabla por evento
     doc
       .fontSize(13)
       .font('Helvetica-Bold')
@@ -3387,7 +3237,6 @@ export const exportIngresosMensuales = async (req, res) => {
       const colWidths  = { evento: 240, fecha: 100, pagos: 80, ingresos: 100 };
       const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
 
-      // Cabecera tabla
       doc
         .rect(tableLeft, tableTop - 4, totalWidth, 22)
         .fillAndStroke('#6366f1', '#6366f1');
@@ -3401,7 +3250,6 @@ export const exportIngresosMensuales = async (req, res) => {
 
       doc.moveDown(1.4);
 
-      // Filas de datos
       doc.font('Helvetica').fontSize(9).fillColor('#111111');
 
       let totalEventos = 0;
@@ -3435,7 +3283,6 @@ export const exportIngresosMensuales = async (req, res) => {
         doc.moveDown(0.8);
       });
 
-      // Fila de total
       const totalRowY = doc.y + 4;
       doc.rect(tableLeft, totalRowY - 4, totalWidth, 22).fill('#6366f1');
       doc.fontSize(9).font('Helvetica-Bold').fillColor('#ffffff');
@@ -3449,7 +3296,7 @@ export const exportIngresosMensuales = async (req, res) => {
       doc.text(formatCurrency(totalEventos), cx + 5, totalRowY, { width: colWidths.ingresos, align: 'right' });
     }
 
-    // === PIE DE PÁGINA ===
+    // Pie
     doc
       .fontSize(8)
       .font('Helvetica')
@@ -3474,11 +3321,6 @@ export const exportIngresosMensuales = async (req, res) => {
 };
 
 
-/**
- * ========================================
- * EXPORT DEFAULT
- * ========================================
- */
 export default {
   getGeneralStats,
   getDashboardStats,

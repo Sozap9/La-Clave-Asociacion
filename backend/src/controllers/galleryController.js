@@ -2,11 +2,7 @@ import Gallery from '../models/Gallery.js';
 import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js';
 import logger from '../config/logger.js';
 
-/**
- * ========================================
- * FOLDERS - Endpoints de carpetas/álbumes
- * ========================================
- */
+// Álbumes
 
 export const listFolders = async (req, res) => {
   try {
@@ -195,9 +191,7 @@ export const deleteFolder = async (req, res) => {
   }
 };
 
-/**
- * Endpoints de imágenes
- */
+// Imágenes de un álbum
 
 export const listFolderImages = async (req, res) => {
   try {
@@ -381,9 +375,7 @@ export const reorderImages = async (req, res) => {
   }
 };
 
-/**
- * MÉTODOS NUEVOS - Gestión Global de Imágenes
- */
+// Imágenes de todos los álbumes
 
 export const getAllImages = async (req, res) => {
   try {
@@ -487,9 +479,7 @@ export const getFeaturedImages = async (req, res) => {
   }
 };
 
-/**
- * ESTADÍSTICAS Y UTILIDADES
- */
+// Estadísticas
 
 export const getStats = async (req, res) => {
   try {
@@ -529,9 +519,7 @@ export const getFeaturedFolders = async (req, res) => {
   }
 };
 
-/**
- * ARTISTS - Endpoints de gestión de artistas
- */
+// Artistas etiquetados en las imágenes
 
 export const getAllImagesWithArtists = async (req, res) => {
   try {
@@ -770,9 +758,7 @@ export const getContentByArtist = async (req, res) => {
   }
 };
 
-/**
- * Imagen de portada del álbum
- */
+// Portada del álbum
 export const setCoverImage = async (req, res) => {
   try {
     const { folderId } = req.params;
@@ -785,7 +771,7 @@ export const setCoverImage = async (req, res) => {
       });
     }
 
-    // Verificar que la imagen pertenece al folder
+    // La imagen tiene que ser del mismo álbum
     const image = await Gallery.findImageById(image_id);
     
     if (!image || image.folder_id !== parseInt(folderId)) {
@@ -795,7 +781,6 @@ export const setCoverImage = async (req, res) => {
       });
     }
 
-    // Actualizar la imagen de portada del folder
     const updatedFolder = await Gallery.updateFolder(folderId, {
       imagen_portada_url: image.imagen_url
     });
@@ -815,9 +800,7 @@ export const setCoverImage = async (req, res) => {
   }
 };
 
-/**
- *Actualizar múltiples imágenes
- */
+// Editar varias imágenes a la vez
 export const bulkUpdateImages = async (req, res) => {
   try {
     const { image_ids, updates } = req.body;
@@ -836,7 +819,6 @@ export const bulkUpdateImages = async (req, res) => {
       });
     }
 
-    // Actualizar cada imagen
     const results = [];
     for (const imageId of image_ids) {
       try {
@@ -882,9 +864,7 @@ export const bulkUpdateImages = async (req, res) => {
   }
 };
 
-/**
- * Eliminar múltiples imágenes
- */
+// Borrar varias imágenes a la vez
 export const bulkDeleteImages = async (req, res) => {
   try {
     const { image_ids } = req.body;
@@ -896,7 +876,6 @@ export const bulkDeleteImages = async (req, res) => {
       });
     }
 
-    // Eliminar cada imagen
     const results = [];
     for (const imageId of image_ids) {
       try {

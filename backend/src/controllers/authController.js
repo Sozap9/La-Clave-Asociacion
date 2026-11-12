@@ -13,165 +13,24 @@ import EmailService from '../services/emailService.js';
 import SolicitudSocio from '../models/SolicitudSocio.js';
 import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js';
 
-/**
- * Controlador de Autenticación
- * Maneja registro, login, refresh tokens y logout
- */
+// Registro, login, tokens y recuperación de contraseña
 
 /**
  * Registro de usuario básico
  * POST /api/auth/register/basic
  */
 export const registerBasic = async (req, res) => {
-  // Desactivado a propósito: este endpoint creaba cuentas de verdad
-  // (rol 'basico', con login automático) SIN pasar por la aprobación
-  // del admin — se saltaba por completo el sistema de solicitudes.
-  // El único camino de alta debe ser POST /api/auth/solicitud-socio.
+  // Desactivado: creaba cuentas sin aprobación del admin. El alta va por
+  // POST /api/auth/solicitud-socio.
   return res.status(410).json({
     success: false,
     message: 'Este método de registro ya no está disponible. Usa el formulario de solicitud de socio.'
   });
 };
 
-// Versión original, desactivada — se deja comentada solo como referencia,
-// no se ejecuta.
-/*
-async function registerBasicOriginal(req, res) {
-  try {
-    const {
-      email,
-      password,
-      nombre,
-      apellidos,
-      telefono,
-      fecha_nacimiento,
-      dni
-    } = req.body;
-
-    // Validaciones
-    if (!email || !password || !nombre || !apellidos || !telefono || !fecha_nacimiento || !dni) {
-      return res.status(400).json({
-        success: false,
-        message: 'Todos los campos son obligatorios'
-      });
-    }
-
-    // Validar email
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email inválido'
-      });
-    }
-
-    // Validar contraseña
-    if (!isStrongPassword(password)) {
-      return res.status(400).json({
-        success: false,
-        message: 'La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número'
-      });
-    }
-
-    // Validar DNI/NIE
-    if (!isValidSpanishDocument(dni)) {
-      return res.status(400).json({
-        success: false,
-        message: 'DNI o NIE inválido'
-      });
-    }
-
-    // Validar teléfono
-    if (!isValidPhone(telefono)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Número de teléfono inválido'
-      });
-    }
-
-    // Validar edad mínima (18 años)
-    const edadMinima = parseInt(process.env.EDAD_MINIMA) || 18;
-    if (!isOldEnough(fecha_nacimiento, edadMinima)) {
-      return res.status(400).json({
-        success: false,
-        message: `Debes tener al menos ${edadMinima} años para registrarte`
-      });
-    }
-
-    // Verificar si el email ya existe
-    const emailExists = await User.emailExists(email);
-    if (emailExists) {
-      return res.status(409).json({
-        success: false,
-        message: 'El email ya está registrado'
-      });
-    }
-
-    // Verificar si el DNI ya está registrado
-    const dniExists = await User.dniExists(dni);
-    if (dniExists) {
-      return res.status(409).json({
-        success: false,
-        message: 'El DNI ya está registrado en el sistema'
-      });
-    }
-
-    // Obtener IP del cliente
-    const ip_registro = req.ip || req.connection.remoteAddress;
-
-    // Crear usuario
-    const userData = {
-      email: email.toLowerCase().trim(),
-      password,
-      nombre: sanitizeString(nombre),
-      apellidos: sanitizeString(apellidos),
-      telefono: telefono.replace(/\s/g, ''),
-      fecha_nacimiento,
-      dni: dni.toUpperCase(),
-      role: 'basico',
-      ip_registro
-    };
-
-    const user = await User.create(userData);
-
-    // 📧 Enviar email de bienvenida (no bloquea la respuesta)
-    EmailService.sendWelcomeEmail(user).catch((emailError) => {
-      logger.error('Error al enviar email de bienvenida:', emailError);
-    });
-
-    // Generar tokens
-    const tokens = generateTokens(user);
-
-    // Respuesta sin datos sensibles
-    const sanitizedUser = User.sanitizeUser(user);
-
-    logger.info('Usuario básico registrado', {
-      userId: user.id
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: 'Usuario registrado exitosamente',
-      data: {
-        user: sanitizedUser,
-        ...tokens
-      }
-    });
-
-  } catch (error) {
-    logger.error('Error en registerBasic:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error al registrar usuario',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-}
-*/
-
 /**
- * Registro directo como socio
+ * Registro directo como socio (sin implementar)
  * POST /api/auth/register/socio
- * TODO: Implementar cuando tengamos el modelo Socio y Stripe
  */
 export const registerSocio = async (req, res) => {
   try {
@@ -196,7 +55,6 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validaciones básicas
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -204,7 +62,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Buscar usuario por email
     const user = await User.findByEmail(email.toLowerCase().trim());
 
     if (!user) {
@@ -214,7 +71,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario esté activo
     if (!user.activo) {
       return res.status(403).json({
         success: false,
@@ -222,7 +78,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Verificar contraseña
     const isPasswordValid = await User.verifyPassword(password, user.password_hash);
 
     if (!isPasswordValid) {
@@ -232,7 +87,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generar tokens
     const tokens = generateTokens(user);
 
     // Respuesta sin datos sensibles
@@ -276,7 +130,6 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Verificar refresh token
     let decoded;
     try {
       decoded = verifyRefreshToken(token);
@@ -287,7 +140,6 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Buscar usuario
     const user = await User.findById(decoded.id);
 
     if (!user || !user.activo) {
@@ -297,7 +149,6 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Generar nuevos tokens
     const tokens = generateTokens(user);
 
     return res.status(200).json({
@@ -317,14 +168,12 @@ export const refreshToken = async (req, res) => {
 };
 
 /**
- * Logout de usuario
+ * Logout
  * POST /api/auth/logout
- * TODO: Implementar blacklist de tokens cuando tengamos Redis o tabla sessions
  */
 export const logout = async (req, res) => {
   try {
-    // Por ahora, el logout se maneja en el cliente eliminando los tokens
-    // En el futuro, implementaremos una blacklist de tokens
+    // El cliente borra los tokens; no hay lista negra en el servidor
 
     return res.status(200).json({
       success: true,
@@ -341,7 +190,7 @@ export const logout = async (req, res) => {
 };
 
 /**
- * Verificar si un email existe (útil para validación en frontend)
+ * Comprobar si un email ya existe
  * GET /api/auth/check-email/:email
  */
 export const checkEmail = async (req, res) => {
@@ -375,13 +224,8 @@ export const checkEmail = async (req, res) => {
 };
 
 /**
- * ================================================================
- * REGISTRO DE ADMINISTRADOR (PROTEGIDO CON adminSecret)
- * ================================================================
+ * Registro de administrador (validateAdminSecret comprueba adminSecret antes)
  * POST /api/auth/register/admin
- * 
- * Requiere adminSecret en el body para poder crear un admin.
- * El middleware validateAdminSecret verifica el secret antes de llegar aquí.
  */
 export const registerAdmin = async (req, res) => {
   try {
@@ -395,7 +239,6 @@ export const registerAdmin = async (req, res) => {
       dni
     } = req.body;
 
-    // Validaciones básicas - solo campos obligatorios
     if (!email || !password || !nombre || !apellidos) {
       return res.status(400).json({
         success: false,
@@ -403,7 +246,6 @@ export const registerAdmin = async (req, res) => {
       });
     }
 
-    // Validar email
     if (!isValidEmail(email)) {
       return res.status(400).json({
         success: false,
@@ -411,7 +253,6 @@ export const registerAdmin = async (req, res) => {
       });
     }
 
-    // Validar contraseña
     if (!isStrongPassword(password)) {
       return res.status(400).json({
         success: false,
@@ -419,7 +260,6 @@ export const registerAdmin = async (req, res) => {
       });
     }
 
-    // Verificar que el email no exista
     const emailExists = await User.emailExists(email);
     if (emailExists) {
       return res.status(409).json({
@@ -428,20 +268,18 @@ export const registerAdmin = async (req, res) => {
       });
     }
 
-    // Obtener IP del cliente
     const ip_registro = req.ip || req.connection.remoteAddress;
 
-    // Crear usuario admin
-    // ✅ IMPORTANTE: Convertir undefined a null para MySQL
+    // mysql2 no acepta undefined: los opcionales van como null
     const userData = {
       email: email.toLowerCase().trim(),
       password,
       nombre: sanitizeString(nombre),
       apellidos: sanitizeString(apellidos),
-      telefono: telefono ? telefono.replace(/\s/g, '') : null,           // ✅ undefined → null
-      fecha_nacimiento: fecha_nacimiento || null,                        // ✅ undefined → null
-      dni: dni ? dni.toUpperCase() : null,                               // ✅ undefined → null
-      role: 'admin',                                                     // ✅ ROL DE ADMIN
+      telefono: telefono ? telefono.replace(/\s/g, '') : null,
+      fecha_nacimiento: fecha_nacimiento || null,
+      dni: dni ? dni.toUpperCase() : null,
+      role: 'admin',
       idioma_preferido: 'es',
       ip_registro
     };
@@ -475,9 +313,7 @@ export const registerAdmin = async (req, res) => {
 };
 
 /**
- * ================================================================
- * FORGOT PASSWORD - Solicitar reset de contraseña
- * ================================================================
+ * Solicitar el reset de contraseña
  * POST /api/auth/forgot-password
  * Body: { email }
  */
@@ -494,8 +330,7 @@ export const forgotPassword = async (req, res) => {
  
     const user = await User.findByEmail(email);
  
-    // Por seguridad, siempre responder lo mismo independientemente
-    // de si el email existe o no
+    // Misma respuesta exista o no el email, para no revelar cuentas
     const genericMessage = 'Si el email existe, recibirás instrucciones para recuperar tu contraseña';
  
     if (!user) {
@@ -503,21 +338,18 @@ export const forgotPassword = async (req, res) => {
       return res.status(200).json({ success: true, message: genericMessage });
     }
  
-    // Generar token aleatorio
     const crypto = await import('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
  
-    // Hashear el token para guardarlo en BD
+    // En la BD solo se guarda el hash del token
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
  
-    // Expiración en 1 hora
+    // Caduca en 1 hora
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
  
-    // Guardar token hasheado en BD
     await User.savePasswordResetToken(user.id, hashedToken, expiresAt);
  
-    // Intentar enviar email — no bloqueante:
-    // si falla, el token ya está guardado y el usuario puede reintentar
+    // Si el email falla, el token ya está guardado y se puede reintentar
     EmailService.sendPasswordReset(user, resetToken)
       .then((emailResult) => {
         if (!emailResult.success) {
@@ -531,7 +363,6 @@ export const forgotPassword = async (req, res) => {
           userId: user.id,
           error: emailError.message
         });
-        // No interrumpimos el flujo — el token está guardado
       });
  
     return res.status(200).json({ success: true, message: genericMessage });
@@ -546,9 +377,7 @@ export const forgotPassword = async (req, res) => {
 };
 
 /**
- * ================================================================
- * RESET PASSWORD - Confirmar nueva contraseña con token
- * ================================================================
+ * Cambiar la contraseña con el token del email
  * POST /api/auth/reset-password
  * Body: { token, newPassword }
  */
@@ -563,7 +392,6 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Validar fortaleza de la contraseña
     if (newPassword.length < 8) {
       return res.status(400).json({
         success: false,
@@ -582,11 +410,9 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Hashear el token recibido
     const crypto = await import('crypto');
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    // Buscar usuario con ese token válido
     const user = await User.findByValidResetToken(hashedToken);
 
     if (!user) {
@@ -596,10 +422,9 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Actualizar la contraseña
     await User.updatePassword(user.id, newPassword);
 
-    // Limpiar el token
+    // El token solo sirve una vez
     await User.clearPasswordResetToken(user.id);
 
     logger.info('Contraseña reseteada exitosamente:', { userId: user.id });
@@ -619,11 +444,9 @@ export const resetPassword = async (req, res) => {
 };
 
 /**
- * Crear solicitud de socio (nuevo flujo de registro)
+ * Solicitud de socio con fotos del DNI. Queda pendiente de aprobar; el
+ * usuario se crea al aprobarla.
  * POST /api/auth/solicitud-socio
- *
- * Recibe FormData con campos de texto + imágenes DNI (multer)
- * No crea el usuario — crea una solicitud pendiente de aprobación admin
  */
 export const crearSolicitud = async (req, res) => {
   try {
@@ -640,7 +463,7 @@ export const crearSolicitud = async (req, res) => {
       evento_interes
     } = req.body;
 
-    // ── Validar que llegó al menos la cara delantera del DNI ──────
+    // Al menos la cara delantera del DNI
     if (!req.files?.dni_front?.[0]) {
       return res.status(400).json({
         success: false,
@@ -648,7 +471,6 @@ export const crearSolicitud = async (req, res) => {
       });
     }
 
-    // ── Comprobar que el email no está ya en users ────────────────
     const emailEnUsers = await User.emailExists(email);
     if (emailEnUsers) {
       return res.status(409).json({
@@ -657,7 +479,6 @@ export const crearSolicitud = async (req, res) => {
       });
     }
 
-    // ── Comprobar que el DNI no está ya registrado en users ──────
     const dniEnUsers = await User.dniExists(dni);
     if (dniEnUsers) {
       return res.status(409).json({
@@ -666,7 +487,7 @@ export const crearSolicitud = async (req, res) => {
       });
     }
 
-    // ── Comprobar que no hay solicitud pendiente ya enviada ───────
+    // Una sola solicitud pendiente por email o DNI
     const solicitudPendiente = await SolicitudSocio.existePendiente(
       email.toLowerCase().trim(),
       dni
@@ -678,19 +499,17 @@ export const crearSolicitud = async (req, res) => {
       });
     }
 
-    // ── Rutas relativas de los archivos subidos ───────────────────
     const dniBasePath = 'uploads/solicitudes/';
     const dni_front_url = dniBasePath + req.files.dni_front[0].filename;
     const dni_back_url  = req.files?.dni_back?.[0]
       ? dniBasePath + req.files.dni_back[0].filename
       : null;
 
-    // ── Crear la solicitud ────────────────────────────────────────
     const solicitud = await SolicitudSocio.create({
       nombre:          sanitizeString(nombre),
       apellidos:       sanitizeString(apellidos),
       email:           email.toLowerCase().trim(),
-      password,                                    // SolicitudSocio.create hashea aquí
+      password, // se hashea en SolicitudSocio.create
       telefono:        telefono.replace(/\s/g, ''),
       fecha_nacimiento,
       dni:             dni.toUpperCase(),
@@ -702,10 +521,7 @@ export const crearSolicitud = async (req, res) => {
       ip_solicitud:    req.ip || req.connection?.remoteAddress
     });
 
-    // ── Emails ────────────────────────────────────────────────────
-    // No usamos await aquí a propósito: si Brevo tarda o falla, no
-    // queremos que el usuario se quede esperando la respuesta HTTP.
-    // El error (si lo hay) solo se registra en el log.
+    // Sin await: si Brevo tarda o falla, la respuesta no espera
     EmailService.sendSolicitudRecibida(solicitud).catch((emailError) => {
       logger.error('Error al enviar email solicitud-recibida:', emailError);
     });

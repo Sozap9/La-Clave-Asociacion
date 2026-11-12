@@ -2,7 +2,7 @@ import Artist from '../models/Artist.js';
 import logger from '../config/logger.js';
 
 /**
- * Listar artistas con filtros y búsqueda
+ * Listar artistas con filtros
  * GET /api/artists
  */
 export const listArtists = async (req, res) => {
@@ -10,11 +10,11 @@ export const listArtists = async (req, res) => {
     const { 
       page = 1, 
       limit = 20, 
-      search,           // Búsqueda general
-      genero,           // Filtro de género
-      sello,            // Filtro de sello
-      ciudad,           // Filtro de ciudad
-      pais_origen,      // Filtro de país
+      search,
+      genero,
+      sello,
+      ciudad,
+      pais_origen,
       activo, 
       verificado, 
       destacado 
@@ -25,7 +25,6 @@ export const listArtists = async (req, res) => {
       limit: parseInt(limit)
     };
 
-    // Añadir filtros solo si están presentes
     if (search) options.search = search;
     if (genero) options.genero = genero;
     if (sello) options.sello = sello;
@@ -46,7 +45,7 @@ export const listArtists = async (req, res) => {
           page: result.page,
           pages: result.pages
         },
-        filters: result.filters  // Info de filtros aplicados
+        filters: result.filters
       }
     });
   } catch (error) {
@@ -59,7 +58,7 @@ export const listArtists = async (req, res) => {
 };
 
 /**
- * Obtener artista por ID
+ * Detalle de un artista
  * GET /api/artists/:id
  */
 export const getArtistById = async (req, res) => {
@@ -74,7 +73,6 @@ export const getArtistById = async (req, res) => {
       });
     }
 
-    // Obtener estadísticas adicionales
     const stats = await Artist.getStats(id);
 
     return res.status(200).json({
@@ -94,9 +92,8 @@ export const getArtistById = async (req, res) => {
 };
 
 /**
- * Crear artista
+ * Crear artista (admin)
  * POST /api/artists
- * ADMIN only
  */
 export const createArtist = async (req, res) => {
   try {
@@ -126,9 +123,8 @@ export const createArtist = async (req, res) => {
 };
 
 /**
- * Actualizar artista
+ * Editar artista (admin)
  * PUT /api/artists/:id
- * ADMIN only
  */
 export const updateArtist = async (req, res) => {
   try {
@@ -161,9 +157,8 @@ export const updateArtist = async (req, res) => {
 };
 
 /**
- * Eliminar artista
+ * Borrar artista (admin)
  * DELETE /api/artists/:id
- * ADMIN only
  */
 export const deleteArtist = async (req, res) => {
   try {
@@ -201,9 +196,8 @@ export const deleteArtist = async (req, res) => {
 };
 
 /**
- * Desactivar artista
+ * Desactivar artista (admin)
  * PATCH /api/artists/:id/deactivate
- * ADMIN only
  */
 export const deactivateArtist = async (req, res) => {
   try {
@@ -233,20 +227,17 @@ export const deactivateArtist = async (req, res) => {
 };
 
 /**
- * Marcar/desmarcar como destacado
+ * Marcar o quitar destacado (admin)
  * PATCH /api/artists/:id/featured
- * ADMIN only
  */
 export const toggleFeatured = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Default: marcar como destacado (true)
+    // featured llega en el body o en la query; por defecto true
     let featured = true;
     
-    // Verificar si req.body existe y tiene la propiedad featured
     if (req.body && req.body.featured !== undefined) {
-      // Convertir a boolean de forma segura
       if (typeof req.body.featured === 'boolean') {
         featured = req.body.featured;
       } else if (typeof req.body.featured === 'string') {
@@ -255,7 +246,6 @@ export const toggleFeatured = async (req, res) => {
         featured = req.body.featured === 1;
       }
     } 
-    // Si no hay body, revisar query params
     else if (req.query && req.query.featured !== undefined) {
       featured = req.query.featured === 'true';
     }
@@ -288,7 +278,7 @@ export const toggleFeatured = async (req, res) => {
 };
 
 /**
- * Obtener artistas activos (para selects)
+ * Artistas activos, para los selects
  * GET /api/artists/active
  */
 export const getActiveArtists = async (req, res) => {
@@ -309,7 +299,7 @@ export const getActiveArtists = async (req, res) => {
 };
 
 /**
- * Obtener artistas destacados
+ * Artistas destacados
  * GET /api/artists/featured
  */
 export const getFeaturedArtists = async (req, res) => {
@@ -361,7 +351,7 @@ export const searchArtists = async (req, res) => {
 };
 
 /**
- * Obtener eventos de un artista
+ * Eventos de un artista
  * GET /api/artists/:id/eventos
  */
 export const getArtistEventos = async (req, res) => {
@@ -400,7 +390,6 @@ export const activateArtist = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verificar que el artista existe
     const artist = await Artist.findById(id);
     if (!artist) {
       return res.status(404).json({
@@ -409,7 +398,6 @@ export const activateArtist = async (req, res) => {
       });
     }
 
-    // Verificar que está desactivado
     if (artist.activo) {
       return res.status(400).json({
         success: false,
@@ -417,7 +405,6 @@ export const activateArtist = async (req, res) => {
       });
     }
 
-    // Reactivar
     await Artist.activate(id);
 
     return res.status(200).json({

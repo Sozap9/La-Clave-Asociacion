@@ -1,14 +1,10 @@
 import PushService from '../services/pushService.js';
 import logger from '../config/logger.js';
 
-/**
- * ================================================================
- * CONTROLLER DE PUSH NOTIFICATIONS
- * ================================================================
- */
+// Notificaciones push
 
 /**
- * Suscribir usuario a notificaciones push
+ * Suscribirse a las notificaciones
  * POST /api/push/subscribe
  */
 export const subscribe = async (req, res) => {
@@ -60,7 +56,7 @@ export const subscribe = async (req, res) => {
 };
 
 /**
- * Desuscribir usuario de notificaciones push
+ * Darse de baja de las notificaciones
  * POST /api/push/unsubscribe
  */
 export const unsubscribe = async (req, res) => {
@@ -87,7 +83,7 @@ export const unsubscribe = async (req, res) => {
 };
 
 /**
- * Obtener clave pública VAPID
+ * Clave pública VAPID
  * GET /api/push/vapid-key
  */
 export const getVapidKey = async (req, res) => {
@@ -118,7 +114,7 @@ export const getVapidKey = async (req, res) => {
 };
 
 /**
- * Enviar notificación de prueba
+ * Notificación de prueba
  * POST /api/push/test
  */
 export const sendTestNotification = async (req, res) => {
@@ -126,7 +122,7 @@ export const sendTestNotification = async (req, res) => {
     const userId = req.user.id;
 
     const notification = {
-      title: '🔔 Notificación de Prueba',
+      title: 'Notificación de prueba',
       body: '¡Las notificaciones push están funcionando correctamente!',
       icon: '/icon-192x192.png',
       data: {

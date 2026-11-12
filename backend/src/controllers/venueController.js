@@ -2,7 +2,7 @@ import Venue from '../models/Venue.js';
 import logger from '../config/logger.js';
 
 /**
- * Listar venues
+ * Listar salas
  * GET /api/venues
  */
 export const listVenues = async (req, res) => {
@@ -41,7 +41,7 @@ export const listVenues = async (req, res) => {
 };
 
 /**
- * Obtener venue por ID
+ * Detalle de una sala
  * GET /api/venues/:id
  */
 export const getVenueById = async (req, res) => {
@@ -56,7 +56,6 @@ export const getVenueById = async (req, res) => {
       });
     }
 
-    // Obtener estadísticas adicionales
     const stats = await Venue.getStats(id);
 
     return res.status(200).json({
@@ -76,9 +75,8 @@ export const getVenueById = async (req, res) => {
 };
 
 /**
- * Crear venue
+ * Crear sala (admin)
  * POST /api/venues
- * ADMIN only
  */
 export const createVenue = async (req, res) => {
   try {
@@ -108,9 +106,8 @@ export const createVenue = async (req, res) => {
 };
 
 /**
- * Actualizar venue
+ * Editar sala (admin)
  * PUT /api/venues/:id
- * ADMIN only
  */
 export const updateVenue = async (req, res) => {
   try {
@@ -143,9 +140,8 @@ export const updateVenue = async (req, res) => {
 };
 
 /**
- * Eliminar venue
+ * Borrar sala (admin)
  * DELETE /api/venues/:id
- * ADMIN only
  */
 export const deleteVenue = async (req, res) => {
   try {
@@ -183,9 +179,8 @@ export const deleteVenue = async (req, res) => {
 };
 
 /**
- * Desactivar venue
+ * Desactivar sala (admin)
  * PATCH /api/venues/:id/deactivate
- * ADMIN only
  */
 export const deactivateVenue = async (req, res) => {
   try {
@@ -215,14 +210,13 @@ export const deactivateVenue = async (req, res) => {
 };
 
 /**
- * Reactivar un venue desactivado
+ * Reactivar una sala desactivada
  * PATCH /api/venues/:id/activate
  */
 export const activateVenue = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verificar que el venue existe
     const venue = await Venue.findById(id);
     if (!venue) {
       return res.status(404).json({
@@ -231,7 +225,6 @@ export const activateVenue = async (req, res) => {
       });
     }
 
-    // Verificar que está desactivado
     if (venue.activo) {
       return res.status(400).json({
         success: false,
@@ -239,7 +232,6 @@ export const activateVenue = async (req, res) => {
       });
     }
 
-    // Reactivar
     await Venue.activate(id);
 
     return res.status(200).json({
@@ -256,7 +248,7 @@ export const activateVenue = async (req, res) => {
 };
 
 /**
- * Obtener venues activos (para selects)
+ * Salas activas, para los selects
  * GET /api/venues/active
  */
 export const getActiveVenues = async (req, res) => {

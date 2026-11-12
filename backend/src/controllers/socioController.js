@@ -13,7 +13,7 @@ import {
 import logger from '../config/logger.js';
 
 /**
- * Upgrade de usuario básico a socio (DEPRECATED)
+ * Pasar de básico a socio (retirado: el alta va por solicitud)
  * POST /api/socios/upgrade
  */
 export const upgradeToSocio = async (req, res) => {
@@ -25,7 +25,7 @@ export const upgradeToSocio = async (req, res) => {
 };
 
 /**
- * Obtener información de mi membresía
+ * Mi membresía
  * GET /api/socios/me
  */
 export const getMyMembership = async (req, res) => {
@@ -103,10 +103,8 @@ export const updatePaymentMethod = async (req, res) => {
       });
     }
 
-    // Actualizar en Stripe
     await updateStripePaymentMethod(socio.stripe_customer_id, paymentMethodId);
 
-    // Actualizar en base de datos
     await Socio.update(socio.id, { payment_method_id: paymentMethodId });
 
     return res.status(200).json({
@@ -154,16 +152,14 @@ export const cancelMembership = async (req, res) => {
       });
     }
 
-    // Cancelar suscripción en Stripe
     await cancelSubscription(socio.stripe_subscription_id);
 
-    // Dar de baja en base de datos
     await Socio.darDeBaja(socio.id, "Cancelación voluntaria");
 
-    // Actualizar rol de usuario a básico
+    // Vuelve a usuario básico
     await query("UPDATE users SET role = ? WHERE id = ?", ["basico", userId]);
 
-    // Cancelar reservas futuras
+    // Y se cancelan sus reservas futuras
     await query(
       `
       UPDATE bookings 
@@ -188,7 +184,7 @@ export const cancelMembership = async (req, res) => {
 };
 
 /**
- * Obtener historial de pagos
+ * Historial de pagos
  * GET /api/socios/me/payments
  */
 export const getMyPayments = async (req, res) => {
@@ -211,7 +207,6 @@ export const getMyPayments = async (req, res) => {
       });
     }
 
-    // Obtener pagos de la base de datos
     const sql = `
       SELECT 
         id, tipo_pago, amount, currency, estado, 
@@ -238,7 +233,7 @@ export const getMyPayments = async (req, res) => {
 };
 
 /**
- * Crear Setup Intent para configurar método de pago
+ * Setup Intent para guardar un método de pago
  * POST /api/socios/setup-intent
  */
 export const createPaymentSetup = async (req, res) => {
@@ -246,14 +241,13 @@ export const createPaymentSetup = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    // Verificar si ya tiene customer en Stripe
     let customerId;
     const existingSocio = await Socio.findByUserId(userId);
 
     if (existingSocio && existingSocio.stripe_customer_id) {
       customerId = existingSocio.stripe_customer_id;
     } else {
-      // Crear nuevo cliente si no existe
+      // Cliente de Stripe si aún no tiene
       const customer = await createStripeCustomer({
         id: user.id,
         email: user.email,
@@ -264,7 +258,6 @@ export const createPaymentSetup = async (req, res) => {
       customerId = customer.id;
     }
 
-    // Crear setup intent
     const setupIntent = await createSetupIntent(customerId);
 
     return res.status(200).json({
@@ -284,13 +277,13 @@ export const createPaymentSetup = async (req, res) => {
 };
 
 /**
- * Obtener mis eventos (reservados y asistidos)
+ * Mis eventos (reservados y asistidos)
  * GET /api/socios/me/events
  */
 export const getMyEvents = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { filter = "proximos" } = req.query; // proximos, pasados, todos
+    const { filter = "proximos" } = req.query; // proximos | pasados | todos
 
     if (req.user.role !== "socio") {
       return res.status(403).json({

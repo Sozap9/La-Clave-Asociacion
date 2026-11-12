@@ -11,15 +11,12 @@ import logger from "../config/logger.js";
 import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
 
 /**
- * Crear reserva de entrada
+ * Crear reserva
  * POST /api/bookings
- *
  */
 export const createBooking = async (req, res) => {
   try {
-    // Interruptor temporal de reservas: pon BOOKINGS_ENABLED=false en las
-    // variables de entorno para desactivar la compra de entradas sin tocar
-    // código (los eventos se siguen viendo y anunciando con normalidad).
+    // BOOKINGS_ENABLED=false cierra la venta sin ocultar los eventos
     if (process.env.BOOKINGS_ENABLED === "false") {
       return res.status(503).json({
         success: false,
@@ -38,10 +35,9 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Obtener o crear socio (admins pueden reservar automáticamente)
     let socio = await Socio.findByUserId(userId);
 
-    // Si es admin y no tiene registro de socio, crear uno automáticamente
+    // Un admin sin fila en socios la obtiene al reservar
     if (!socio && req.user.role === "admin") {
       try {
         const [result] = await pool.execute(
@@ -68,7 +64,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el socio esté activo (admins siempre están activos)
+    // Los admins cuentan siempre como activos
     if (socio.estado !== "activo" && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
@@ -77,7 +73,6 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el evento existe
     const event = await Event.findById(event_id);
     if (!event) {
       return res.status(404).json({
@@ -86,7 +81,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el evento está publicado (scheduled en lugar de publicado)
+    // Publicado = estado scheduled
     if (event.estado !== "scheduled") {
       return res.status(400).json({
         success: false,
@@ -94,11 +89,8 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el evento no haya terminado ya. La venta de entradas
-    // sigue abierta con el evento en marcha, y se cierra al llegar
-    // hora_fin (no al empezar el evento). Si hora_fin es anterior a
-    // hora_evento, el evento cruza la medianoche (ej. empieza 23:30,
-    // termina 06:00) y por tanto termina el día siguiente.
+    // La venta cierra en hora_fin, no al empezar. Si hora_fin < hora_evento,
+    // el evento acaba al día siguiente (p. ej. 23:30 a 06:00).
     const fechaEvento = new Date(event.fecha_evento);
     const [horaInicioH, horaInicioM] = (event.hora_evento || "00:00:00")
       .split(":")
@@ -125,7 +117,6 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar que no tenga ya una reserva
     const existingBooking = await Booking.findBySocioAndEvent(
       socio.id,
       event_id,
@@ -137,13 +128,11 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Verificar disponibilidad (ya cuenta también las reservas en
-    // esperando_pago — ver Event.js — para no vender de más mientras
-    // alguien más está pagando)
+    // Cuenta también las reservas esperando_pago, para no vender de más
     const available = await Event.checkAvailability(event_id, numero_entradas);
 
     if (!available) {
-      // Agregar a lista de espera
+      // Sin plazas: lista de espera
       const inWaitingList = await Booking.checkWaitingList(socio.id, event_id);
 
       if (inWaitingList) {
@@ -172,18 +161,14 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // Precio vigente ahora mismo (tanda activa, o precio base del evento
-    // si no tiene tandas configuradas). Se fija en la propia reserva
-    // (precio_unitario/tier_id) para que no cambie después aunque la
-    // tanda cambie mientras la reserva sigue esperando_pago.
+    // El precio vigente se fija en la reserva (precio_unitario, tier_id) para
+    // que no cambie si entra otra tanda antes de pagar
     const { precio: precioUnitario, tier_id: tierId } =
       await EventTicketTier.resolveActivePrice(event_id, event.precio_socio);
 
-    // Evento/tanda gratuita (precio 0): se confirma directamente, sin
-    // pasar por Stripe — no tiene sentido abrir un Checkout para cobrar 0€
+    // Gratis: se confirma sin pasar por Stripe
     const esGratuito = !precioUnitario || precioUnitario <= 0;
 
-    // Crear reserva con campos correctos de la tabla bookings
     const booking = await transaction(async (conn) => {
       const codigo_acceso = `ACC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
@@ -205,19 +190,9 @@ export const createBooking = async (req, res) => {
 
       const bookingId = result.insertId;
 
-      // El aforo PÚBLICO (entradas_disponibles/entradas_reservadas, lo que
-      // ve la web) solo se descuenta aquí si la reserva queda confirmada
-      // de inmediato (evento gratuito). Si es de pago, la reserva se crea
-      // en "esperando_pago" y el aforo público NO se toca todavía — se
-      // descuenta al confirmarse el pago de verdad (ver
-      // webhookController.handleCheckoutSessionCompleted). Así una
-      // reserva sin pagar nunca "llena" el aforo que ve el público.
-      //
-      // La protección contra sobreventa durante el checkout (que dos
-      // personas no puedan pagar a la vez la última entrada) sigue
-      // intacta y es independiente de esto: vive en
-      // Event.checkAvailability / entradas_reservadas_real, que sí
-      // sigue contando las reservas esperando_pago.
+      // El aforo público solo baja aquí si la reserva se confirma ya (gratis).
+      // Las de pago lo descuentan en el webhook al pagarse. La sobreventa la
+      // evita Event.checkAvailability, que sí cuenta las esperando_pago.
       if (estadoInicial === "confirmada") {
         try {
           await conn.execute(
@@ -232,7 +207,7 @@ export const createBooking = async (req, res) => {
             "No se pudo actualizar entradas disponibles:",
             updateError.message,
           );
-          // No fallar si la columna no existe
+          // Bases de datos antiguas sin la columna
         }
       }
 
@@ -242,7 +217,7 @@ export const createBooking = async (req, res) => {
       return rows[0];
     });
 
-    // ── Caso evento gratuito: confirmar ya mismo, sin Stripe ──────────
+    // Gratis: confirmar ya
     if (esGratuito) {
       let qrCode = null;
       try {
@@ -254,10 +229,10 @@ export const createBooking = async (req, res) => {
           booking.id,
         ]);
       } catch (qrError) {
-        logger.error("❌ Error generando QR:", qrError);
+        logger.error("Error generando QR:", qrError);
       }
 
-      // Registrar como pago de 0€ para que las estadísticas cuadren
+      // Pago de 0 € para que cuadren las estadísticas
       try {
         await query(
           `INSERT INTO payments (
@@ -283,7 +258,7 @@ export const createBooking = async (req, res) => {
           await EmailService.sendBookingConfirmation(bookingWithQR, event, user);
         }
       } catch (emailError) {
-        logger.error("❌ Error enviando email de confirmación:", emailError);
+        logger.error("Error enviando email de confirmación:", emailError);
       }
 
       return res.status(201).json({
@@ -293,7 +268,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // ── Caso evento de pago: crear Checkout Session real de Stripe ────
+    // De pago: sesión de Checkout de Stripe
     try {
       const user = await User.findById(userId);
       const session = await createCheckoutSession({
@@ -304,7 +279,7 @@ export const createBooking = async (req, res) => {
         precioUnitario,
       });
 
-      logger.info("💳 Checkout Session creada:", {
+      logger.info("Checkout Session creada:", {
         bookingId: booking.id,
         sessionId: session.id,
       });
@@ -318,9 +293,7 @@ export const createBooking = async (req, res) => {
         },
       });
     } catch (stripeError) {
-      // Si falla la creación del Checkout, deshacemos la reserva. El
-      // aforo público NO se toca aquí (nunca se llegó a descontar para
-      // reservas de pago — solo se descuenta al confirmarse el pago).
+      // Si falla el Checkout se borra la reserva; el aforo no se había tocado
       logger.error("Error creando Checkout Session, revirtiendo reserva:", stripeError);
 
       await query(
@@ -344,6 +317,7 @@ export const createBooking = async (req, res) => {
 };
 
 /**
+ * Reintentar el pago de una reserva esperando_pago
  * POST /api/bookings/:id/pagar
  */
 export const retryBookingPayment = async (req, res) => {
@@ -387,14 +361,11 @@ export const retryBookingPayment = async (req, res) => {
 
     const user = await User.findById(userId);
 
-    // Se usa el precio ya fijado en la reserva (booking.precio_unitario),
-    // NO el precio vigente ahora — si la reserva se creó en la Tanda 1 y
-    // mientras seguía sin pagar entró en vigor la Tanda 2, el socio sigue
-    // pagando el precio de cuando reservó.
+    // Se cobra el precio fijado al reservar, aunque haya cambiado la tanda
     const precioUnitario =
       booking.precio_unitario !== null && booking.precio_unitario !== undefined
         ? parseFloat(booking.precio_unitario)
-        : parseFloat(event.precio_socio || 0); // reservas antiguas, previas a esta columna
+        : parseFloat(event.precio_socio || 0); // reservas anteriores a precio_unitario
 
     try {
       const session = await createCheckoutSession({
@@ -406,7 +377,7 @@ export const retryBookingPayment = async (req, res) => {
         precioUnitario,
       });
 
-      logger.info("💳 Checkout Session de reintento creada:", {
+      logger.info("Checkout Session de reintento creada:", {
         bookingId: booking.id,
         sessionId: session.id,
       });
@@ -436,7 +407,7 @@ export const retryBookingPayment = async (req, res) => {
 };
 
 /**
- * Servir el QR de una reserva como imagen PNG real (no data URI).
+ * QR de una reserva como imagen PNG (no data URI)
  * GET /api/bookings/qr/:id/:codigo
  */
 export const getBookingQRImage = async (req, res) => {
@@ -480,7 +451,7 @@ export const getBookingQRImage = async (req, res) => {
 };
 
 /**
- * Obtener mis reservas
+ * Mis reservas
  * GET /api/bookings/me
  */
 export const getMyBookings = async (req, res) => {
@@ -512,7 +483,7 @@ export const getMyBookings = async (req, res) => {
 };
 
 /**
- * Obtener detalles de una reserva
+ * Detalle de una reserva
  * GET /api/bookings/:id
  */
 export const getBooking = async (req, res) => {
@@ -529,7 +500,7 @@ export const getBooking = async (req, res) => {
       });
     }
 
-    // Verificar que la reserva pertenece al usuario (o es admin)
+    // Solo el dueño o un admin
     const socio = await Socio.findByUserId(userId);
     if (req.user.role !== "admin" && booking.socio_id !== socio?.id) {
       return res.status(403).json({
@@ -552,7 +523,7 @@ export const getBooking = async (req, res) => {
 };
 
 /**
- * ✅ CORREGIDO: Cancelar reserva
+ * Cancelar reserva
  * DELETE /api/bookings/:id
  */
 export const cancelBooking = async (req, res) => {
@@ -561,7 +532,7 @@ export const cancelBooking = async (req, res) => {
     const userId = req.user.id;
     const { motivo } = req.body;
 
-    logger.info("📋 Cancelando reserva:", { bookingId: id, userId, motivo });
+    logger.info("Cancelando reserva:", { bookingId: id, userId, motivo });
 
     const booking = await Booking.findById(id);
 
@@ -572,7 +543,6 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
-    // Verificar que la reserva pertenece al usuario
     const socio = await Socio.findByUserId(userId);
     if (booking.socio_id !== socio?.id) {
       return res.status(403).json({
@@ -581,8 +551,7 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
-    // Se puede cancelar una reserva confirmada, o una pendiente de pago
-    // (para poder reintentar sin esperar a que expire sola en 30 min)
+    // También las esperando_pago, para reintentar sin esperar los 30 min
     if (!["confirmada", "esperando_pago"].includes(booking.estado)) {
       return res.status(400).json({
         success: false,
@@ -590,12 +559,8 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
-    // Verificar que el evento no ha pasado (no aplica si solo estaba
-    // pendiente de pago — cancelar una reserva sin pagar nunca depende
-    // de la fecha del evento). Este límite es independiente del cierre
-    // de venta de entradas (que ahora cierra al empezar el evento, ver
-    // createBooking) — cancelar una reserva ya confirmada sigue
-    // permitido con un margen algo mayor, hasta esta hora configurable.
+    // Las confirmadas tienen hora límite (HORA_LIMITE_COMPRA_MISMO_DIA);
+    // las esperando_pago se pueden cancelar siempre
     if (booking.estado === "confirmada") {
       const event = await Event.findById(booking.event_id);
       const fechaEvento = new Date(event.fecha_evento);
@@ -619,9 +584,7 @@ export const cancelBooking = async (req, res) => {
       }
     }
 
-    // Cancelar en transacción
     await transaction(async (conn) => {
-      // Cancelar reserva
       await conn.execute(
         `UPDATE bookings 
          SET estado = 'cancelada', fecha_cancelacion = NOW(), motivo_cancelacion = ?
@@ -629,13 +592,8 @@ export const cancelBooking = async (req, res) => {
         [motivo || "Cancelación voluntaria", id],
       );
 
-      // Liberar entradas del aforo público SOLO si estaba confirmada (ya
-      // pagada, así que sí lo tenía descontado). Si estaba esperando_pago,
-      // nunca llegó a descontarse — no hay nada que devolver.
-      // Las invitaciones (es_invitacion=1) nunca restaron entradas_disponibles
-      // al crearse (son un asiento de cortesía a mayores del aforo), así que
-      // al cancelarlas tampoco se les devuelve — solo se corrige el contador
-      // informativo entradas_reservadas.
+      // Solo se devuelven plazas si estaba confirmada. Las invitaciones no
+      // ocupaban plaza: solo se corrige entradas_reservadas.
       if (booking.estado === "confirmada") {
         if (booking.es_invitacion) {
           await conn.execute(
@@ -656,7 +614,7 @@ export const cancelBooking = async (req, res) => {
       }
     });
 
-    logger.info("✅ Reserva cancelada:", { bookingId: id });
+    logger.info("Reserva cancelada:", { bookingId: id });
 
     registrarActividad({
       userId,
@@ -667,14 +625,14 @@ export const cancelBooking = async (req, res) => {
       ipAddress: getIpFromRequest(req),
     });
 
-    // TODO: Notificar a persona en lista de espera si hay
+    // Pendiente: avisar a la lista de espera
 
     return res.status(200).json({
       success: true,
       message: "Reserva cancelada exitosamente",
     });
   } catch (error) {
-    logger.error("❌ Error en cancelBooking:", error);
+    logger.error("Error en cancelBooking:", error);
     return res.status(500).json({
       success: false,
       message: "Error al cancelar reserva",
@@ -684,7 +642,7 @@ export const cancelBooking = async (req, res) => {
 };
 
 /**
- * Obtener reservas de un evento (solo admin)
+ * Reservas de un evento (admin)
  * GET /api/bookings/event/:eventId
  */
 export const getEventBookings = async (req, res) => {
@@ -694,7 +652,7 @@ export const getEventBookings = async (req, res) => {
 
     const bookings = await Booking.getByEvent(eventId, estado);
 
-    // Para cada reserva, traer pagos asociados (pago de entrada)
+    // Pagos de cada reserva
     const bookingsWithPayments = await Promise.all(
       bookings.map(async (booking) => {
         const payments = await query(
@@ -736,7 +694,7 @@ export const getEventBookings = async (req, res) => {
 };
 
 /**
- * Verificar código QR y marcar asistencia (solo admin)
+ * Validar un QR y marcar asistencia (admin)
  * POST /api/bookings/verify-qr
  */
 export const verifyQRAndCheckIn = async (req, res) => {
@@ -752,11 +710,8 @@ export const verifyQRAndCheckIn = async (req, res) => {
 
     const raw = codigo_reserva.trim();
 
-    // El QR real codifica "LACLAVE-{bookingId}-{codigo_acceso}" (ver
-    // webhookController.handleCheckoutSessionCompleted), NO el
-    // codigo_reserva. Si el texto escaneado tiene ese formato, lo
-    // interpretamos así; si no, se trata como código manual
-    // (codigo_reserva) introducido a mano por el admin.
+    // El QR lleva LACLAVE-{bookingId}-{codigo_acceso}; cualquier otro texto se
+    // trata como codigo_reserva escrito a mano
     const qrMatch = raw.match(/^LACLAVE-(\d+)-(.+)$/);
 
     const booking = qrMatch
@@ -777,7 +732,6 @@ export const verifyQRAndCheckIn = async (req, res) => {
       });
     }
 
-    // Marcar como asistida
     await Booking.markAsAttended(booking.id);
 
     registrarActividad({
@@ -809,7 +763,7 @@ export const verifyQRAndCheckIn = async (req, res) => {
 };
 
 /**
- * Obtener estadísticas de reservas del socio
+ * Estadísticas de reservas del socio
  * GET /api/bookings/me/stats
  */
 export const getMyBookingStats = async (req, res) => {

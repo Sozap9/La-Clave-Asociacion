@@ -2,14 +2,7 @@ import { query } from '../config/database.js';
 import EmailService from '../services/emailService.js';
 import logger from '../config/logger.js';
 
-/**
- * ================================================================
- * CONTROLADOR DE CONTACTO
- * ================================================================
- * Gestiona el formulario público de contacto.
- * Guarda el mensaje en la tabla `contacts` y notifica por email.
- * ================================================================
- */
+// Formulario de contacto: guarda en contacts y avisa por email
 
 /**
  * Enviar mensaje de contacto
@@ -20,7 +13,6 @@ export const submitContact = async (req, res) => {
   try {
     const { nombre, email, asunto, mensaje } = req.body;
 
-    // ── Validación básica ────────────────────────────────────────
     if (!nombre?.trim() || !email?.trim() || !asunto?.trim() || !mensaje?.trim()) {
       return res.status(400).json({
         success: false,
@@ -49,7 +41,6 @@ export const submitContact = async (req, res) => {
       });
     }
 
-    // ── Guardar en BD ────────────────────────────────────────────
     const sql = `
       INSERT INTO contacts (nombre, email, asunto, mensaje, estado, created_at)
       VALUES (?, ?, ?, ?, 'nuevo', NOW())
@@ -67,7 +58,7 @@ export const submitContact = async (req, res) => {
       asunto: asunto.trim(),
     });
 
-    // ── Notificar a admins por email (no bloqueante) ─────────────
+    // Aviso a los admins sin bloquear la respuesta
     const adminEmails = (process.env.ADMIN_NOTIFICATION_EMAILS || '')
       .split(',')
       .map((e) => e.trim())
