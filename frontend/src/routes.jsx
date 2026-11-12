@@ -444,7 +444,7 @@ export const router = createBrowserRouter([
           <div className="text-center">
             <h1 className="text-6xl font-bold text-primary-500 mb-4">404</h1>
             <p className="text-gray-400 text-xl mb-6">Página no encontrada</p>
-            <a href="/" className="text-primary-400 hover:text-primary-300">
+            <a href="/" className="text-white hover:text-primary-400 transition-colors">
               Volver al inicio
             </a>
           </div>

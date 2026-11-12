@@ -154,7 +154,7 @@ const Login = () => {
             </div>
 
             <div className="text-right">
-              <a href="/recuperar-password" className="text-sm text-primary-400 hover:text-primary-300 transition-colors">
+              <a href="/recuperar-password" className="text-sm text-white hover:text-primary-400 transition-colors">
                 {t('login.forgotPassword')}
               </a>
             </div>
@@ -172,7 +172,7 @@ const Login = () => {
           <div className="mt-6 text-center">
             <p className="text-gray-400">
               {t('login.noAccount')}{' '}
-              <a href={NAV_ROUTES.REGISTER} className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+              <a href={NAV_ROUTES.REGISTER} className="text-white hover:text-primary-400 font-medium transition-colors">
                 {t('login.registerLink')}
               </a>
             </p>

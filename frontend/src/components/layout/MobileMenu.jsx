@@ -122,7 +122,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 <button
                   key={item.href}
                   onClick={() => handleNavigation(item.href)}
-                  className="w-full text-left text-gray-300 hover:text-white hover:bg-[#1a1a1a] menu-nav-item transition-all py-3 px-4 rounded-lg flex items-center gap-3"
+                  className="w-full text-left text-white hover:text-primary-400 hover:bg-[#1a1a1a] menu-nav-item transition-all py-3 px-4 rounded-lg flex items-center gap-3"
                 >
                   {ItemIcon && <ItemIcon size={20} />}
                   {item.label}

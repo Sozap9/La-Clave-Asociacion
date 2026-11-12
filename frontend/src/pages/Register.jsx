@@ -487,7 +487,7 @@ const Register = () => {
               {t("register.hasAccount")}{" "}
               <a
                 href={NAV_ROUTES.LOGIN}
-                className="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+                className="text-white hover:text-primary-400 font-medium transition-colors"
               >
                 {t("register.loginLink")}
               </a>

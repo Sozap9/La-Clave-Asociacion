@@ -31,8 +31,8 @@ const Footer = () => {
     <footer className="bg-[#0a0a0a] border-t border-[#262626] mt-auto">
       <div className="container-custom px-6">
 
-        {/* ── Fila superior: idioma (izquierda) + links (derecha) ── */}
-        <div className="flex flex-row items-center justify-between gap-3 py-4">
+        {/* ── Fila superior: selector de idioma, a la derecha ── */}
+        <div className="flex flex-row items-center justify-end gap-3 py-4">
 
           {/* Selector de idioma */}
           <div className="relative" ref={dropdownRef}>
@@ -50,7 +50,7 @@ const Footer = () => {
             </button>
 
             {open && (
-              <div className="absolute bottom-full left-0 mb-2 w-32 bg-[#111111] border border-[#262626] rounded-md shadow-lg overflow-hidden z-50">
+              <div className="absolute bottom-full right-0 mb-2 w-32 bg-[#111111] border border-[#262626] rounded-md shadow-lg overflow-hidden z-50">
                 {LANGUAGES.map((lang) => (
                   <button
                     key={lang.code}

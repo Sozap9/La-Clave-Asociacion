@@ -75,7 +75,7 @@ const ForgotStep = ({ onSuccess }) => {
       </form>
 
       <div className="mt-6 text-center">
-        <a href="/login" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors">
+        <a href="/login" className="inline-flex items-center gap-2 text-sm text-white hover:text-primary-400 transition-colors">
           <ArrowLeft size={14} />
           Volver al inicio de sesión
         </a>
@@ -105,7 +105,7 @@ const EmailSentStep = ({ email }) => (
     </div>
 
     <div className="text-center">
-      <a href="/login" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors">
+      <a href="/login" className="inline-flex items-center gap-2 text-sm text-white hover:text-primary-400 transition-colors">
         <ArrowLeft size={14} />
         Volver al inicio de sesión
       </a>
@@ -290,7 +290,7 @@ const InvalidToken = () => (
       <Button variant="primary" className="w-full">Solicitar nuevo enlace</Button>
     </a>
     <div className="mt-4 text-center">
-      <a href="/login" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors">
+      <a href="/login" className="inline-flex items-center gap-2 text-sm text-white hover:text-primary-400 transition-colors">
         <ArrowLeft size={14} />
         Volver al inicio de sesión
       </a>
