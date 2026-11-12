@@ -12,7 +12,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Reserva ya existente del socio para este evento (si la hay)
+  // Reserva que ya tenga el socio para este evento
   const [existingBooking, setExistingBooking] = useState(null);
   const [checkingBooking, setCheckingBooking] = useState(false);
 
@@ -93,16 +93,13 @@ const EventDetail = ({ event, isOpen, onClose }) => {
       const result = await createBooking(event.id, token);
 
       if (result.success) {
-        // Evento de pago: el backend ya creó la reserva (esperando_pago)
-        // y una Stripe Checkout Session real — redirigimos ahí a pagar.
-        // La reserva no queda confirmada hasta que Stripe confirme el
-        // pago (webhook), no al volver de esta redirección.
+        // De pago: a Stripe. La reserva se confirma con el webhook, no al volver
         if (result.data?.checkout_url) {
           window.location.href = result.data.checkout_url;
           return;
         }
 
-        // Evento gratuito o entrada en lista de espera: ya viene resuelto
+        // Gratis o lista de espera: ya viene resuelto
         setSuccess(true);
         setTimeout(() => {
           onClose();
@@ -120,7 +117,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
 
   return (
     <>
-      {/* Overlay */}
+      {/* Fondo */}
       <div
         className="fixed inset-0 bg-black/90 z-50 animate-fade-in"
         onClick={onClose}
@@ -131,7 +128,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
         <div
           className="bg-[#0a0a0a] border border-[#262626] max-w-5xl w-full max-h-[92vh] md:max-h-[85vh] flex flex-col shadow-2xl animate-slide-up overflow-hidden"
         >
-          {/* Botón cerrar */}
+          {/* Cerrar */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 bg-black/80 hover:bg-[#1a1a1a] text-white p-2
@@ -141,13 +138,13 @@ const EventDetail = ({ event, isOpen, onClose }) => {
             <X size={18} />
           </button>
 
-          {/* ── CABECERA: título + info grid ── */}
+          {/* Cabecera */}
           <div className="bg-[#111111] border-b border-[#262626] px-4 sm:px-8 pt-6 sm:pt-10 pb-4 sm:pb-8 flex-none">
             <h2 className="text-xl sm:text-3xl md:text-4xl font-light text-white uppercase tracking-widest mb-4 sm:mb-8 pr-10">
               {titulo}
             </h2>
 
-            {/* Info grid: fecha / hora / ubicación */}
+            {/* Fecha, hora y lugar */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
               <div>
                 <p className="text-primary-400 text-xs uppercase tracking-widest mb-1">
@@ -176,13 +173,13 @@ const EventDetail = ({ event, isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* ── CUERPO: mobile = columna, desktop = dos columnas ── */}
+          {/* Una columna en móvil, dos en escritorio */}
           <div className="flex flex-col md:grid md:grid-cols-2 gap-0 flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
 
-            {/* Columna izquierda (desktop) / scroll único (mobile) */}
+            {/* Columna izquierda */}
             <div className="p-4 sm:p-8 flex flex-col gap-5 border-r border-[#262626] md:overflow-y-auto min-h-0">
 
-              {/* Alertas */}
+              {/* Avisos */}
               {error && (
                 <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 text-sm">
                   {error}
@@ -201,7 +198,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 </p>
               )}
 
-              {/* Imagen — solo mobile, entre descripción y reserva */}
+              {/* Imagen, solo en móvil */}
               {imagen_cartel_url && (
                 <div className="md:hidden w-full flex-shrink-0 rounded-lg overflow-hidden">
                   <img
@@ -212,10 +209,9 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* Separador */}
               <div className="border-t border-[#262626]" />
 
-              {/* Precio / Donación */}
+              {/* Precio o donación */}
               {precio_socio > 0 && (
                 <div>
                   <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">
@@ -227,7 +223,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* Botón reserva */}
+              {/* Reservar */}
               <div className="md:mt-auto pt-2">
                 {isAuthenticated ? (
                   existingBooking ? (
@@ -282,7 +278,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Columna derecha: cartel — solo desktop */}
+            {/* Cartel, solo en escritorio */}
             <div className="bg-[#080808] overflow-hidden hidden md:flex md:items-center md:justify-center">
               {imagen_cartel_url ? (
                 <img

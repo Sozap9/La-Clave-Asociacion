@@ -16,7 +16,6 @@ const NavBar = () => {
           <div className="relative flex items-center justify-between h-20">
 
             {/* Logo */}
-            {/* La llave es un SVG blanco sin fondo: se funde con el navbar */}
             <button
               onClick={() => window.location.href = '/'}
               aria-label={t('nav.goHome')}

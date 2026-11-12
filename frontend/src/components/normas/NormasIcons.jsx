@@ -1,10 +1,5 @@
-/**
- * Iconos de la página de Normas, iguales que los del cartel del local.
- *
- * Los iconos rellenos son de Font Awesome Free (licencia CC BY 4.0,
- * https://fontawesome.com/license/free). El de "ruido" combina el
- * altavoz de Font Awesome con un círculo tachado, como en el cartel.
- */
+// Iconos de Normas como los del cartel. Los rellenos son de Font Awesome Free
+// (CC BY 4.0, https://fontawesome.com/license/free).
 
 export const IconRuido = (props) => (
   <svg fill="currentColor" viewBox="0 0 512 512" {...props}><circle cx="256" cy="256" r="226" fill="none" stroke="currentColor" strokeWidth="40"/><g transform="translate(97 115) scale(0.55)"><path d="M48 352l48 0 134.1 119.2c6.4 5.7 14.6 8.8 23.1 8.8 19.2 0 34.8-15.6 34.8-34.8l0-378.4c0-19.2-15.6-34.8-34.8-34.8-8.5 0-16.7 3.1-23.1 8.8L96 160 48 160c-26.5 0-48 21.5-48 48l0 96c0 26.5 21.5 48 48 48zM367 175c-9.4 9.4-9.4 24.6 0 33.9l47 47-47 47c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0l47-47 47 47c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-47-47 47-47c9.4-9.4 9.4-24.6 0-33.9s-24.6-9.4-33.9 0l-47 47-47-47c-9.4-9.4-24.6-9.4-33.9 0z"/></g><line x1="96" y1="96" x2="416" y2="416" stroke="currentColor" strokeWidth="40"/></svg>

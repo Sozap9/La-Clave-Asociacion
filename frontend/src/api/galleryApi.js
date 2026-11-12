@@ -8,11 +8,7 @@ const getAuthHeaders = () => {
   };
 };
 
-/**
- * ========================================
- * FOLDERS/ÁLBUMES - Público y Admin
- * ========================================
- */
+// Álbumes
 
 export const getAllFolders = async (params = {}) => {
   try {
@@ -91,9 +87,7 @@ export const deleteFolder = async (id) => {
   }
 };
 
-/**
- * ✅ NUEVO: Establecer imagen de portada
- */
+// Portada del álbum
 export const setCoverImage = async (folderId, imageId) => {
   try {
     const response = await fetch(`${API_URL}/gallery/folders/${folderId}/cover`, {
@@ -108,11 +102,7 @@ export const setCoverImage = async (folderId, imageId) => {
   }
 };
 
-/**
- * ========================================
- * IMÁGENES
- * ========================================
- */
+// Imágenes
 
 export const getAllImagesWithArtists = async (params = {}) => {
   try {
@@ -158,9 +148,7 @@ export const uploadImage = async (folderId, formData) => {
   }
 };
 
-/**
- * ✅ NUEVO: Subir múltiples imágenes
- */
+// Subir varias imágenes
 export const uploadMultipleImages = async (folderId, imagesData, onProgress) => {
   try {
     const token = localStorage.getItem('token');
@@ -197,7 +185,6 @@ export const uploadMultipleImages = async (folderId, imagesData, onProgress) => 
         errors.push({ file: file.name, error: err.message });
       }
 
-      // Actualizar progreso
       if (onProgress) {
         onProgress({
           [i]: Math.round(((i + 1) / imagesData.length) * 100)
@@ -236,9 +223,7 @@ export const updateImage = async (id, imageData) => {
   }
 };
 
-/**
- * ✅ NUEVO: Actualizar múltiples imágenes
- */
+// Editar varias imágenes
 export const bulkUpdateImages = async (imageIds, updates) => {
   try {
     const response = await fetch(`${API_URL}/gallery/images/bulk-update`, {
@@ -266,9 +251,7 @@ export const deleteImage = async (id) => {
   }
 };
 
-/**
- * ✅ NUEVO: Eliminar múltiples imágenes
- */
+// Borrar varias imágenes
 export const bulkDeleteImages = async (imageIds) => {
   try {
     const response = await fetch(`${API_URL}/gallery/images/bulk-delete`, {
@@ -297,11 +280,7 @@ export const reorderImages = async (folderId, imageIds) => {
   }
 };
 
-/**
- * ========================================
- * ARTISTAS EN IMÁGENES
- * ========================================
- */
+// Artistas de una imagen
 
 export const getImageArtists = async (imageId) => {
   try {
@@ -354,11 +333,7 @@ export const removeArtistFromImage = async (imageId, artistId) => {
   }
 };
 
-/**
- * ========================================
- * ARTISTAS EN ÁLBUMES
- * ========================================
- */
+// Artistas de un álbum
 
 export const getFolderArtists = async (folderId) => {
   try {

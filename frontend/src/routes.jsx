@@ -12,7 +12,7 @@ import Gallery from "./pages/Gallery";
 import GalleryAlbum from "./pages/GalleryAlbum";
 import MisEntradas from "./pages/MisEntradas";
 
-// Admin imports
+// Admin
 import AdminLayout from "./components/admin/AdminLayout";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -36,7 +36,6 @@ import AdminGallery from "./pages/admin/AdminGallery";
 import AdminGalleryImages from "./pages/admin/AdminGalleryImages";
 import AdminSolicitudes from "./pages/admin/AdminSolicitudes";
 
-// Exports individuales
 import AdminExportSocios from "./pages/admin/AdminExportSocios";
 import AdminExportEventos from "./pages/admin/AdminExportEventos";
 import AdminExportReservas from "./pages/admin/AdminExportReservas";
@@ -51,7 +50,7 @@ const ComingSoon = ({ title }) => (
 );
 
 export const router = createBrowserRouter([
-  // RUTAS PÚBLICAS
+  // Públicas
   {
     path: "/",
     element: (
@@ -69,7 +68,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Única ruta de registro = solicitud de membresía
+  // El registro es la solicitud de socio
   {
     path: "/registro",
     element: (
@@ -122,7 +121,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // RUTAS PROTEGIDAS (autenticación requerida)
+  // Con sesión
   {
     path: "/perfil",
     element: (
@@ -134,7 +133,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // RUTAS SOLO PARA SOCIOS Y ADMIN
+  // Socios y admin
   {
     path: "/eventos",
     element: (
@@ -186,7 +185,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // RUTAS DE ADMIN
+  // Admin
   {
     path: "/admin",
     element: (
@@ -262,7 +261,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Solicitudes ✨ NUEVO
+  // Solicitudes
   {
     path: "/admin/solicitudes",
     element: (

@@ -1,6 +1,4 @@
-/**
- * Componente Loader - Spinner de carga
- */
+// Spinner de carga
 const Loader = ({ size = 'md', fullScreen = false }) => {
   const sizeClasses = {
     sm: 'w-6 h-6 border-2',

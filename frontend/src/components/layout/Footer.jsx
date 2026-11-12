@@ -31,10 +31,9 @@ const Footer = () => {
     <footer className="bg-[#0a0a0a] border-t border-[#262626] mt-auto">
       <div className="container-custom px-6">
 
-        {/* ── Fila superior: selector de idioma, a la derecha ── */}
+        {/* Idioma, a la derecha */}
         <div className="flex flex-row items-center justify-end gap-3 py-4">
 
-          {/* Selector de idioma */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setOpen((prev) => !prev)}
@@ -73,10 +72,9 @@ const Footer = () => {
 
         </div>
 
-        {/* ── Separador ── */}
         <div className="border-t border-[#262626]" />
 
-        {/* ── Fila inferior: copyright ── */}
+        {/* Copyright */}
         <div className="py-4 flex items-center justify-center">
           <p className="text-gray-600 text-xs">
             © {currentYear} {APP_NAME} — {t('footer.rights')}

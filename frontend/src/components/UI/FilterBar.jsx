@@ -1,11 +1,4 @@
-/**
-  * Componente FilterBar
-  * 
-  * En mobile (< sm): muestra un <select> nativo con el filtro activo
-  * En desktop (sm+): botón desplegable con el filtro activo — evita
-  * ocupar una fila entera con botones sueltos, y mantiene el mismo
-  * estilo oscuro/dorado del resto de la web
-  */
+// Filtros: <select> nativo en móvil y desplegable en escritorio
 
 import React, { useState, useRef, useEffect } from "react";
 import { Filter } from "lucide-react";
@@ -21,7 +14,7 @@ const FilterBar = ({
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
 
-  // Cerrar al hacer click fuera del desplegable
+  // Se cierra al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -32,7 +25,7 @@ const FilterBar = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── MODO GENÉRICO (ej. Galería) ──
+  // Modo genérico (galería)
   if (customFilters) {
     const activeLabel =
       customFilters.find((f) => f.value === activeFilter)?.label ||
@@ -40,7 +33,7 @@ const FilterBar = ({
 
     return (
       <div className="w-full sm:w-auto" ref={containerRef}>
-        {/* Mobile: select nativo */}
+        {/* Móvil */}
         <select
           className="sm:hidden w-full px-4 py-2.5 bg-[#1a1a1a] text-white text-sm rounded-lg border border-[#262626] focus:outline-none focus:border-primary-500 appearance-none cursor-pointer"
           value={activeFilter}
@@ -54,7 +47,7 @@ const FilterBar = ({
           ))}
         </select>
 
-        {/* Desktop: icono discreto que despliega las opciones */}
+        {/* Escritorio */}
         <div className="hidden sm:block relative">
           <button
             onClick={() => setOpen((v) => !v)}
@@ -93,7 +86,7 @@ const FilterBar = ({
     );
   }
 
-  // ── MODO EVENTOS ──
+  // Modo eventos
   const handleStatusChange = (status) => {
     onFilterChange({ ...filters, status, featured: undefined });
     setOpen(false);
@@ -110,7 +103,6 @@ const FilterBar = ({
 
   const isFeaturedActive = filters.featured === true;
 
-  // Valor actual para el select mobile
   const currentMobileValue = isFeaturedActive
     ? "featured"
     : filters.status || "upcoming";
@@ -137,7 +129,7 @@ const FilterBar = ({
 
   return (
     <div className="w-full sm:w-auto" ref={containerRef}>
-      {/* Mobile: select nativo */}
+      {/* Móvil */}
       <select
         className="sm:hidden w-full px-4 py-2.5 bg-[#1a1a1a] text-white text-sm rounded-lg border border-[#262626] focus:outline-none focus:border-primary-500 appearance-none cursor-pointer"
         value={currentMobileValue}
@@ -150,7 +142,7 @@ const FilterBar = ({
         {includeCancelled && <option value="cancelled">Cancelados</option>}
       </select>
 
-      {/* Desktop: icono discreto que despliega las opciones */}
+      {/* Escritorio */}
       <div className="hidden sm:block relative">
         <button
           onClick={() => setOpen((v) => !v)}

@@ -31,7 +31,7 @@ const EventCard = ({ event, onViewDetail }) => {
       className="group cursor-pointer bg-[#1a1a1a] overflow-hidden border border-[#262626]
                  hover:border-primary-600 transition-all duration-300"
     >
-      {/* Imagen del evento */}
+      {/* Imagen */}
       <div className="relative aspect-[4/3] overflow-hidden bg-[#0a0a0a]">
         {imageUrl ? (
           <img
@@ -54,13 +54,12 @@ const EventCard = ({ event, onViewDetail }) => {
             <span className="text-gray-600 text-sm">Sin imagen</span>
           </div>
         )}
-        {/* Overlay en hover */}
+        {/* Capa al pasar el ratón */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300" />
       </div>
 
       {/* Contenido */}
       <div className="p-4 space-y-3">
-        {/* Título */}
         <h3 className="text-white text-lg font-light uppercase tracking-wide line-clamp-2 
                       group-hover:text-primary-400 transition-colors">
           {event.titulo}
@@ -79,7 +78,7 @@ const EventCard = ({ event, onViewDetail }) => {
         </div>
         
 
-        {/* Precio (si existe) */}
+        {/* Precio, si lo tiene */}
         {event.precio_socio && (
           <div className="pt-2 border-t border-[#262626]">
             <span className="text-primary-400 text-sm font-medium">

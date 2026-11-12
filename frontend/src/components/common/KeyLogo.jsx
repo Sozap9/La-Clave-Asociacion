@@ -1,10 +1,5 @@
-/**
- * Logo de La Clave 981 (la llave) en SVG.
- *
- * Usa `currentColor`, así que toma el color del texto: con `text-white`
- * se ve blanca sobre cualquier fondo, sin el recuadro negro del PNG.
- * El tamaño se controla con la altura, p. ej. className="h-10 w-auto".
- */
+// La llave en SVG. Toma el color del texto (currentColor); el tamaño va por
+// la altura: "h-10 w-auto".
 const KeyLogo = ({ className = "h-10 w-auto", title }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

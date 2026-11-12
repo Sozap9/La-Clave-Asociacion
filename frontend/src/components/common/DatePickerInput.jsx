@@ -3,14 +3,11 @@ import { registerLocale } from "react-datepicker";
 import es from "date-fns/locale/es";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Registrar locale español
+// Calendario en castellano
 registerLocale("es", es);
 
-// Input de hora manual, con el mismo estilo que el resto de campos
-// "input" del formulario — evita el selector nativo del navegador
-// (input type="time"), que no se puede re-estilizar y rompe el tema oscuro.
-// Ancho fijo por estilo inline: la clase compartida "input" trae w-full
-// por @apply, que si no se sobreescribe así gana y ocupa todo el hueco.
+// Hora escrita a mano: el input type="time" nativo no admite el tema oscuro.
+// El ancho va inline porque la clase "input" trae w-full.
 const CustomTimeInput = ({ value, onChange }) => (
   <div className="flex justify-center w-full">
     <input
@@ -154,7 +151,7 @@ const DatePickerInput = ({
     />
   );
 
-  // Si showLabel es true, renderiza con label y div wrapper
+  // Con etiqueta
   if (showLabel && label) {
     return (
       <div className={className}>
@@ -167,12 +164,11 @@ const DatePickerInput = ({
     );
   }
 
-  // Si hay className, envuelve con div (manteniendo la disposición original)
+  // Con className, dentro de un div
   if (className) {
     return <div className={className}>{content}</div>;
   }
 
-  // Si no, solo renderiza el DatePicker
   return content;
 };
 

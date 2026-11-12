@@ -14,7 +14,6 @@ const FolderModal = ({ folder, onClose, onSave }) => {
     destacado: false,
   });
 
-  // Portada como archivo
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const fileInputRef = useRef(null);
@@ -31,7 +30,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
       if (folder.fecha_evento) {
         setSelectedDate(new Date(folder.fecha_evento));
       }
-      // Mostrar portada actual si existe
+      // Portada actual
       if (folder.imagen_portada_url) {
         const url = folder.imagen_portada_url.startsWith('http')
           ? folder.imagen_portada_url
@@ -100,7 +99,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-primary-500/20 shadow-2xl">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-4 sm:p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
             {folder ? "Editar Álbum" : "Crear Álbum"}
@@ -114,7 +113,6 @@ const FolderModal = ({ folder, onClose, onSave }) => {
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
           {/* Nombre */}
           <div>
@@ -145,7 +143,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
             />
           </div>
 
-          {/* Fecha del Evento */}
+          {/* Fecha del evento */}
           <div>
             <label className="block text-gray-300 font-medium mb-2">
               Fecha del Evento{" "}
@@ -159,7 +157,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
             />
           </div>
 
-          {/* Imagen de Portada — file picker */}
+          {/* Portada */}
           <div>
             <label className="block text-gray-300 font-medium mb-2">
               Imagen de Portada{" "}
@@ -216,7 +214,7 @@ const FolderModal = ({ folder, onClose, onSave }) => {
             )}
           </div>
 
-          {/* Toggles — mismo estilo que modal de imagen */}
+          {/* Interruptores */}
           <div className="space-y-3">
             {/* Visible */}
             <div className="flex items-center justify-between p-4 bg-[#1a1a1a] border border-[#262626] rounded-lg">

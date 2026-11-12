@@ -1,33 +1,10 @@
-/**
- * Componente Pagination
- *
- * Paginación discreta y consistente para toda la web (admin y público).
- * No se renderiza nada si solo hay 1 página — por diseño, para no
- * ensuciar listados cortos con controles que no hacen falta.
- * Va centrada y muestra como mucho 5 números, con la página actual en
- * medio: 6 7 8 9 10. Con más de 5 páginas añade botones de primera y última.
- *
- * Uso típico (paginación en servidor):
- *   <Pagination page={pagination.page} pages={pagination.pages}
- *     total={pagination.total} onPageChange={(p) => setFilters(f => ({...f, page: p}))} />
- *
- * Uso típico (paginación en cliente, sobre un array ya cargado):
- *   const { pageItems, page, pages, setPage } = usePagination(items, 20);
- *   <Pagination page={page} pages={pages} total={items.length} onPageChange={setPage} />
- */
+// Paginación de toda la web: centrada, máximo 5 números y nada si hay una sola página
 
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
-// Máximo de números (casillas) que se muestran a la vez
 const MAX_NUMEROS = 5;
 
-/**
- * Devuelve los números de página a mostrar: como mucho 5 seguidos,
- * con la página actual en el centro siempre que se pueda.
- * Ej. con 20 páginas y la 8 activa: 6 7 8 9 10
- *     con 20 páginas y la 1 activa: 1 2 3 4 5
- *     con 20 páginas y la 20 activa: 16 17 18 19 20
- */
+// Hasta 5 páginas seguidas con la actual en medio: 8 de 20 → 6 7 8 9 10
 const getPageNumbers = (page, pages) => {
   const count = Math.min(MAX_NUMEROS, pages);
   let start = Math.max(1, page - Math.floor(count / 2));
@@ -46,8 +23,7 @@ const Pagination = ({ page, pages, total, onPageChange, itemLabel = "resultados"
     onPageChange(p);
   };
 
-  // Los botones de primera/última página solo hacen falta si hay más
-  // páginas de las que caben en las 5 casillas
+  // Primera y última solo si hay más de 5 páginas
   const showEdges = pages > MAX_NUMEROS;
 
   return (

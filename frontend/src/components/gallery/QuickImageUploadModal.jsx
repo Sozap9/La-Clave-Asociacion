@@ -18,7 +18,7 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
         return;
       }
       
-      if (file.size > 10 * 1024 * 1024) { // 10MB
+      if (file.size > 10 * 1024 * 1024) { // 10 MB
         setError('La imagen no debe superar los 10MB');
         return;
       }
@@ -74,7 +74,7 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
       />
       
       <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-primary-500/20">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Upload size={24} className="text-primary-400" />
@@ -90,7 +90,7 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
           </button>
         </div>
 
-        {/* Content */}
+        {/* Contenido */}
         <div className="p-4 sm:p-6 space-y-6">
           {error && (
             <Alert 
@@ -182,7 +182,6 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
             </p>
           </div>
 
-          {/* Info adicional */}
           <div className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors">
             <p className="text-gray-300 text-sm">
               <strong>Nota:</strong> Esta es una subida rápida sin título ni descripción. 
@@ -191,7 +190,7 @@ const QuickImageUploadModal = ({ folders, onClose, onSuccess }) => {
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Pie */}
         <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-primary-500/20">
           <button
             onClick={onClose}

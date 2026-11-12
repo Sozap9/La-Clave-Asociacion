@@ -53,7 +53,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
     else if (isAdmin) items = adminItems;
     else if (isSocio) items = socioItems;
 
-    // Galería oculta: se quita del menú mientras FEATURES.GALLERY_ENABLED sea false
+    // Sin galería mientras FEATURES.GALLERY_ENABLED sea false
     return FEATURES.GALLERY_ENABLED
       ? items
       : items.filter((item) => item.href !== NAV_ROUTES.GALLERY);
@@ -89,7 +89,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Overlay */}
+      {/* Fondo */}
       <div
         className="fixed inset-0 bg-black bg-opacity-70 z-40 animate-fade-in"
         onClick={onClose}
@@ -98,7 +98,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
       {/* Menú lateral */}
       <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-[#0a0a0a] shadow-2xl z-50 transform transition-transform duration-300">
 
-        {/* Header */}
+        {/* Cabecera */}
         <div className="flex items-center justify-between p-6 border-b border-[#262626]">
           <h2 className="menu-title text-white">
             {isAuthenticated ? `${t('menu.hello')}, ${user?.nombre}` : t('menu.title')}
@@ -131,11 +131,11 @@ const MobileMenu = ({ isOpen, onClose }) => {
             })}
           </nav>
 
-          {/* Footer del menú */}
+          {/* Pie del menú */}
           <div className="p-6 border-t border-[#262626] space-y-4 bg-black">
             {isAuthenticated ? (
               <>
-                {/* Mi Perfil */}
+                {/* Mi perfil */}
                 <button
                   onClick={() => handleNavigation(NAV_ROUTES.PROFILE)}
                   className="w-full flex items-center gap-3 mb-4 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#262626] transition-colors cursor-pointer"

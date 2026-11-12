@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import { LanguageProvider } from './context/LanguageContext'  // ← esta línea
+import { LanguageProvider } from './context/LanguageContext'
 import { router } from './routes'
 import './index.css'
 

@@ -1,25 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 
-/**
- * usePagination
- *
- * Pagina un array ya cargado en memoria (para endpoints que no
- * soportan page/limit en el backend). Vuelve a la página 1
- * automáticamente si la lista cambia (nuevo filtro, búsqueda, etc.)
- * y la página actual deja de tener sentido.
- *
- * @param {Array} items - Lista completa ya filtrada/ordenada
- * @param {Number} perPage - Elementos por página
- * @returns {{ pageItems, page, pages, total, setPage }}
- */
+// Pagina en el cliente un array ya cargado (endpoints sin page/limit)
 export const usePagination = (items = [], perPage = 20) => {
   const [page, setPage] = useState(1);
 
   const total = items.length;
   const pages = Math.max(1, Math.ceil(total / perPage));
 
-  // Si la lista se acorta (filtro/búsqueda) y la página actual ya no
-  // existe, volvemos a la última página válida.
+  // Si la lista se acorta, se vuelve a la última página que exista
   useEffect(() => {
     if (page > pages) setPage(pages);
   }, [pages, page]);

@@ -7,11 +7,7 @@ const getAuthHeaders = () => {
   return headers;
 };
 
-/**
- * ========================================
- * DASHBOARD & STATISTICS
- * ========================================
- */
+// Dashboard y estadísticas
 
 export const getAdminStats = async () => {
   try {
@@ -46,11 +42,7 @@ export const getDashboardStats = async () => {
   }
 };
 
-/**
- * ========================================
- * EVENT MANAGEMENT
- * ========================================
- */
+// Eventos
 
 export const getAllEventsAdmin = async (params = {}) => {
   try {
@@ -83,10 +75,7 @@ export const getEventDetailsAdmin = async (id) => {
   }
 };
 
-/**
- * Forzar manualmente una tanda como vigente ahora mismo, sin esperar
- * a su fecha_hora_inicio.
- */
+// Forzar una tanda como vigente ya
 export const activateEventTier = async (eventId, tierId) => {
   try {
     const response = await fetch(
@@ -103,10 +92,7 @@ export const activateEventTier = async (eventId, tierId) => {
   }
 };
 
-/**
- * Quitar el forzado manual de tanda, volver al modo automático por
- * fecha/hora.
- */
+// Quitar el forzado: las tandas vuelven a ir por fecha
 export const deactivateEventTier = async (eventId) => {
   try {
     const response = await fetch(
@@ -270,11 +256,7 @@ export const cancelEvent = async (id, motivo) => {
   }
 };
 
-/**
- * ========================================
- * USER DETAILS (USADO CON SOCIOS)
- * ========================================
- */
+// Usuarios
 
 export const getUserDetails = async (id) => {
   try {
@@ -302,11 +284,7 @@ export const updateUserRole = async (userId, newRole) => {
   }
 };
 
-/**
- * ========================================
- * MEMBER (SOCIOS) MANAGEMENT
- * ========================================
- */
+// Socios
 
 export const getAllSocios = async (params = {}) => {
   try {
@@ -449,11 +427,7 @@ export const suspendSocio = async (id) => {
   }
 };
 
-/**
- * ========================================
- * BOOKING MANAGEMENT
- * ========================================
- */
+// Reservas
 
 export const getAllBookings = async (params = {}) => {
   try {
@@ -525,11 +499,7 @@ export const verifyQR = async (codigo_reserva) => {
   }
 };
 
-/**
- * ========================================
- * PAYMENT MANAGEMENT
- * ========================================
- */
+// Pagos
 
 export const getAllPayments = async (params = {}) => {
   try {
@@ -575,11 +545,7 @@ export const getMonthlyRevenue = async (year) => {
   }
 };
 
-/**
- * ========================================
- * GALLERY
- * ========================================
- */
+// Gallery
 
 export const getGalleryStats = async () => {
   try {
@@ -593,11 +559,7 @@ export const getGalleryStats = async () => {
   }
 };
 
-/**
- * ========================================
- * ACTIVITY
- * ========================================
- */
+// Actividad
 
 export const getRecentActivity = async (limit = 50) => {
   try {
@@ -611,11 +573,7 @@ export const getRecentActivity = async (limit = 50) => {
   }
 };
 
-/**
- * ========================================
- * SOLICITUDES DE SOCIO  ✨ NUEVO
- * ========================================
- */
+// Solicitudes de socio
 
 export const getSolicitudesPendientesCount = async () => {
   try {
@@ -707,10 +665,7 @@ export const eliminarSolicitud = async (id) => {
   }
 };
 
-/**
- * Obtener lista de eventos para el selector del export de reservas
- * Devuelve todos los eventos sin cap de paginación
- */
+// Eventos para el selector de la exportación de reservas, sin paginar
 export const getEventsForExport = async () => {
   try {
     const response = await fetch(`${API_URL}/admin/export/events-selector`, {
@@ -723,11 +678,7 @@ export const getEventsForExport = async () => {
   }
 };
 
-/**
- * ========================================
- * EXPORTACIONES - PDF
- * ========================================
- */
+// Exportaciones PDF
 
 const downloadPDF = async (url, filename) => {
   const token = localStorage.getItem("token");

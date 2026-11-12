@@ -10,7 +10,7 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
   const [uploadProgress, setUploadProgress] = useState({});
   const [error, setError] = useState('');
   
-  // Opciones por defecto para todas las imágenes
+  // Opciones comunes a todas las imágenes
   const [defaultVisible, setDefaultVisible] = useState(true);
   const [defaultFeatured, setDefaultFeatured] = useState(false);
   
@@ -35,7 +35,6 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
       return;
     }
 
-    // Validar tamaño
     const oversizedFiles = imageFiles.filter(file => file.size > 10 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       setError(`${oversizedFiles.length} archivo(s) superan los 10MB`);
@@ -45,7 +44,6 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
     setError('');
     setSelectedFiles(prev => [...prev, ...imageFiles]);
 
-    // Crear previews
     imageFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -74,7 +72,6 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
     setError('');
 
     try {
-      // Preparar datos para upload múltiple
       const imagesData = selectedFiles.map(file => ({
         file,
         visible: defaultVisible,
@@ -114,7 +111,7 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="p-4 sm:p-6 border-b border-gray-800 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-white">Subir Imágenes</h2>
@@ -131,9 +128,9 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
           </button>
         </div>
 
-        {/* Content */}
+        {/* Contenido */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          {/* Drop Zone */}
+          {/* Zona para soltar */}
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -187,7 +184,7 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
             </div>
           </div>
 
-          {/* Opciones por Defecto */}
+          {/* Opciones comunes */}
           {selectedFiles.length > 0 && (
             <div className="bg-gray-800 rounded-lg p-4 space-y-3">
               <h3 className="text-white font-semibold mb-3">
@@ -224,7 +221,7 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
             </div>
           )}
 
-          {/* Preview de Imágenes */}
+          {/* Vista previa */}
           {previews.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -288,7 +285,7 @@ const ImageUploadModal = ({ folderId, onClose, onUploadComplete }) => {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Pie */}
         <div className="p-4 sm:p-6 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="text-gray-400 text-sm">
             {selectedFiles.length > 0 && (

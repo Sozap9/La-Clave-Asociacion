@@ -1,4 +1,3 @@
-// Constantes de la aplicación
 export const APP_NAME = 'La Clave';
 
 
@@ -17,7 +16,7 @@ export const NAV_ROUTES = {
   GALLERY: '/galeria',
   NORMATIVA: '/normativa',
   LOGIN: '/login',
-  REGISTER: '/registro',       // Única ruta de registro (solicitud de socio)
+  REGISTER: '/registro', // solicitud de socio
   DASHBOARD: '/',
   PROFILE: '/perfil',
   MY_BOOKINGS: '/mis-entradas',
@@ -40,8 +39,7 @@ export const PERMISSIONS = {
   ACCESS_ADMIN: [USER_ROLES.ADMIN]
 };
 
-// Interruptores de funcionalidades
-// Galería oculta (NO borrada): poner GALLERY_ENABLED a true para volver a mostrarla en toda la web
+// Interruptores. La galería está oculta, no borrada
 export const FEATURES = {
   GALLERY_ENABLED: false,
 };

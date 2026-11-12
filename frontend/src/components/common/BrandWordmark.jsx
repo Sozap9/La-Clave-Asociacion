@@ -1,12 +1,5 @@
-/**
- * Rótulos de marca con las mismas letras que el cartel de normas del local.
- *
- * La tipografía del cartel no está disponible (ninguna gratuita coincide),
- * así que "LACLAVE981" y "NORMAS" están dibujados como SVG midiendo el
- * cartel píxel a píxel: trazos rectos, esquinas cortadas solo donde las
- * tiene el cartel, la A de techo plano, la V recta y el 1 con base. Usan `currentColor` y se dimensionan con la altura, p. ej.
- * className="h-6 w-auto".
- */
+// "LACLAVE981" y "NORMAS" dibujados en SVG a partir del cartel (su fuente no
+// está disponible). Usan currentColor; el tamaño va por la altura: "h-6 w-auto".
 
 export const LaClaveWordmark = ({ className = "h-6 w-auto", decorative = false }) => (
   <svg

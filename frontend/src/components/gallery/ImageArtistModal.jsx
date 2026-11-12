@@ -24,7 +24,6 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
     setError("");
 
     try {
-      // Obtener artistas actuales de la imagen
       const currentResult = await galleryApi.getImageArtists(image.id);
 
       if (currentResult.success) {
@@ -33,7 +32,6 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
         setSelectedArtists(currentArtistsList.map((a) => a.id));
       }
 
-      // Obtener todos los artistas disponibles
       try {
         const response = await fetch(`${API_URL}/artists`);
         const artistsResult = await response.json();
@@ -83,7 +81,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
     }
   };
 
-  // ✅ CORRECCIÓN: Verificar que availableArtists es array antes de filtrar
+  // availableArtists puede no ser un array
   const filteredArtists = Array.isArray(availableArtists)
     ? availableArtists.filter(
         (artist) =>
@@ -97,7 +95,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-xl border border-gray-700 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-700">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Users size={24} className="text-primary-400" />
@@ -112,7 +110,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
           </button>
         </div>
 
-        {/* Content */}
+        {/* Contenido */}
         <form
           onSubmit={handleSubmit}
           className="flex-1 flex flex-col overflow-hidden"
@@ -208,7 +206,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
                       </div>
                     )}
 
-                    {/* Lista de artistas disponibles */}
+                    {/* Artistas disponibles */}
                     <div>
                       <h3 className="text-white font-semibold mb-3">
                         Todos los artistas ({filteredArtists.length})
@@ -257,7 +255,7 @@ const ImageArtistModal = ({ image, onClose, onSave }) => {
             )}
           </div>
 
-          {/* Footer */}
+          {/* Pie */}
           <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 border-t border-gray-700">
             <Button
               type="button"

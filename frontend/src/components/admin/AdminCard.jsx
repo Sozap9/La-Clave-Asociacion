@@ -67,9 +67,8 @@ const AdminCard = ({
       `}
       onClick={onClick}
     >
-      {/* Layout principal */}
       <div className="flex flex-col md:flex-row gap-5">
-        {/* Imagen / Avatar */}
+        {/* Imagen */}
         {(image || avatar) && (
           <div className="flex-shrink-0 self-start">
             {image ? (
@@ -86,9 +85,8 @@ const AdminCard = ({
 
         {/* Contenido */}
         <div className="flex-1 min-w-0">
-          {/* Header */}
+          {/* Cabecera */}
           <div className="flex flex-col md:flex-row md:justify-between gap-4 mb-4">
-            {/* Título */}
             <div className="flex-1 min-w-0">
               {title && (
                 <div className="flex flex-wrap items-center gap-4 mb-1">
@@ -125,7 +123,7 @@ const AdminCard = ({
                   md:items-end
                 "
               >
-                {/* Botones de acción + selector de rol en la misma fila */}
+                {/* Botones y selector de rol en la misma fila */}
                 <div className="flex items-center gap-2 justify-start md:justify-end flex-wrap">
                   {actions
                     .filter((a) => a.type !== "role")
@@ -148,7 +146,6 @@ const AdminCard = ({
                       </button>
                     ))}
 
-                  {/* Selector de rol — inline con los iconos */}
                   {actions.filter((a) => a.type === "role").map((action, i) => (
                     <div key={i} onClick={(e) => e.stopPropagation()}>
                       {action.element}
@@ -159,7 +156,7 @@ const AdminCard = ({
             )}
           </div>
 
-          {/* Fields */}
+          {/* Campos */}
           {fields.length > 0 && (
             <div
               className={`
@@ -203,7 +200,7 @@ const AdminCard = ({
         </div>
       </div>
 
-      {/* Expand */}
+      {/* Desplegable */}
       {expandable && (
         <button
           onClick={(e) => {

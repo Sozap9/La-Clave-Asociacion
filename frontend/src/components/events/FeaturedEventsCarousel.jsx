@@ -6,7 +6,7 @@ import EventCard from './EventCard';
 const FeaturedEventsCarousel = () => {
   const navigate = useNavigate();
   const handleClick = (event) => {
-    navigate(`/eventos/${event.id}`);  //  Va al detalle del evento específico
+    navigate(`/eventos/${event.id}`);
   };
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,7 @@ const FeaturedEventsCarousel = () => {
     }
   };
 
-  // No se ve si no hay eventos destacados o hay un error
+  // Oculto si no hay destacados o hay error
   if (error || events.length === 0) {
     return null;
   }
@@ -53,7 +53,7 @@ const FeaturedEventsCarousel = () => {
   return (
     <section className="py-24 bg-[#0a0a0a] border-t border-[#262626]">
       <div className="container-custom px-4 sm:px-6">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-light text-white mb-4 uppercase tracking-wider">
             Eventos Destacados
@@ -64,7 +64,7 @@ const FeaturedEventsCarousel = () => {
           </p>
         </div>
 
-        {/* Grid de eventos */}
+        {/* Eventos */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {events.map((event) => (
             <EventCard key={event.id} event={event} />

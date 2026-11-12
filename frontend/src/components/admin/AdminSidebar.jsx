@@ -28,7 +28,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
   const [openMenu, setOpenMenu] = useState(null);
   const [pendientesCount, setPendientesCount] = useState(0);
 
-  // ── Badge: contar solicitudes pendientes ──────────────────────────
+  // Contador de solicitudes pendientes
   useEffect(() => {
     const fetchCount = async () => {
       try {
@@ -39,7 +39,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       }
     };
     fetchCount();
-    // Refrescar cada 60 s mientras el sidebar está montado
+    // Se refresca cada 60 s
     const interval = setInterval(fetchCount, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -49,7 +49,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     navigate("/");
   };
 
-  // ── Menús ─────────────────────────────────────────────────────────
   const statsItems = [
     { path: "/admin/actividad", label: "Actividad Reciente", icon: BarChart3 },
     {
@@ -176,7 +175,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        {/* Header */}
+        {/* Cabecera */}
         <div className="flex items-center justify-between p-6 border-b border-[#262626]">
           <h2 className="text-2xl font-display text-white">Panel Admin</h2>
           <button
@@ -197,7 +196,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           <span className="font-medium">Volver a la Web</span>
         </a>
 
-        {/* Nav */}
+        {/* Navegación */}
         <nav className="flex-1 overflow-y-auto p-4">
           {/* Dashboard */}
           <NavLink
@@ -304,7 +303,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           </div>
         </nav>
 
-        {/* Logout */}
+        {/* Cerrar sesión */}
         <div className="p-4 border-t border-[#262626]">
           <button
             onClick={handleLogout}

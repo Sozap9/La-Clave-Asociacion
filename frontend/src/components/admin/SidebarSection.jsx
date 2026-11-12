@@ -4,14 +4,14 @@ import { ChevronDown } from "lucide-react";
 const SidebarSection = ({ id, title, icon: Icon, items, isOpen, onToggle }) => {
   const location = useLocation();
 
-  // Verificar si alguna ruta de este menú está activa
+  // ¿Alguna ruta de este menú está activa?
   const isActiveSection = items.some((item) =>
     location.pathname.startsWith(item.path),
   );
 
   return (
     <div className="mb-2">
-      {/* Header del menú - TAMAÑO FIJO */}
+      {/* Cabecera del menú */}
       <button
         onClick={onToggle}
         className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
@@ -30,7 +30,7 @@ const SidebarSection = ({ id, title, icon: Icon, items, isOpen, onToggle }) => {
         />
       </button>
 
-      {/* Submenú colapsable con animación suave */}
+      {/* Submenú plegable */}
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out ${
           isOpen ? "max-h-96 opacity-100 mt-1" : "max-h-0 opacity-0"

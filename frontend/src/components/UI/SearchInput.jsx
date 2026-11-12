@@ -1,28 +1,21 @@
 import React, { useEffect, useState, useRef } from "react";
 
-/**
- * Campo de búsqueda reutilizable.
- *
- * - Con debounceMs > 0 avisa al padre cuando el usuario deja de escribir
- *   durante ese tiempo, en vez de con cada letra.
- * - Al pulsar Enter avisa al momento, sin esperar.
- * - El valor que se escribe se guarda dentro del componente, así que no se
- *   pierden letras aunque el padre tarde en responder.
- */
+// Buscador: avisa al dejar de escribir (debounceMs) o al pulsar Enter.
+// Guarda el texto dentro para no perder letras si el padre tarda.
 const SearchInput = ({
   value = "",
   onChange,
-  onDebounced, // opcional: se llama con el valor tras el debounce o al pulsar Enter
+  onDebounced,
   onClear,
   placeholder = "Buscar...",
   debounceMs = 0,
 }) => {
   const [internal, setInternal] = useState(value);
   const timeoutRef = useRef(null);
-  // Último valor enviado al padre, para no avisar dos veces del mismo
+  // Último valor enviado, para no repetir
   const lastSentRef = useRef(value || "");
 
-  // Si el padre cambia el valor (p. ej. al limpiar filtros), se sincroniza
+  // Sincroniza si el padre cambia el valor
   useEffect(() => {
     setInternal(value || "");
     lastSentRef.current = value || "";
@@ -46,7 +39,6 @@ const SearchInput = ({
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
     }
-    // Sin debounce: se avisa con cada cambio
     send(internal);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [internal, debounceMs]);

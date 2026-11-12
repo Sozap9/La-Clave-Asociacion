@@ -3,9 +3,7 @@ import { Sparkles, Check } from 'lucide-react';
 import Button from './Button';
 import { FEATURES } from '../../utils/constants';
 
-/**
- * Banner para incentivar a usuarios básicos a mejorar su cuenta
- */
+// Banner para que los usuarios básicos se hagan socios
 const UpgradeBanner = () => {
   const navigate = useNavigate();
 
@@ -18,7 +16,7 @@ const UpgradeBanner = () => {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600/20 to-primary-800/20 backdrop-blur-lg border border-primary-500/30 shadow-2xl">
       
-      {/* Efecto de brillo animado */}
+      {/* Brillo animado */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
       
       <div className="relative p-5 sm:p-8 md:p-12">
@@ -40,7 +38,7 @@ const UpgradeBanner = () => {
               <span className="text-primary-400 font-bold text-2xl">10€/mes</span>
             </p>
 
-            {/* Lista de beneficios */}
+            {/* Beneficios */}
             <ul className="space-y-2 mb-6">
               {benefits.map((benefit, index) => (
                 <li key={index} className="flex items-center gap-3 text-white">
@@ -68,7 +66,7 @@ const UpgradeBanner = () => {
             </div>
           </div>
 
-          {/* Imagen/Icono decorativo */}
+          {/* Icono */}
           <div className="hidden lg:block">
             <div className="w-48 h-48 bg-gradient-to-br from-primary-500/30 to-primary-700/30 rounded-full flex items-center justify-center shadow-glow">
               <Crown size={80} className="text-primary-400" />
@@ -80,7 +78,6 @@ const UpgradeBanner = () => {
   );
 };
 
-// Importar Crown desde lucide-react
 import { Crown } from 'lucide-react';
 
 export default UpgradeBanner;

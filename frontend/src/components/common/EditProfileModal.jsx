@@ -3,9 +3,7 @@ import { X, Camera, Check, Upload } from "lucide-react";
 import api from "../../api/axios";
 import DatePickerInput from "./DatePickerInput";
 
-/**
- * Valida DNI español (formato: 12345678A)
- */
+// DNI (12345678A)
 const isValidDNI = (dni) => {
   if (typeof dni !== "string") return false;
   const value = dni.trim().toUpperCase();
@@ -19,9 +17,7 @@ const isValidDNI = (dni) => {
   return letters.charAt(number % 23) === letter;
 };
 
-/**
- * Valida NIE español (formato: X1234567A)
- */
+// NIE (X1234567A)
 const isValidNIE = (nie) => {
   if (typeof nie !== "string") return false;
   const value = nie.trim().toUpperCase();
@@ -37,9 +33,7 @@ const isValidNIE = (nie) => {
   return letters.charAt(parseInt(nieNumber, 10) % 23) === letter;
 };
 
-/**
- * Valida DNI o NIE
- */
+// DNI o NIE
 const isValidSpanishDocument = (document) => {
   return isValidDNI(document) || isValidNIE(document);
 };
@@ -181,8 +175,8 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
         setLoading(false);
       }
     } catch (err) {
-      console.error("❌ Error:", err);
-      console.error("❌ Error response:", err.response);
+      console.error("Error:", err);
+      console.error("Error response:", err.response);
       setError(err.response?.data?.message || "Error al actualizar perfil");
       setLoading(false);
     }
@@ -197,9 +191,9 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
         onClick={onClose}
       />
 
-      {/* Modal FIJO - Sin overflow en contenedor principal */}
+      {/* El scroll va por dentro, no en el modal */}
       <div className="relative bg-[#0a0a0a]/95 backdrop-blur-md rounded-2xl border border-primary-500/20 w-full max-w-6xl max-h-[90vh] shadow-2xl flex flex-col">
-        {/* Header FIJO */}
+        {/* Cabecera fija */}
         <div className="bg-[#0a0a0a]/95 backdrop-blur-md border-b border-primary-500/20 p-4 sm:p-6 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
           <h2 className="text-2xl font-bold text-white">Editar Perfil</h2>
           <button
@@ -211,7 +205,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
           </button>
         </div>
 
-        {/* Contenido con SCROLL INTERNO */}
+        {/* Contenido con scroll */}
         <div className="overflow-y-auto flex-1">
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
             {/* Avatar */}
@@ -271,7 +265,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
               </div>
             )}
 
-            {/* Grid de 3 columnas */}
+            {/* Datos */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -372,13 +366,13 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
               </div>
             </div>
 
-            {/* DNI - Fotos */}
+            {/* Fotos del DNI */}
             <div className="border-t border-gray-800 pt-6">
               <h3 className="text-lg font-semibold text-white mb-4">
                 Documentación DNI
               </h3>
               <div className="grid grid-cols-1 max-w-xs gap-6">
-                {/* DNI Frente */}
+                {/* Cara delantera */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     DNI Frente

@@ -1,24 +1,5 @@
-/**
- * EmptyState — estado vacío reutilizable en toda la app.
- *
- * Sigue el patrón visual usado originalmente en MisEntradas.jsx:
- * icono fino centrado (strokeWidth 1), título ligero en mayúsculas,
- * subtítulo opcional y acción opcional (botón, link...).
- *
- * Uso:
- *   <EmptyState
- *     icon={Ticket}
- *     title="No tienes entradas"
- *     subtitle="Reserva tu primera entrada para un evento"
- *   />
- *
- *   <EmptyState
- *     icon={Image}
- *     title="No hay álbumes disponibles"
- *     subtitle="Pronto subiremos nuevas fotos de nuestros eventos"
- *     action={<Button variant="primary" to="/eventos">Ver Eventos</Button>}
- *   />
- */
+// Estado vacío: icono fino, título, subtítulo y acción opcionales
+// <EmptyState icon={Ticket} title="No tienes entradas" action={<Button …/>} />
 const EmptyState = ({
   icon: Icon,
   title,

@@ -1,15 +1,7 @@
 import { useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, Info, XCircle } from 'lucide-react';
 
-/**
- * Componente Alert con auto-cierre automático
- * 
- * @param {string} type - Tipo de alerta: success, error, warning, info
- * @param {string} message - Mensaje a mostrar
- * @param {function} onClose - Callback al cerrar
- * @param {number} autoCloseDelay - Tiempo en ms antes de cerrar (default: 5000)
- * @param {boolean} persistent - Si true, no se cierra automáticamente
- */
+// Aviso con cierre automático
 const Alert = ({ 
   type = 'info', 
   message, 
@@ -18,7 +10,7 @@ const Alert = ({
   persistent = false 
 }) => {
   
-  // Auto-cierre después de X segundos (solo si no es persistente)
+  // Se cierra solo salvo que sea persistente
   useEffect(() => {
     if (!persistent && onClose) {
       const timer = setTimeout(() => {
