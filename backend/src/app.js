@@ -8,33 +8,27 @@ import { apiLimiter } from "./middleware/rateLimiter.js";
 import logger from "./config/logger.js";
 import httpLogger from "./middleware/httpLogger.js";
 
-// __dirname CONFIGURATION FOR ES MODULES
+// __dirname en módulos ES
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CREATE APP
 const app = express();
 
-// TRUST PROXY
+// Detrás del proxy de Railway
 app.set('trust proxy', 1);
 
 
-// SECURITY MIDDLEWARES (ORDER MATTERS)
+// Seguridad (el orden importa)
 
 
-/**
- * 1. HELMET - Security headers
- * Permitir cross-origin para imágenes
- */
+// Helmet, permitiendo cargar las imágenes desde otro origen
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-/**
- * 2. CORS - Permitir múltiples orígenes
- */
+// CORS
 const corsOptions = {
   origin: function(origin, callback) {
     const allowedOrigins = [
@@ -46,9 +40,8 @@ const corsOptions = {
       process.env.FRONTEND_URL
     ].filter(Boolean);
 
-    // Permitir sin origin (ej: Postman, curl), orígenes permitidos, y subdominios de
-    // pages.dev / workers.dev / vercel.app (incluye previews con prefijo, ej:
-    // la-clave-asociacion-bb75ywlks-sozap9s-projects.vercel.app)
+    // Sin origin (curl), orígenes de la lista y subdominios de pages.dev,
+    // workers.dev y vercel.app (las previews de Vercel)
     if (
       !origin ||
       allowedOrigins.includes(origin) ||
@@ -68,9 +61,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-/**
- * 3. COMPRESSION - GZIP
- */
+// Gzip
 app.use(compression({
   filter: (req, res) => {
     if (req.headers['x-no-compression']) {
@@ -82,13 +73,11 @@ app.use(compression({
   threshold: 1024
 }));
 
-/**
- * 4. STATIC FILES
- */
+// Archivos subidos
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 
-// HTTP LOGGING WITH WINSTON
+// Log HTTP
 if (process.env.NODE_ENV !== 'test') {
   app.use(httpLogger);
 }
@@ -103,36 +92,30 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-// RATE LIMITING
+// Límite de peticiones
 app.use('/api/', apiLimiter);
 
-// PUBLIC ROUTES (NO AUTH) - BEFORE BODY PARSERS
+// Rutas que van antes de los body parsers
 import publicEventRoutes from "./routes/publicEventRoutes.js";
 
-// Public event routes (no authentication required)
 app.use("/api/events", publicEventRoutes);
 
 
-// FORMDATA/MULTER ROUTES - BEFORE BODY PARSERS
 import eventRoutes from "./routes/eventRoutes.js";
 
-// Admin routes with FormData (BEFORE express.json)
+// Eventos del admin: FormData con multer
 app.use("/api/admin/events", eventRoutes);
 
-// WEBHOOK DE STRIPE - BEFORE BODY PARSERS
-// Stripe necesita el body en crudo (sin parsear) para verificar la firma
-// del webhook (ver webhookRoutes.js: usa express.raw internamente). Si
-// esto se montara después de express.json(), el body ya vendría parseado
-// como objeto y la verificación de firma fallaría siempre.
+// Webhook de Stripe: necesita el body sin parsear para comprobar la firma
 import webhookRoutes from "./routes/webhookRoutes.js";
 app.use("/api/webhooks", webhookRoutes);
 
 
-// BODY PARSER - AFTER FormData routes
+// Body parsers
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// OTHER ROUTES (JSON + FormData mixed) - AFTER body parsers
+// Resto de rutas
 import galleryRoutes from "./routes/galleryRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -144,9 +127,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import pushRoutes from "./routes/pushRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 
-// Gallery routes (handles both JSON and FormData via multer)
-// Galería OCULTA (no borrada): solo se monta si GALLERY_ENABLED=true en las
-// variables de entorno de Railway. Sin esa variable, /api/gallery responde 404.
+// Galería oculta: solo se monta con GALLERY_ENABLED=true (si no, 404)
 if (process.env.GALLERY_ENABLED === "true") {
   app.use("/api/gallery", galleryRoutes);
 } else {
@@ -155,7 +136,6 @@ if (process.env.GALLERY_ENABLED === "true") {
   );
 }
 
-// Main routes (JSON)
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/socios", socioRoutes);
@@ -166,7 +146,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/contact", contactRoutes);
 
-// Root route
+// Raíz
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -177,7 +157,7 @@ app.get("/", (req, res) => {
 });
 
 
-// 404 HANDLER
+// 404
 app.use((req, res) => {
   logger.warn('Route not found', {
     method: req.method,
@@ -192,7 +172,7 @@ app.use((req, res) => {
   });
 });
 
-// GLOBAL ERROR HANDLER
+// Errores
 app.use((err, req, res, next) => {
   logger.error('Unhandled error', {
     message: err.message,

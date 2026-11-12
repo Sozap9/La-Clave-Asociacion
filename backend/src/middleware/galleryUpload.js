@@ -4,7 +4,6 @@ import fs from 'fs';
 import sharp from 'sharp';
 import logger from '../config/logger.js';
 
-// ✅ Crear directorios para galería
 const galleryDir = './uploads/gallery';
 const galleryOriginalsDir = './uploads/gallery/originals';
 const galleryThumbsDir = './uploads/gallery/thumbs';
@@ -15,7 +14,7 @@ const galleryThumbsDir = './uploads/gallery/thumbs';
   }
 });
 
-// ✅ Configuración de almacenamiento para GALERÍA
+// Almacenamiento de la galería
 const galleryStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, galleryOriginalsDir);
@@ -28,7 +27,7 @@ const galleryStorage = multer.diskStorage({
   }
 });
 
-// Filtro de archivos (solo imágenes)
+// Solo imágenes
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -41,16 +40,15 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// ✅ Configuración de multer para GALERÍA
 export const galleryUpload = multer({
   storage: galleryStorage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB máximo
+    fileSize: 10 * 1024 * 1024 // 10 MB
   },
   fileFilter: fileFilter
 });
 
-// ✅ Middleware para crear thumbnail después de subir
+// Miniatura de 400x400 tras subir la imagen
 export const createThumbnail = async (req, res, next) => {
   if (!req.file) {
     return next();
@@ -61,7 +59,6 @@ export const createThumbnail = async (req, res, next) => {
     const thumbnailFilename = `thumb-${req.file.filename}`;
     const thumbnailPath = path.join(galleryThumbsDir, thumbnailFilename);
 
-    // Crear thumbnail de 400x400
     await sharp(originalPath)
       .resize(400, 400, {
         fit: 'cover',
@@ -70,14 +67,12 @@ export const createThumbnail = async (req, res, next) => {
       .jpeg({ quality: 80 })
       .toFile(thumbnailPath);
 
-    // Agregar información del thumbnail al request
     req.thumbnail = {
       filename: thumbnailFilename,
       path: thumbnailPath,
       url: `/uploads/gallery/thumbs/${thumbnailFilename}`
     };
 
-    // Obtener dimensiones de la imagen original
     const metadata = await sharp(originalPath).metadata();
     req.imageMetadata = {
       width: metadata.width,
@@ -87,12 +82,12 @@ export const createThumbnail = async (req, res, next) => {
     next();
   } catch (error) {
     logger.error('Error creating thumbnail:', error);
-    // Continuar sin thumbnail si falla
+    // Si falla, se sigue sin miniatura
     next();
   }
 };
 
-// Middleware para manejo de errores de multer
+// Errores de multer
 export const handleGalleryMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {

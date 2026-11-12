@@ -1,7 +1,4 @@
-/**
- * Validador de Variables de Entorno
- * Verifica que todas las variables obligatorias estén definidas al iniciar el servidor
- */
+// Comprueba las variables de entorno al arrancar
 
 const requiredEnvVars = [
   'PORT',
@@ -22,7 +19,7 @@ const optionalEnvVars = [
   'JWT_REFRESH_EXPIRE',
   'STRIPE_PUBLISHABLE_KEY',
   'STRIPE_WEBHOOK_SECRET',
-  // ── Brevo SMTP ───────────────────────────────────────────
+  // Brevo
   'BREVO_SMTP_HOST',
   'BREVO_SMTP_PORT',
   'BREVO_SMTP_USER',
@@ -32,7 +29,7 @@ const optionalEnvVars = [
   'EMAIL_SUPPORT',
   'EMAIL_ADMIN',
   'ADMIN_NOTIFICATION_EMAILS',
-  // ── App ──────────────────────────────────────────────────
+  // App
   'MAX_FILE_SIZE',
   'UPLOAD_PATH',
   'MAX_SOCIOS',
@@ -47,7 +44,6 @@ const optionalEnvVars = [
 export const validateEnv = () => {
   const missingVars = [];
 
-  // Verificar variables obligatorias
   requiredEnvVars.forEach(varName => {
     if (!process.env[varName]) {
       missingVars.push(varName);
@@ -63,10 +59,10 @@ export const validateEnv = () => {
     process.exit(1);
   }
 
-  // Advertencias sobre variables opcionales pero recomendadas
+  // Opcionales pero recomendadas
   const warnings = [];
 
-  // ── Brevo SMTP: avisar si falta la clave ─────────────────────
+  // Sin clave de Brevo los emails no salen
   const brevoVars = ['BREVO_SMTP_HOST', 'BREVO_SMTP_USER', 'BREVO_SMTP_KEY'];
   const missingBrevoVars = brevoVars.filter(v => !process.env[v]);
 
@@ -87,75 +83,68 @@ export const validateEnv = () => {
   }
 
   if (warnings.length > 0 && process.env.NODE_ENV !== 'test') {
-    console.warn('\n⚠️  ADVERTENCIA: Variables opcionales no configuradas:\n');
+    console.warn('\n  ADVERTENCIA: Variables opcionales no configuradas:\n');
     warnings.forEach(warning => {
       console.warn(`   - ${warning}`);
     });
     console.warn('\n');
   }
 
-  // Validaciones adicionales
   validateJWTSecrets();
   validateStripeKeys();
   validateURLs();
 
-  console.log('✅ Variables de entorno validadas correctamente\n');
+  console.log('Variables de entorno validadas correctamente\n');
 };
 
-/**
- * Valida que los secrets JWT sean seguros
- */
+// Secretos JWT suficientemente largos
 const validateJWTSecrets = () => {
   const minLength = 32;
 
   if (process.env.JWT_SECRET.length < minLength) {
-    console.warn(`⚠️  JWT_SECRET debería tener al menos ${minLength} caracteres para mayor seguridad`);
+    console.warn(`JWT_SECRET debería tener al menos ${minLength} caracteres para mayor seguridad`);
   }
 
   if (process.env.JWT_REFRESH_SECRET.length < minLength) {
-    console.warn(`⚠️  JWT_REFRESH_SECRET debería tener al menos ${minLength} caracteres para mayor seguridad`);
+    console.warn(`JWT_REFRESH_SECRET debería tener al menos ${minLength} caracteres para mayor seguridad`);
   }
 
   if (process.env.JWT_SECRET === process.env.JWT_REFRESH_SECRET) {
-    console.error('❌ ERROR: JWT_SECRET y JWT_REFRESH_SECRET NO deben ser iguales');
+    console.error('ERROR: JWT_SECRET y JWT_REFRESH_SECRET NO deben ser iguales');
     process.exit(1);
   }
 };
 
-/**
- * Valida las claves de Stripe según el entorno
- */
+// Claves de Stripe acordes al entorno
 const validateStripeKeys = () => {
   const { NODE_ENV, STRIPE_SECRET_KEY } = process.env;
 
   if (NODE_ENV === 'production' && STRIPE_SECRET_KEY.startsWith('sk_test_')) {
-    console.warn('⚠️  ADVERTENCIA: Estás usando claves de TEST de Stripe en producción.');
+    console.warn('ADVERTENCIA: Estás usando claves de TEST de Stripe en producción.');
     console.warn('   Los pagos NO serán reales hasta que cambies a claves LIVE (sk_live_...).');
     console.warn('   Esto es intencional mientras completas la verificación de tu cuenta en Stripe.');
   }
 
   if (NODE_ENV === 'development' && STRIPE_SECRET_KEY.startsWith('sk_live_')) {
-    console.warn('⚠️  ADVERTENCIA: Estás usando claves de LIVE de Stripe en desarrollo');
+    console.warn('ADVERTENCIA: Estás usando claves de LIVE de Stripe en desarrollo');
     console.warn('   Se recomienda usar claves de TEST (sk_test_...)');
   }
 };
 
-/**
- * Valida que las URLs tengan formato correcto
- */
+// URLs bien formadas
 const validateURLs = () => {
   const { FRONTEND_URL, BACKEND_URL } = process.env;
 
   const urlRegex = /^https?:\/\/.+/;
 
   if (FRONTEND_URL && !urlRegex.test(FRONTEND_URL)) {
-    console.error(`❌ ERROR: FRONTEND_URL tiene formato inválido: ${FRONTEND_URL}`);
+    console.error(`ERROR: FRONTEND_URL tiene formato inválido: ${FRONTEND_URL}`);
     console.error('   Debe comenzar con http:// o https://');
     process.exit(1);
   }
 
   if (BACKEND_URL && !urlRegex.test(BACKEND_URL)) {
-    console.error(`❌ ERROR: BACKEND_URL tiene formato inválido: ${BACKEND_URL}`);
+    console.error(`ERROR: BACKEND_URL tiene formato inválido: ${BACKEND_URL}`);
     console.error('   Debe comenzar con http:// o https://');
     process.exit(1);
   }

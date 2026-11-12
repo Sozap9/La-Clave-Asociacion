@@ -1,14 +1,11 @@
 import jwt from 'jsonwebtoken';
 import logger from '../config/logger.js';
 
-/**
- * Middleware para verificar el token JWT
- */
+// Comprueba el JWT
 export const authenticateToken = (req, res, next) => {
   try {
-    // Obtener token del header Authorization
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
 
     if (!token) {
       return res.status(401).json({ 
@@ -17,7 +14,6 @@ export const authenticateToken = (req, res, next) => {
       });
     }
 
-    // Verificar token
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
         logger.error('Error al verificar token:', { error: err.message });
@@ -30,8 +26,7 @@ export const authenticateToken = (req, res, next) => {
         });
       }
 
-      // Añadir información del usuario al request
-      // Soporta diferentes formatos de payload JWT
+      // Acepta los distintos formatos de payload que ha tenido el token
       req.user = {
         id: decoded.id || decoded.userId || decoded.user_id,
         email: decoded.email,
@@ -49,9 +44,7 @@ export const authenticateToken = (req, res, next) => {
   }
 };
 
-/**
- * Middleware para verificar que el usuario es admin
- */
+// Solo admin
 export const requireAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ 
@@ -70,9 +63,7 @@ export const requireAdmin = (req, res, next) => {
   }
 };
 
-/**
- * Middleware para verificar que el usuario es socio o admin
- */
+// Socio o admin
 export const requireSocio = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ 

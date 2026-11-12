@@ -1,48 +1,18 @@
 import logger from './logger.js';
 
 /**
- * ================================================================
- * CONFIGURACIÓN DE ENVÍO DE EMAILS — BREVO API HTTP
- * ================================================================
- * Cambiado de SMTP a la API HTTP de Brevo (https://api.brevo.com) porque
- * Railway no consigue completar la conexión SMTP saliente (ETIMEDOUT
- * persistente en los puertos 587 y 465, incluso forzando IPv4). La API
- * HTTP va por HTTPS (puerto 443), que nunca se bloquea, y es el método
- * que Brevo recomienda para plataformas cloud/serverless.
- *
- * Mantiene la misma interfaz que antes (transporter.sendMail(mailOptions))
- * para no tener que tocar emailService.js ni ningún controlador.
- *
- * Tres remitentes con propósito diferente:
- *
- *   noreply  → emails automáticos sin necesidad de respuesta
- *              (confirmaciones, recordatorios, recuperar contraseña)
- *
- *   support  → emails donde el usuario puede necesitar responder
- *              (solicitud recibida, aprobación, rechazo)
- *
- *   admin    → notificaciones internas para el equipo admin
- *              (nueva solicitud pendiente, avisos de contacto)
- *
- * Variables de entorno necesarias:
- *   BREVO_API_KEY     xkeysib-xxxxxxxxxxxx  (API Key, NO la clave SMTP)
- *   EMAIL_FROM_NAME   La Clave Asociación
- *   EMAIL_NOREPLY     noreply@tudominio.com
- *   EMAIL_SUPPORT     support@tudominio.com
- *   EMAIL_ADMIN       admin@tudominio.com
- *
- * La API Key se genera en Brevo → Settings (icono engranaje) → SMTP & API
- * → pestaña "API Keys" → "Generate a new API key". Es distinta de la
- * BREVO_SMTP_KEY que usábamos antes.
- * ================================================================
+ * Emails por la API HTTP de Brevo: Railway bloquea el SMTP saliente (587/465).
+ * Mantiene la interfaz transporter.sendMail(mailOptions).
+ * Remitentes: noreply (automáticos), support (el usuario puede responder) y
+ * admin (avisos internos). BREVO_API_KEY es la API key, no la clave SMTP.
  */
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-// ─── Detección de modo mock (sin API key configurada) ────────────────────────
+// Detección de modo mock (sin API key configurada)
 const isConfigured = () => !!process.env.BREVO_API_KEY;
 
-// ─── Parsear el formato '"Nombre" <email@dominio.com>' a {name, email} ───────
+// Parsear el formato '"Nombre" <email@dominio.com>' a {name, email}
 const parseFromAddress = (fromAddress) => {
   const match = /^"?([^"<]*)"?\s*<(.+)>$/.exec(fromAddress || '');
   if (match) {
@@ -51,7 +21,7 @@ const parseFromAddress = (fromAddress) => {
   return { name: process.env.EMAIL_FROM_NAME || 'La Clave Asociación', email: fromAddress };
 };
 
-// ─── Parsear el campo 'to' (string simple o 'a@x.com, b@x.com') a array ──────
+// Parsear el campo 'to' (string simple o 'a@x.com, b@x.com') a array
 const parseToAddresses = (to) => {
   if (Array.isArray(to)) return to.map((email) => ({ email: email.trim() }));
   return to
@@ -61,7 +31,7 @@ const parseToAddresses = (to) => {
     .map((email) => ({ email }));
 };
 
-// ─── Transporter mock para desarrollo (sin API key configurada) ─────────────
+// Transporter mock para desarrollo (sin API key configurada)
 const createMockTransporter = (label) => ({
   sendMail: async (mailOptions) => {
     logger.info(`[MOCK — ${label}] Email que se enviaría:`, {
@@ -74,7 +44,7 @@ const createMockTransporter = (label) => ({
   verify: async () => true,
 });
 
-// ─── Transporter real vía API HTTP de Brevo ──────────────────────────────────
+// Transporter real vía API HTTP de Brevo
 const createBrevoApiTransporter = (label) => ({
   sendMail: async (mailOptions) => {
     const sender = parseFromAddress(mailOptions.from);
@@ -129,7 +99,7 @@ const createBrevoApiTransporter = (label) => ({
   },
 });
 
-// ─── Verificar conexión con Brevo al arrancar ────────────────────────────────
+// Verificar conexión con Brevo al arrancar
 const verifyTransporter = async (transporter, label) => {
   if (!isConfigured()) return;
 
@@ -143,7 +113,7 @@ const verifyTransporter = async (transporter, label) => {
   }
 };
 
-// ─── Crear los tres transporters ─────────────────────────────────────────────
+// Crear los tres transporters
 let noreplyTransporter;
 let supportTransporter;
 let adminTransporter;
@@ -163,7 +133,7 @@ if (isConfigured()) {
   adminTransporter   = createMockTransporter('admin');
 }
 
-// ─── Helpers para FROM ────────────────────────────────────
+// Helpers para FROM
 const fromName = () => process.env.EMAIL_FROM_NAME || 'La Clave Asociación';
 
 export const fromNoreply = () =>
@@ -175,7 +145,7 @@ export const fromSupport = () =>
 export const fromAdmin = () =>
   `"${fromName()} — Admin" <${process.env.EMAIL_ADMIN || 'admin@laclave.com'}>`;
 
-// ─── Exportaciones ────────────────────────────────────────────────────────────
+// Exportaciones
 export {
   noreplyTransporter,
   supportTransporter,

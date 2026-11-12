@@ -6,20 +6,14 @@ import logger from './src/config/logger.js';
 import CronService from './src/services/cronService.js';
 import PushService from './src/services/pushService.js';
 
-// Cargar variables de entorno
 dotenv.config({ quiet: true });
 
-// Validar variables de entorno
 validateEnv();
 
 const PORT = process.env.PORT || 5000;
 
-/**
- * Iniciar servidor
- */
 const startServer = async () => {
   try {
-    // Probar conexión a la base de datos
     logger.info('Conectando a la base de datos...');
     const dbConnected = await testConnection();
 
@@ -28,24 +22,19 @@ const startServer = async () => {
       process.exit(1);
     }
 
-    logger.info('✅ Conexión a MySQL establecida correctamente');
-    logger.info(`🗄️  Base de datos: ${process.env.DB_NAME}`);
+    logger.info('Conexión a MySQL establecida correctamente');
+    logger.info(`Base de datos: ${process.env.DB_NAME}`);
     
-    // ========== INICIALIZAR SERVICIOS ========== 
     logger.info('');
-    logger.info('🔧 Inicializando servicios...');
+    logger.info('Inicializando servicios...');
     
-    // Inicializar cron jobs (tareas programadas)
     CronService.init();
     
-    // Inicializar servicio de push notifications
     PushService.init();
     
     logger.info('Servicios inicializados correctamente');
     logger.info('');
-    // ===========================================
 
-    // Iniciar servidor Express
     app.listen(PORT, () => {
       logger.info('');
       logger.info('========================================');
@@ -69,7 +58,7 @@ const startServer = async () => {
   }
 };
 
-// Manejo de errores no capturados
+// Errores no capturados
 process.on('unhandledRejection', (error) => {
   logger.error('Unhandled Rejection', {
     error: error.message,
@@ -86,19 +75,18 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-// Manejo de cierre graceful
+// Cierre ordenado
 process.on('SIGTERM', () => {
   logger.info('SIGTERM recibido. Cerrando servidor...');
-  CronService.stop(); // Detener tareas programadas
+  CronService.stop();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   logger.info('SIGINT recibido. Cerrando servidor...');
-  CronService.stop(); // Detener tareas programadas
+  CronService.stop();
   process.exit(0);
 });
 
 
-// Iniciar servidor
 startServer();

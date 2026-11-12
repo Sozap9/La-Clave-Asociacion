@@ -1,8 +1,5 @@
 import logger from '../config/logger.js';
-/**
- * Jerarquía de roles en La Clave
- * basico < socio < admin
- */
+// Jerarquía de roles: basico < socio < admin
 const ROLES = {
   BASICO: 'basico',
   SOCIO: 'socio',
@@ -15,14 +12,9 @@ const ROLE_HIERARCHY = {
   admin: 3
 };
 
-/**
- * Middleware para verificar que el usuario tiene un rol específico
- * @param {String|Array} allowedRoles - Rol(es) permitido(s)
- * @returns {Function} Middleware function
- */
+// Uno de los roles indicados
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
-    // Verificar que el usuario está autenticado
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -32,7 +24,6 @@ export const authorize = (...allowedRoles) => {
 
     const userRole = req.user.role;
 
-    // Verificar si el rol del usuario está en los roles permitidos
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
@@ -44,12 +35,7 @@ export const authorize = (...allowedRoles) => {
   };
 };
 
-/**
- * Middleware para verificar que el usuario tiene al menos un nivel de rol
- * Por ejemplo, si requieres 'socio', también acepta 'admin'
- * @param {String} minimumRole - Rol mínimo requerido
- * @returns {Function} Middleware function
- */
+// Al menos ese nivel: 'socio' también deja pasar a 'admin'
 export const authorizeMinimum = (minimumRole) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -74,26 +60,14 @@ export const authorizeMinimum = (minimumRole) => {
   };
 };
 
-/**
- * Middleware solo para usuarios básicos
- */
+// Atajos
 export const isBasico = authorize(ROLES.BASICO, ROLES.SOCIO, ROLES.ADMIN);
 
-/**
- * Middleware solo para socios (incluye admin)
- */
 export const isSocio = authorizeMinimum(ROLES.SOCIO);
 
-/**
- * Middleware solo para administradores
- */
 export const isAdmin = authorize(ROLES.ADMIN);
 
-/**
- * Middleware para verificar que el usuario está accediendo a su propio recurso
- * o es un admin
- * @param {String} paramName - Nombre del parámetro en req.params que contiene el ID
- */
+// El propio usuario o un admin
 export const isOwnerOrAdmin = (paramName = 'id') => {
   return (req, res, next) => {
     if (!req.user) {
@@ -118,10 +92,7 @@ export const isOwnerOrAdmin = (paramName = 'id') => {
   };
 };
 
-/**
- * Middleware para verificar permisos personalizados
- * @param {Function} checkPermission - Función que retorna true/false
- */
+// Comprobación a medida
 export const customAuthorize = (checkPermission) => {
   return async (req, res, next) => {
     try {
@@ -152,22 +123,10 @@ export const customAuthorize = (checkPermission) => {
   };
 };
 
-/**
- * Helper para verificar si un usuario tiene un rol específico
- * @param {String} userRole - Rol del usuario
- * @param {String} requiredRole - Rol requerido
- * @returns {Boolean}
- */
 export const hasRole = (userRole, requiredRole) => {
   return userRole === requiredRole;
 };
 
-/**
- * Helper para verificar si un usuario tiene al menos el nivel de rol requerido
- * @param {String} userRole - Rol del usuario
- * @param {String} minimumRole - Rol mínimo requerido
- * @returns {Boolean}
- */
 export const hasMinimumRole = (userRole, minimumRole) => {
   const userLevel = ROLE_HIERARCHY[userRole] || 0;
   const minimumLevel = ROLE_HIERARCHY[minimumRole] || 0;

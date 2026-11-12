@@ -1,31 +1,18 @@
 import { body, param } from 'express-validator';
 
-/**
- * ========================================
- * VALIDATORS PARA GESTIÓN DE RESERVAS
- * ========================================
- */
 
-/**
- * Validación para CREAR RESERVA
- * Endpoint: POST /api/bookings
- * 
- * Usado por: Socios
- */
+// Crear reserva
 export const createBookingValidator = [
-  // EVENT ID
   body('event_id')
     .notEmpty().withMessage('El ID del evento es obligatorio')
     .isInt({ min: 1 }).withMessage('El ID del evento debe ser un número entero positivo')
     .toInt(),
 
-  // NÚMERO DE ENTRADAS
   body('numero_entradas')
     .optional({ nullable: true, checkFalsy: true })
     .isInt({ min: 1, max: 10 }).withMessage('El número de entradas debe estar entre 1 y 10')
     .toInt()
     .custom((value) => {
-      // Validación adicional: números razonables
       if (value > 10) {
         throw new Error('No puedes reservar más de 10 entradas por reserva. Contacta con el administrador para grupos grandes');
       }
@@ -33,29 +20,19 @@ export const createBookingValidator = [
     })
 ];
 
-/**
- * Validación para ID de reserva en params
- * Usado en: GET /api/bookings/:id, DELETE /api/bookings/:id
- */
+// ID de reserva en params
 export const bookingIdValidator = [
   param('id')
     .isInt({ min: 1 }).withMessage('El ID de la reserva debe ser un número entero positivo')
     .toInt()
 ];
 
-/**
- * Validación para CANCELAR RESERVA
- * Endpoint: DELETE /api/bookings/:id
- * 
- * Usado por: Socios (sus propias reservas)
- */
+// Cancelar reserva
 export const cancelBookingValidator = [
-  // ID en params
   param('id')
     .isInt({ min: 1 }).withMessage('El ID de la reserva debe ser un número entero positivo')
     .toInt(),
 
-  // MOTIVO (opcional)
   body('motivo')
     .optional({ nullable: true, checkFalsy: true })
     .trim()
@@ -63,19 +40,9 @@ export const cancelBookingValidator = [
     .escape()
 ];
 
-/**
- * Validación para VERIFICAR QR CODE
- * Endpoint: POST /api/bookings/verify-qr
- * 
- * Usado por: Admin (en puerta del evento)
- * 
- * NOTA: El generador produce 6 caracteres (Math.random().toString(36).substring(2, 8)),
- * por lo que el regex acepta entre 4 y 10 caracteres alfanuméricos en mayúsculas.
- */
+// Validar QR
 export const verifyQRValidator = [
-  // CÓDIGO DE RESERVA — acepta dos formatos:
-  // 1) El que realmente codifica el QR: LACLAVE-{bookingId}-{codigo_acceso}
-  // 2) El codigo_reserva introducido a mano: LCV-XXXXXX-XXXXXX
+  // El texto del QR (LACLAVE-{bookingId}-{codigo_acceso}) o el codigo_reserva escrito a mano
   body('codigo_reserva')
     .notEmpty().withMessage('El código de reserva es obligatorio')
     .trim()
@@ -84,12 +51,8 @@ export const verifyQRValidator = [
     .isLength({ min: 10, max: 80 }).withMessage('El código de reserva debe tener entre 10 y 80 caracteres')
 ];
 
-/**
- * Validación para query params de estado
- * Usado en: GET /api/bookings/me?estado=confirmada
- */
+// Estado en query
 export const bookingStatusQueryValidator = [
-  // ESTADO (query param, opcional)
   body('estado')
     .optional({ nullable: true })
     .isIn(['confirmada', 'cancelada', 'asistida', 'no_asistida']).withMessage('El estado debe ser: confirmada, cancelada, asistida o no_asistida')

@@ -3,16 +3,11 @@ import { handleStripeWebhook } from '../controllers/webhookController.js';
 
 const router = express.Router();
 
-/**
- * IMPORTANTE: Los webhooks NO deben tener middleware de autenticación
- * Stripe verifica la firma del webhook
- */
+// Sin autenticación: la seguridad es la firma de Stripe
 
-// Webhook de Stripe
-// POST /api/webhooks/stripe
 router.post(
   '/stripe',
-  express.raw({ type: 'application/json' }), // Raw body para verificar firma
+  express.raw({ type: 'application/json' }), // la firma se comprueba sobre el body sin parsear
   handleStripeWebhook
 );
 

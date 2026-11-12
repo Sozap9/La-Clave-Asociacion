@@ -19,95 +19,50 @@ import { handleValidationErrors } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-/**
- * ========================================
- * RUTA PÚBLICA: imagen del QR (sin autenticación)
- * Se abre desde el <img> de los emails, sin sesión iniciada.
- * Protegida por el codigo_acceso en la propia URL — ver
- * bookingController.getBookingQRImage.
- * GET /api/bookings/qr/:id/:codigo.png
- * ========================================
- */
+// Imagen del QR para los emails: sin sesión, la protege el codigo_acceso de la URL
 router.get('/qr/:id/:codigo.png', getBookingQRImage);
 
-/**
- * ========================================
- * MIDDLEWARE GLOBAL
- * A partir de aquí, todas las rutas requieren autenticación
- * ========================================
- */
+// Desde aquí, todo requiere sesión
 router.use(authenticate);
 
-/**
- * ========================================
- * RUTAS PARA SOCIOS
- * Gestión de reservas propias
- * ========================================
- */
+// Reservas del propio socio
 
-// Crear reserva para un evento
-// Body: { event_id, numero_entradas }
-// Requiere: socio activo con membresía al día
-// POST /api/bookings
 router.post(
   '/',
-  isSocio,                    // ← MIDDLEWARE: Solo socios
-  createBookingValidator,     // ← VALIDAR DATOS
-  handleValidationErrors,     // ← MANEJAR ERRORES
-  createBooking               // ← CONTROLLER
+  isSocio,
+  createBookingValidator,
+  handleValidationErrors,
+  createBooking
 );
 
-// Obtener mis reservas
-// Muestra todas las reservas del socio autenticado
-// Query params: ?estado=confirmada (opcional)
-// GET /api/bookings/me
 router.get('/me', isSocio, getMyBookings);
 
-// Obtener estadísticas de mis reservas
-// Incluye: total, confirmadas, canceladas, asistencias
-// GET /api/bookings/me/stats
 router.get('/me/stats', isSocio, getMyBookingStats);
 
-// Obtener detalles de una de mis reservas
-// Solo muestra reservas del socio autenticado
-// GET /api/bookings/:id
 router.get(
   '/:id',
-  isSocio,                    // ← MIDDLEWARE: Solo socios
-  bookingIdValidator,         // ← VALIDAR ID
-  handleValidationErrors,     // ← MANEJAR ERRORES
-  getBooking                  // ← CONTROLLER
+  isSocio,
+  bookingIdValidator,
+  handleValidationErrors,
+  getBooking
 );
 
-// Reanudar el pago de una reserva en estado 'esperando_pago'
-// (ej. el socio le dio atrás en el Checkout de Stripe sin completar el pago)
-// Crea una Checkout Session nueva para la misma reserva
-// POST /api/bookings/:id/pagar
 router.post(
   '/:id/pagar',
-  isSocio,                    // ← MIDDLEWARE: Solo socios
-  bookingIdValidator,         // ← VALIDAR ID
-  handleValidationErrors,     // ← MANEJAR ERRORES
-  retryBookingPayment         // ← CONTROLLER
+  isSocio,
+  bookingIdValidator,
+  handleValidationErrors,
+  retryBookingPayment
 );
 
-// Cancelar mi reserva
-// Solo permite cancelar reservas propias con estado='confirmada'
-// DELETE /api/bookings/:id
 router.delete(
   '/:id',
-  isSocio,                    // ← MIDDLEWARE: Solo socios
-  cancelBookingValidator,     // ← VALIDAR ID Y MOTIVO
-  handleValidationErrors,     // ← MANEJAR ERRORES
-  cancelBooking               // ← CONTROLLER
+  isSocio,
+  cancelBookingValidator,
+  handleValidationErrors,
+  cancelBooking
 );
 
-/**
- * ========================================
- * NOTA: RUTAS DE ADMINISTRACIÓN
- * Las rutas de gestión de reservas para admin (listar todas, cancelar cualquiera, verify QR)
- * están en /api/admin/bookings (adminRoutes.js)
- * ========================================
- */
+// Las rutas de reservas del admin están en adminRoutes.js
 
 export default router;

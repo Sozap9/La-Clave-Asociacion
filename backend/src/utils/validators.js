@@ -1,18 +1,10 @@
-/**
- * Valida formato de email
- * @param {String} email - Email a validar
- * @returns {Boolean}
- */
+// Email
 export const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 };
 
-/**
- * Valida DNI español
- * @param {String} dni - DNI a validar (formato: 12345678A)
- * @returns {Boolean}
- */
+// DNI con letra de control
 export const isValidDNI = (dni) => {
     const dniRegex = /^[0-9]{8}[A-Z]$/;
     if (!dniRegex.test(dni)) return false;
@@ -24,11 +16,7 @@ export const isValidDNI = (dni) => {
     return letters.charAt(number % 23) === letter;
 };
 
-/**
- * Valida NIE español
- * @param {String} nie - NIE a validar (formato: X1234567A)
- * @returns {Boolean}
- */
+// NIE con letra de control
 export const isValidNIE = (nie) => {
     const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;
     if (!nieRegex.test(nie)) return false;
@@ -42,31 +30,19 @@ export const isValidNIE = (nie) => {
     return letters.charAt(parseInt(nieNumber) % 23) === letter;
 };
 
-/**
- * Valida DNI o NIE
- * @param {String} document - Documento a validar
- * @returns {Boolean}
- */
+// DNI o NIE
 export const isValidSpanishDocument = (document) => {
     return isValidDNI(document) || isValidNIE(document);
 };
 
-/**
- * Valida teléfono español
- * @param {String} phone - Teléfono a validar
- * @returns {Boolean}
- */
+// Teléfono español
 export const isValidPhone = (phone) => {
-  // Acepta: +34123456789, 34123456789, 123456789, 612345678
+  // Con o sin prefijo 34 / +34
     const phoneRegex = /^(\+34|0034|34)?[6-9][0-9]{8}$/;
     return phoneRegex.test(phone.replace(/\s/g, ''));
 };
 
-/**
- * Valida edad mínima (debe ser mayor de 18)
- * @param {String|Date} birthdate - Fecha de nacimiento
- * @returns {Boolean}
- */
+// Mayor de 18
 export const isOldEnough = (birthdate, minAge = 18) => {
     const today = new Date();
     const birth = new Date(birthdate);
@@ -80,12 +56,7 @@ export const isOldEnough = (birthdate, minAge = 18) => {
     return age >= minAge;
 };
 
-/**
- * Valida contraseña segura
- * Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número
- * @param {String} password - Contraseña a validar
- * @returns {Boolean}
- */
+// Contraseña: 8 caracteres mínimo, con mayúscula, minúscula y número
 export const isStrongPassword = (password) => {
     const minLength = 8;
     const hasUpperCase = /[A-Z]/.test(password);
@@ -100,11 +71,7 @@ export const isStrongPassword = (password) => {
     );
 };
 
-/**
- * Valida formato de fecha (YYYY-MM-DD)
- * @param {String} date - Fecha a validar
- * @returns {Boolean}
- */
+// Fecha YYYY-MM-DD
 export const isValidDate = (date) => {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) return false;
@@ -113,61 +80,36 @@ export const isValidDate = (date) => {
     return dateObj instanceof Date && !isNaN(dateObj);
 };
 
-/**
- * Sanitiza string para evitar inyecciones
- * @param {String} str - String a sanitizar
- * @returns {String}
- */
+// Limpia texto de entrada
 export const sanitizeString = (str) => {
     if (typeof str !== 'string') return '';
     return str.trim().replace(/[<>]/g, '');
 };
 
-/**
- * Valida número de socio (formato: LC-YYYY-NNNN)
- * @param {String} numeroSocio - Número de socio a validar
- * @returns {Boolean}
- */
+// numero_socio LC-YYYY-NNNN
 export const isValidNumeroSocio = (numeroSocio) => {
     const regex = /^LC-\d{4}-\d{4}$/;
     return regex.test(numeroSocio);
 };
 
-/**
- * Valida código de reserva (formato: LCV-YYYYMM-XXXXXXXX)
- * @param {String} codigo - Código de reserva a validar
- * @returns {Boolean}
- */
+// codigo_reserva LCV-YYYYMM-XXXXXXXX
 export const isValidCodigoReserva = (codigo) => {
     const regex = /^LCV-\d{6}-[A-Z0-9]{8}$/;
     return regex.test(codigo);
 };
 
-/**
- * Valida que un archivo sea una imagen
- * @param {String} mimetype - Tipo MIME del archivo
- * @returns {Boolean}
- */
+// ¿Es una imagen?
 export const isValidImageType = (mimetype) => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     return validTypes.includes(mimetype);
 };
 
-/**
- * Valida que un archivo sea un PDF
- * @param {String} mimetype - Tipo MIME del archivo
- * @returns {Boolean}
- */
+// ¿Es un PDF?
 export const isValidPDFType = (mimetype) => {
     return mimetype === 'application/pdf';
 };
 
-/**
- * Valida tamaño máximo de archivo (en bytes)
- * @param {Number} size - Tamaño del archivo en bytes
- * @param {Number} maxSize - Tamaño máximo permitido en bytes (default 5MB)
- * @returns {Boolean}
- */
+// Tamaño máximo en bytes
 export const isValidFileSize = (size, maxSize = 5242880) => {
     return size <= maxSize;
 };

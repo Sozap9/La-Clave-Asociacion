@@ -7,35 +7,27 @@ import { uploadLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-/**
- * FOLDERS - Rutas de carpetas/álbumes
- */
+// Álbumes
 
-// Públicas
 router.get('/folders', galleryController.listFolders);
 router.get('/folders/:identifier', galleryController.getFolderByIdOrSlug);
 router.get('/featured', galleryController.getFeaturedFolders);
 
-// Admin
 router.post('/folders', authenticate, authorize('admin'), galleryController.createFolder);
 router.put('/folders/:id', authenticate, authorize('admin'), galleryController.updateFolder);
 router.delete('/folders/:id', authenticate, authorize('admin'), galleryController.deleteFolder);
 
-// Establecer imagen de portada (ANTES de las rutas con :id)
+// Antes de las rutas con :id
 router.put('/folders/:folderId/cover', 
   authenticate, 
   authorize('admin'), 
   galleryController.setCoverImage
 );
 
-/**
- * IMAGES - Rutas de imágenes
- */
+// Imágenes
 
-// Públicas
 router.get('/folders/:folderId/images', galleryController.listFolderImages);
 
-// Admin - SUBIR IMAGEN CON UPLOAD LIMITER
 router.post('/folders/:folderId/images', 
   authenticate, 
   authorize('admin'),
@@ -46,7 +38,7 @@ router.post('/folders/:folderId/images',
   galleryController.uploadImage
 );
 
-// ✅ RUTAS ESPECÍFICAS PRIMERO (bulk-update, bulk-delete)
+// Rutas fijas antes que las de :id
 router.put('/images/bulk-update', 
   authenticate, 
   authorize('admin'), 
@@ -59,7 +51,6 @@ router.delete('/images/bulk-delete',
   galleryController.bulkDeleteImages
 );
 
-// ✅ RUTAS CON PARÁMETROS DESPUÉS (:id)
 router.put('/images/:id', 
   authenticate, 
   authorize('admin'), 
@@ -78,43 +69,31 @@ router.put('/folders/:folderId/images/reorder',
   galleryController.reorderImages
 );
 
-/**
- * Gestión Global de Imágenes
- */
+// Todas las imágenes
 
-// Obtener imagen por ID (público)
 router.get('/images/:id', galleryController.getImageById);
 
-// Imágenes destacadas (público)
 router.get('/featured-images', galleryController.getFeaturedImages);
 
-// Mover imagen a otro folder (admin)
 router.put('/images/:id/move', 
   authenticate, 
   authorize('admin'), 
   galleryController.moveImageToFolder
 );
 
-/**
- * ESTADÍSTICAS
- */
 router.get('/stats', 
   authenticate, 
   authorize('admin'),
   galleryController.getStats
 );
 
-/**
- * ARTISTS - Rutas de gestión de artistas
- */
+// Artistas etiquetados
 
-// Públicas - Ver imágenes con artistas
 router.get('/images', galleryController.getAllImagesWithArtists);
 router.get('/images/:imageId/artists', galleryController.getImageArtists);
 router.get('/folders/:folderId/artists', galleryController.getFolderArtists);
 router.get('/artists/:artistId/content', galleryController.getContentByArtist);
 
-// Admin - Gestión de artistas en imágenes
 router.post('/images/:imageId/artists', 
   authenticate, 
   authorize('admin'), 
@@ -133,7 +112,6 @@ router.delete('/images/:imageId/artists/:artistId',
   galleryController.removeArtistFromImage
 );
 
-// Admin - Gestión de artistas en folders
 router.post('/folders/:folderId/artists', 
   authenticate, 
   authorize('admin'), 

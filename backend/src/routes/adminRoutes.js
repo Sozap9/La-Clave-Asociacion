@@ -53,7 +53,7 @@ import {
   exportEventos,
   exportIngresosMensuales,
 
-  // Solicitudes ✨ NUEVO
+  // Solicitudes
   listSolicitudes,
   getSolicitudDetails,
   aprobarSolicitud,
@@ -62,7 +62,6 @@ import {
   getPendientesCount,
 } from "../controllers/adminController.js";
 
-// Controllers de otros módulos (para rutas de gestión)
 import {
   createEvent,
   updateEvent,
@@ -81,7 +80,6 @@ import { isAdmin } from "../middleware/roleMiddleware.js";
 import { adminStrictLimiter } from "../middleware/rateLimiter.js";
 import { handleValidationErrors } from "../middleware/validationMiddleware.js";
 
-// Validators
 import { verifyQRValidator } from "../validators/bookingValidator.js";
 import {
   createSocioValidator,
@@ -98,35 +96,21 @@ import { param, body } from "express-validator";
 
 const router = express.Router();
 
-/**
- * MIDDLEWARE GLOBAL
- * Todas las rutas requieren autenticación y rol admin
- */
+// Todo requiere sesión de admin
 router.use(authenticate);
 router.use(isAdmin);
 
-/**
- * RUTAS: DASHBOARD Y MENÚ
- */
-// Obtener estructura del menú del panel admin
+// Dashboard y menú
 router.get("/menu", getAdminMenu);
 
-// Estadísticas completas del dashboard
 router.get("/dashboard/stats", getDashboardStats);
 
-// Estadísticas generales resumidas
 router.get("/stats", getGeneralStats);
 
-/**
- * MÓDULO: GESTIÓN DE SOCIOS
- */
+// Socios
 
-// Listar usuarios básicos (selector para "Crear Socio Manual")
-// GET /api/admin/users?role=basico&search=&page=1&limit=20
 router.get("/users", listUsers);
 
-// Crear socio manualmente a partir de un usuario básico existente
-// POST /api/admin/socios
 router.post(
   "/socios",
   createSocioValidator,
@@ -134,7 +118,6 @@ router.post(
   createSocioManual,
 );
 
-// Listar socios con filtros
 router.get(
   "/socios",
   paginationValidator,
@@ -144,10 +127,8 @@ router.get(
   listSocios,
 );
 
-// Obtener socios morosos
 router.get("/socios/morosos", listMorosos);
 
-// Obtener detalles de un socio específico
 router.get(
   "/socios/:id",
   idParamValidator,
@@ -155,7 +136,6 @@ router.get(
   getSocioDetails,
 );
 
-// Actualizar datos de un socio
 router.put(
   "/socios/:id",
   updateSocioValidator,
@@ -163,7 +143,6 @@ router.put(
   updateSocio,
 );
 
-// Dar de baja a un socio (soft, estado inactivo)
 router.patch(
   "/socios/:id/deactivate",
   adminStrictLimiter,
@@ -172,7 +151,7 @@ router.patch(
   deleteSocio,
 );
 
-// Alias para compatibilidad antigua: DELETE /socios/:id también hace soft delete
+// Alias antiguo: también hace soft delete
 router.delete(
   "/socios/:id",
   adminStrictLimiter,
@@ -181,7 +160,6 @@ router.delete(
   deleteSocio,
 );
 
-// Eliminar permanentemente un socio (OPERACIÓN CRÍTICA - 20 ops/hora)
 router.delete(
   "/socios/:id/permanent",
   adminStrictLimiter,
@@ -190,7 +168,6 @@ router.delete(
   deleteSocioPermanent,
 );
 
-// Reactivar un socio dado de baja
 router.patch(
   "/socios/:id/reactivate",
   idParamValidator,
@@ -198,13 +175,8 @@ router.patch(
   reactivateSocio,
 );
 
-/**
- * ========================================
- * GESTIÓN DE EVENTOS
- * ========================================
- */
+// Eventos
 
-// Listar TODOS los eventos (admin ve todos los estados)
 router.get(
   "/events",
   paginationValidator,
@@ -215,10 +187,8 @@ router.get(
   listAllEvents,
 );
 
-// Obtener estadísticas de eventos
 router.get("/events/stats", getEventsStats);
 
-// Obtener detalles completos de un evento
 router.get(
   "/events/:id",
   idParamValidator,
@@ -226,28 +196,18 @@ router.get(
   getEventDetailsAdmin,
 );
 
-// Crear nuevo evento
 router.post("/events", createEvent);
 
-// Actualizar evento existente
 router.put("/events/:id", updateEvent);
 
-// Eliminar evento (OPERACIÓN CRÍTICA - 20 ops/hora)
 router.delete("/events/:id", adminStrictLimiter, deleteEvent);
 
-// Cancelar evento (OPERACIÓN CRÍTICA - 20 ops/hora)
 router.patch("/events/:id/cancel", adminStrictLimiter, cancelEvent);
 
-// Publicar evento
 router.patch("/events/:id/publish", publishEvent);
 
-/**
- * ========================================
- * GESTIÓN DE RESERVAS
- * ========================================
- */
+// Reservas
 
-// Listar TODAS las reservas del sistema
 router.get(
   "/bookings",
   paginationValidator,
@@ -258,10 +218,8 @@ router.get(
   listAllBookings,
 );
 
-// Obtener estadísticas generales de reservas
 router.get("/bookings/stats", getBookingsStats);
 
-// Obtener reservas de un evento específico
 router.get(
   "/bookings/event/:eventId",
   param("eventId")
@@ -273,7 +231,6 @@ router.get(
   getEventBookings,
 );
 
-// Obtener detalles completos de una reserva
 router.get(
   "/bookings/:id",
   idParamValidator,
@@ -281,10 +238,8 @@ router.get(
   getBookingDetails,
 );
 
-// Cancelar reserva (OPERACIÓN CRÍTICA - 20 ops/hora)
 router.patch("/bookings/:id/cancel", adminStrictLimiter, cancelBookingAdmin);
 
-// Regenerar QR (base64) y reenviar el email de confirmación con la entrada
 router.post(
   "/bookings/:id/reenviar",
   idParamValidator,
@@ -292,8 +247,6 @@ router.post(
   resendBookingTicket,
 );
 
-// Enviar una entrada de invitación (coste 0€) a un socio elegido por el admin
-// Body: { socio_id, event_id, numero_entradas? }
 router.post(
   "/bookings/invitacion",
   adminStrictLimiter,
@@ -304,7 +257,6 @@ router.post(
   sendBookingInvitation,
 );
 
-// Verificar QR y registrar asistencia
 router.post(
   "/bookings/verify-qr",
   verifyQRValidator,
@@ -312,47 +264,14 @@ router.post(
   verifyQRAndCheckIn,
 );
 
-/**
- * ========================================
- * GESTIÓN DE GALERÍA
- * ========================================
- */
+// Galería (el resto de rutas, en galleryRoutes.js)
 
-// Obtener estadísticas de galería
-// Incluye: total folders, imágenes, espacio usado, visibles, destacados
-// GET /api/admin/gallery/stats
 router.get("/gallery/stats", getGalleryStats);
 
-// NOTA: Las rutas CRUD de galería (crear folders, subir imágenes, etc.)
-// están en /api/gallery (galleryRoutes.js) con middleware de admin
+// Artistas y salas tienen sus rutas en artistRoutes.js y venueRoutes.js
 
-/**
- * ========================================
- * GESTIÓN DE ARTISTAS
- * ========================================
- */
+// Pagos
 
-// NOTA: Las rutas CRUD de artistas están en /api/artists (artistRoutes.js)
-// Incluyen: POST, PUT, DELETE, PATCH con middleware de admin
-// Filtros: search, genero, sello, ciudad, pais_origen, verificado, destacado
-
-/**
- * ========================================
- * GESTIÓN DE VENUES
- * ========================================
- */
-
-// NOTA: Las rutas CRUD de venues están en /api/venues (venueRoutes.js)
-// Incluyen: POST, PUT, DELETE, PATCH con middleware de admin
-// Filtros: search, ciudad, tipo_local, activo
-
-/**
- * ========================================
- * GESTIÓN DE PAGOS
- * ========================================
- */
-
-// Listar todos los pagos del sistema
 router.get(
   "/payments",
   paginationValidator,
@@ -363,7 +282,6 @@ router.get(
   listPayments,
 );
 
-// Obtener pagos por evento
 router.get(
   "/events/:eventId/payments",
   param("eventId")
@@ -377,7 +295,6 @@ router.get(
   getEventPayments,
 );
 
-// Obtener ingresos mensuales por año
 router.get(
   "/payments/monthly",
   yearQueryValidator,
@@ -385,61 +302,31 @@ router.get(
   getMonthlyRevenue,
 );
 
-// Obtener estadísticas de pagos
 router.get("/payments/stats", getPaymentsStats);
 
-/**
- * ========================================
- * ACTIVIDAD Y LOGS
- * ========================================
- */
+// Actividad
 
-// Obtener actividad reciente del sistema
 router.get("/activity", getRecentActivity);
 
-/**
- * ========================================
- * EXPORTACIONES
- * ========================================
- */
+// Exportaciones
 
-// Obtener eventos para el selector del export de reservas
-// GET /api/admin/export/events-selector
 router.get("/export/events-selector", getEventsForExportSelector);
 
-// Exportar lista completa de socios en formato PDF
-// GET /api/admin/export/socios
 router.get("/export/socios", exportSocios);
 
-// Exportar lista completa de reservas en formato PDF
-// GET /api/admin/export/reservas
 router.get("/export/reservas", exportReservas);
 
-// Exportar lista completa de usuarios en formato PDF
-// GET /api/admin/export/usuarios
 router.get("/export/usuarios", exportUsuarios);
 
-// Exportar lista completa de eventos en formato PDF
-// GET /api/admin/export/eventos
 router.get("/export/eventos", exportEventos);
 
-// Exportar informe de ingresos mensuales en formato PDF
-// GET /api/admin/export/ingresos-mensuales?year=2026&month=4
 router.get("/export/ingresos-mensuales", exportIngresosMensuales);
 
-/**
- * ========================================
- * GESTIÓN DE SOLICITUDES DE SOCIO  
- * ========================================
- */
+// Solicitudes de socio
 
-// Contar pendientes (badge sidebar)
-// Debe ir ANTES de /:id para no ser capturada por el parámetro
-// GET /api/admin/solicitudes/pendientes/count
+// Antes de /:id para que no la capture el parámetro
 router.get("/solicitudes/pendientes/count", getPendientesCount);
 
-// Listar solicitudes con filtros
-// GET /api/admin/solicitudes?estado=pendiente&search=&page=1&limit=20
 router.get(
   "/solicitudes",
   paginationValidator,
@@ -448,30 +335,16 @@ router.get(
   listSolicitudes,
 );
 
-// Detalle de una solicitud
-// GET /api/admin/solicitudes/:id
 router.get("/solicitudes/:id", getSolicitudDetails);
 
-// Aprobar → crea usuario socio
-// PUT /api/admin/solicitudes/:id/aprobar
 router.put("/solicitudes/:id/aprobar", aprobarSolicitud);
 
-// Rechazar — Body: { motivo_rechazo }
-// PUT /api/admin/solicitudes/:id/rechazar
 router.put("/solicitudes/:id/rechazar", rechazarSolicitud);
 
-// Eliminar solicitud definitivamente
-// DELETE /api/admin/solicitudes/:id
 router.delete("/solicitudes/:id", adminStrictLimiter, deleteSolicitud);
 
-/**
- * ========================================
- * GESTIÓN DE ROLES DE USUARIO
- * ========================================
- */
+// Roles
 
-// Cambiar el rol de un usuario (admin <-> socio)
-// PATCH /api/admin/users/:id/role
 router.patch(
   "/users/:id/role",
   idParamValidator,

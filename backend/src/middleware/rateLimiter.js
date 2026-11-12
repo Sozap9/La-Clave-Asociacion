@@ -1,18 +1,9 @@
 import rateLimit from 'express-rate-limit';
 
-/**
- * ================================================================
- * RATE LIMITERS PARA PROTEGER ENDPOINTS
- * ================================================================
- */
 
-/**
- * Rate limiter para autenticación (login, register)
- * Límite: 10 intentos por 10 minutos
- * Uso: Login, registro, cambio de contraseña
- */
+// Login, registro y cambio de contraseña
 export const authLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutos
+  windowMs: 10 * 60 * 1000,
   max: 10,
   message: {
     success: false,
@@ -22,13 +13,9 @@ export const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
-/**
- * Rate limiter general para API
- * Límite: 200 requests por 15 minutos
- * Uso: Endpoints públicos generales
- */
+// API general
 export const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 200,
   message: {
     success: false,
@@ -38,13 +25,9 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false
 });
 
-/**
- * Rate limiter estricto para operaciones sensibles
- * Límite: 3 intentos por hora
- * Uso: Operaciones críticas de usuarios
- */
+// Operaciones sensibles de usuarios
 export const strictLimiter = rateLimit({
-  windowMs: 30 * 60 * 1000, // 30 mins/hora
+  windowMs: 30 * 60 * 1000,
   max: 3,
   message: {
     success: false,
@@ -54,13 +37,9 @@ export const strictLimiter = rateLimit({
   legacyHeaders: false
 });
 
-/**
- * Rate limiter para uploads
- * Límite: 10 uploads por media hora
- * Uso: Subida de avatares, DNI, documentos
- */
+// Subidas de archivos
 export const uploadLimiter = rateLimit({
-  windowMs: 30 * 60 * 1000, // 30 mins/hora
+  windowMs: 30 * 60 * 1000,
   max: 10,
   message: {
     success: false,
@@ -70,14 +49,9 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false
 });
 
-/**
- * Rate limiter EXTRA ESTRICTO para operaciones de administración críticas
- * Límite: 1000 operaciones por hora
- * Uso: Eliminación de usuarios, eliminación de eventos, cancelación de eventos,
- *      dar de baja socios, cancelar reservas como admin
- */
+// Borrados y cancelaciones del admin
 export const adminStrictLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hora
+  windowMs: 60 * 60 * 1000,
   max: 1000,
   message: {
     success: false,

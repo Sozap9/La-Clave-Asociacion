@@ -8,17 +8,12 @@ const JWT_EXPIRE = process.env.JWT_EXPIRE || '30d';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const JWT_REFRESH_EXPIRE = process.env.JWT_REFRESH_EXPIRE || '30d';
 
-/**
- * Genera un token de acceso JWT
- * @param {Object} payload - Datos del usuario a incluir en el token
- * @returns {String} Token JWT
- */
+// Token de acceso
 export const generateAccessToken = (payload) => {
-  // Asegurarse de que el role está incluido
   const tokenPayload = {
     id: payload.id,
     email: payload.email,
-    role: payload.role // Incluir el role
+    role: payload.role
   };
   
   return jwt.sign(tokenPayload, JWT_SECRET, {
@@ -27,11 +22,7 @@ export const generateAccessToken = (payload) => {
   });
 };
 
-/**
- * Genera un refresh token
- * @param {Object} payload - Datos del usuario
- * @returns {String} Refresh token
- */
+// Refresh token
 export const generateRefreshToken = (payload) => {
   return jwt.sign(payload, JWT_REFRESH_SECRET, {
     expiresIn: JWT_REFRESH_EXPIRE,
@@ -39,11 +30,7 @@ export const generateRefreshToken = (payload) => {
   });
 };
 
-/**
- * Verifica un token de acceso
- * @param {String} token - Token a verificar
- * @returns {Object} Payload decodificado
- */
+// Verificar token de acceso
 export const verifyAccessToken = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET);
@@ -58,11 +45,7 @@ export const verifyAccessToken = (token) => {
   }
 };
 
-/**
- * Verifica un refresh token
- * @param {String} token - Refresh token a verificar
- * @returns {Object} Payload decodificado
- */
+// Verificar refresh token
 export const verifyRefreshToken = (token) => {
   try {
     return jwt.verify(token, JWT_REFRESH_SECRET);
@@ -77,11 +60,7 @@ export const verifyRefreshToken = (token) => {
   }
 };
 
-/**
- * Genera un par de tokens (acceso y refresh)
- * @param {Object} user - Datos del usuario
- * @returns {Object} { accessToken, refreshToken }
- */
+// Devuelve { accessToken, refreshToken }
 export const generateTokens = (user) => {
   const payload = {
     id: user.id,
@@ -95,11 +74,7 @@ export const generateTokens = (user) => {
   };
 };
 
-/**
- * Decodifica un token sin verificar (útil para debugging)
- * @param {String} token - Token a decodificar
- * @returns {Object} Payload decodificado
- */
+// Decodifica sin verificar (para depurar)
 export const decodeToken = (token) => {
   return jwt.decode(token);
 };

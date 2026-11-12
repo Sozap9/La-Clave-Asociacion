@@ -1,12 +1,6 @@
--- ============================================
--- LA CLAVE - SCHEMA INICIAL
--- ============================================
--- Este archivo contiene todas las tablas necesarias para la aplicación
--- Ejecutar en orden: crear la BD primero, luego ejecutar este script
+-- Esquema inicial de La Clave. Crear la base de datos antes de ejecutarlo.
 
--- ============================================
--- 1. TABLA USERS - Usuarios básicos y admins
--- ============================================
+-- users: usuarios básicos, socios y admins
 CREATE TABLE IF NOT EXISTS users (
   id INT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(50) NOT NULL UNIQUE,
@@ -36,9 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 2. TABLA SOCIOS - Información de membresía
--- ============================================
+-- socios: membresía
 CREATE TABLE IF NOT EXISTS socios (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL UNIQUE,
@@ -61,9 +53,7 @@ CREATE TABLE IF NOT EXISTS socios (
   INDEX idx_fecha_alta (fecha_alta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 3. TABLA PAYMENTS - Registro de pagos
--- ============================================
+-- payments
 CREATE TABLE IF NOT EXISTS payments (
   id INT PRIMARY KEY AUTO_INCREMENT,
   socio_id INT NOT NULL,
@@ -90,9 +80,7 @@ CREATE TABLE IF NOT EXISTS payments (
   INDEX idx_tipo (tipo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 4. TABLA EVENTS - Eventos del club
--- ============================================
+-- events
 CREATE TABLE IF NOT EXISTS events (
   id INT PRIMARY KEY AUTO_INCREMENT,
   titulo VARCHAR(200) NOT NULL,
@@ -123,9 +111,7 @@ CREATE TABLE IF NOT EXISTS events (
   FULLTEXT idx_fulltext (titulo, descripcion)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 5. TABLA BOOKINGS - Reservas de entradas
--- ============================================
+-- bookings: reservas de entradas
 CREATE TABLE IF NOT EXISTS bookings (
   id INT PRIMARY KEY AUTO_INCREMENT,
   event_id INT NOT NULL,
@@ -149,9 +135,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   UNIQUE KEY unique_socio_evento (socio_id, event_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 6. TABLA GALLERY - Galería de fotos
--- ============================================
+-- gallery
 CREATE TABLE IF NOT EXISTS gallery (
   id INT PRIMARY KEY AUTO_INCREMENT,
   titulo VARCHAR(200) NOT NULL,
@@ -179,9 +163,7 @@ CREATE TABLE IF NOT EXISTS gallery (
   INDEX idx_autor_id (autor_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 7. TABLA ACTIVITY_LOG - Log de actividades
--- ============================================
+-- activity_log: actividad reciente del admin
 CREATE TABLE IF NOT EXISTS activity_log (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT,
@@ -200,9 +182,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
   INDEX idx_entidad (entidad_tipo, entidad_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- 8. TABLA CONTACTS - Contactos/Mensajes
--- ============================================
+-- contacts: mensajes del formulario de contacto
 CREATE TABLE IF NOT EXISTS contacts (
   id INT PRIMARY KEY AUTO_INCREMENT,
   nombre VARCHAR(100) NOT NULL,
@@ -222,11 +202,9 @@ CREATE TABLE IF NOT EXISTS contacts (
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- PROCEDIMIENTOS ALMACENADOS
--- ============================================
+-- Procedimientos almacenados
 
--- Obtener estadísticas generales
+-- Estadísticas generales
 DELIMITER //
 
 DROP PROCEDURE IF EXISTS obtener_estadisticas_generales //
@@ -245,7 +223,7 @@ BEGIN
     (SELECT COUNT(*) FROM contacts WHERE estado = 'nuevo') as mensajes_pendientes;
 END //
 
--- Obtener ingresos mensuales (últimos 12 meses)
+-- Ingresos de los últimos 12 meses
 DROP PROCEDURE IF EXISTS obtener_ingresos_mensuales //
 
 CREATE PROCEDURE obtener_ingresos_mensuales()
@@ -260,7 +238,7 @@ BEGIN
   ORDER BY mes DESC;
 END //
 
--- Obtener socios morosos
+-- Socios morosos
 DROP PROCEDURE IF EXISTS obtener_socios_morosos //
 
 CREATE PROCEDURE obtener_socios_morosos(IN dias_limite INT)
@@ -283,42 +261,21 @@ END //
 
 DELIMITER ;
 
--- ============================================
--- ÍNDICES ADICIONALES PARA PERFORMANCE
--- ============================================
+-- Índices
 
--- Para búsquedas de eventos por rango de fechas
 CREATE INDEX idx_events_fecha_range ON events(fecha_evento, estado);
 
--- Para búsquedas de pagos pendientes por socio
 CREATE INDEX idx_payments_socio_estado ON payments(socio_id, estado);
 
--- Para check de reservas duplicadas
 CREATE INDEX idx_bookings_socio_evento ON bookings(socio_id, event_id, estado);
 
--- ============================================
--- INSERTS INICIALES
--- ============================================
+-- Los usuarios se crean desde la aplicación
 
--- Insertar estados/configuraciones iniciales si es necesario
--- (Los usuarios se crearán mediante la aplicación)
-
--- ============================================
--- FIN DEL SCHEMA
--- ============================================
--- ============================================
--- MIGRACIÓN ADICIONAL: Añadir tablas entregadas por el usuario
--- Tablas añadidas: venues, artists, event_artists, event_genres,
--- guest_lists, event_supplements, social_links, vistas, triggers y procedimientos
--- NOTA: No ejecutar desde aquí — incluir en el pipeline de migraciones o ejecutar manualmente.
--- ============================================
+-- Ampliación: salas, artistas, guest lists, suplementos, redes, vistas y triggers
 
 USE la_clave;
 
--- ============================================
--- TABLA: venues
--- Locales/lugares donde se realizan eventos
--- ============================================
+-- venues: salas
 CREATE TABLE IF NOT EXISTS venues (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(200) NOT NULL,
@@ -347,10 +304,7 @@ CREATE TABLE IF NOT EXISTS venues (
   INDEX idx_tipo (tipo_local)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLA: artists
--- Base de datos de artistas/DJs
--- ============================================
+-- artists: artistas y DJs
 CREATE TABLE IF NOT EXISTS artists (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre_artistico VARCHAR(200) NOT NULL,
@@ -376,10 +330,7 @@ CREATE TABLE IF NOT EXISTS artists (
   INDEX idx_activo (activo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLA: event_artists
--- Relación muchos-a-muchos entre eventos y artistas
--- ============================================
+-- event_artists: eventos y artistas (N:M)
 CREATE TABLE IF NOT EXISTS event_artists (
   id INT AUTO_INCREMENT PRIMARY KEY,
   event_id INT NOT NULL,
@@ -403,10 +354,7 @@ CREATE TABLE IF NOT EXISTS event_artists (
   INDEX idx_orden (event_id, orden_aparicion)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLA: event_genres
--- Géneros musicales asociados a eventos
--- ============================================
+-- event_genres: géneros de cada evento
 CREATE TABLE IF NOT EXISTS event_genres (
   id INT AUTO_INCREMENT PRIMARY KEY,
   event_id INT NOT NULL,
@@ -420,10 +368,7 @@ CREATE TABLE IF NOT EXISTS event_genres (
   INDEX idx_genero (genero)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLA: guest_lists
--- Lista de invitados para eventos (gestionada por admin)
--- ============================================
+-- guest_lists: invitados de cada evento
 CREATE TABLE IF NOT EXISTS guest_lists (
   id INT AUTO_INCREMENT PRIMARY KEY,
   event_id INT NOT NULL,
@@ -453,10 +398,7 @@ CREATE TABLE IF NOT EXISTS guest_lists (
   INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLA: event_supplements
--- Suplementos/cargos adicionales para eventos específicos
--- ============================================
+-- event_supplements: cargos extra por evento
 CREATE TABLE IF NOT EXISTS event_supplements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   event_id INT NOT NULL,
@@ -477,10 +419,7 @@ CREATE TABLE IF NOT EXISTS event_supplements (
   INDEX idx_orden (event_id, orden)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- TABLA: social_links
--- Enlaces a redes sociales del club
--- ============================================
+-- social_links: redes sociales
 CREATE TABLE IF NOT EXISTS social_links (
   id INT AUTO_INCREMENT PRIMARY KEY,
   plataforma VARCHAR(50) NOT NULL, -- instagram, facebook, twitter, spotify, etc.
@@ -496,13 +435,10 @@ CREATE TABLE IF NOT EXISTS social_links (
   INDEX idx_orden (orden)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================
--- MODIFICACIONES: Añadir relación venue_id a events
--- ============================================
+-- events.venue_id
 ALTER TABLE events 
 ADD COLUMN IF NOT EXISTS venue_id INT AFTER ubicacion;
 
--- Añadir índice si no existe
 SET @index_exists = (SELECT COUNT(*) 
   FROM information_schema.statistics 
   WHERE table_schema = 'la_clave' 
@@ -517,7 +453,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Añadir foreign key solo si no existe
 SET @fk_exists = (SELECT COUNT(*) 
   FROM information_schema.TABLE_CONSTRAINTS 
   WHERE CONSTRAINT_SCHEMA = 'la_clave' 
@@ -532,14 +467,11 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- ============================================
--- MODIFICACIONES: bookings -> añadir supplement_id y precio_suplemento
--- ============================================
+-- bookings.supplement_id y precio_suplemento
 ALTER TABLE bookings
 ADD COLUMN IF NOT EXISTS supplement_id INT AFTER event_id,
 ADD COLUMN IF NOT EXISTS precio_suplemento DECIMAL(10,2) DEFAULT 0.00 AFTER precio_pagado;
 
--- Añadir foreign key para suplemento
 SET @fk_exists = (SELECT COUNT(*) 
   FROM information_schema.TABLE_CONSTRAINTS 
   WHERE CONSTRAINT_SCHEMA = 'la_clave' 
@@ -554,7 +486,6 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Añadir índice para suplemento
 SET @index_exists = (SELECT COUNT(*) 
   FROM information_schema.statistics 
   WHERE table_schema = 'la_clave' 
@@ -569,13 +500,11 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- ============================================
--- TRIGGERS Y PROCEDIMIENTOS (guest lists, validaciones, etc.)
--- ============================================
+-- Triggers de guest lists
 
 DELIMITER $$
 
--- Trigger: Generar código de acceso para guest list
+-- Código de acceso de cada invitado
 DROP TRIGGER IF EXISTS before_guest_list_insert$$
 CREATE TRIGGER before_guest_list_insert
 BEFORE INSERT ON guest_lists
@@ -591,7 +520,7 @@ BEGIN
   END IF;
 END$$
 
--- Trigger: Verificar cupo de artista antes de insertar en guest list
+-- Cupo de invitados del artista
 DROP TRIGGER IF EXISTS before_guest_list_artist_insert$$
 CREATE TRIGGER before_guest_list_artist_insert
 BEFORE INSERT ON guest_lists
@@ -600,15 +529,12 @@ BEGIN
   DECLARE v_cupo INT;
   DECLARE v_usados INT;
     
-  -- Solo validar si es guest list de artista
   IF NEW.tipo_guest = 'artista' AND NEW.event_artist_id IS NOT NULL THEN
-    -- Obtener cupo y usados del artista
     SELECT cupo_guest_list, guest_list_usados
     INTO v_cupo, v_usados
     FROM event_artists
     WHERE id = NEW.event_artist_id;
         
-    -- Verificar si hay cupo disponible
     IF v_usados >= v_cupo THEN
       SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'El artista ha alcanzado su límite de invitados para este evento';
@@ -616,13 +542,12 @@ BEGIN
   END IF;
 END$$
 
--- Trigger: Actualizar contador de guest list usados por artista
+-- Suma un invitado usado al artista
 DROP TRIGGER IF EXISTS after_guest_list_insert$$
 CREATE TRIGGER after_guest_list_insert
 AFTER INSERT ON guest_lists
 FOR EACH ROW
 BEGIN
-  -- Solo actualizar si es guest list de artista
   IF NEW.tipo_guest = 'artista' AND NEW.event_artist_id IS NOT NULL THEN
     UPDATE event_artists
     SET guest_list_usados = guest_list_usados + 1 + NEW.acompanantes
@@ -630,13 +555,12 @@ BEGIN
   END IF;
 END$$
 
--- Trigger: Actualizar contador cuando se cancela un invitado de artista
+-- Libera el cupo al cancelar un invitado
 DROP TRIGGER IF EXISTS after_guest_list_update$$
 CREATE TRIGGER after_guest_list_update
 AFTER UPDATE ON guest_lists
 FOR EACH ROW
 BEGIN
-  -- Si se cancela un invitado de artista, liberar el cupo
   IF OLD.tipo_guest = 'artista' 
      AND OLD.event_artist_id IS NOT NULL 
      AND OLD.estado != 'cancelado' 
@@ -650,11 +574,9 @@ END$$
 
 DELIMITER ;
 
--- ============================================
--- VISTAS Y PROCEDIMIENTOS AUXILIARES
--- ============================================
+-- Vistas y procedimientos auxiliares
 
--- Vista: Lineup completo de eventos con artistas
+-- Vista: lineup de cada evento
 DROP VIEW IF EXISTS event_lineup;
 CREATE VIEW event_lineup AS
 SELECT 
@@ -678,7 +600,7 @@ LEFT JOIN artists a ON ea.artist_id = a.id
 WHERE e.estado = 'publicado'
 ORDER BY e.fecha_evento DESC, ea.orden_aparicion ASC;
 
--- Vista: Resumen de guest list por evento
+-- Vista: resumen de invitados por evento
 DROP VIEW IF EXISTS guest_list_summary;
 CREATE VIEW guest_list_summary AS
 SELECT 
@@ -694,7 +616,7 @@ FROM events e
 LEFT JOIN guest_lists gl ON e.id = gl.event_id
 GROUP BY e.id;
 
--- Vista: Venues activos con estadísticas
+-- Vista: salas activas con estadísticas
 DROP VIEW IF EXISTS venues_stats;
 CREATE VIEW venues_stats AS
 SELECT 
@@ -709,7 +631,7 @@ FROM venues v
 LEFT JOIN events e ON v.id = e.venue_id
 GROUP BY v.id;
 
--- Vista: Suplementos disponibles por evento
+-- Vista: suplementos por evento
 DROP VIEW IF EXISTS event_supplements_view;
 CREATE VIEW event_supplements_view AS
 SELECT 
@@ -723,7 +645,7 @@ LEFT JOIN bookings b ON es.id = b.supplement_id AND b.estado = 'confirmada'
 WHERE es.activo = TRUE
 GROUP BY es.id;
 
--- Procedimientos almacenados auxiliares (opcionalmente usados por la app)
+-- Procedimientos auxiliares
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS asignar_artista_evento$$
@@ -788,7 +710,6 @@ BEGIN
   SET p_mensaje = '';
   SET p_codigo_acceso = NULL;
     
-  -- Si es guest list de artista, verificar cupo
   IF p_tipo_guest = 'artista' AND p_event_artist_id IS NOT NULL THEN
     SELECT cupo_guest_list, guest_list_usados
     INTO v_cupo, v_usados
@@ -801,7 +722,6 @@ BEGIN
     END IF;
   END IF;
     
-  -- Insertar en guest list
   INSERT INTO guest_lists (
     event_id,
     event_artist_id,
@@ -824,7 +744,6 @@ BEGIN
     p_notas
   );
     
-  -- Obtener el código generado
   SELECT codigo_acceso INTO p_codigo_acceso
   FROM guest_lists
   WHERE id = LAST_INSERT_ID();
@@ -837,9 +756,7 @@ END$$
 
 DELIMITER ;
 
--- ============================================
--- ACTUALIZAR CONFIGURACIÓN DEL SITIO (site_settings)
--- ============================================
+-- site_settings
 
 INSERT INTO site_settings (clave, valor, tipo, descripcion, grupo) VALUES
 ('guest_list_enabled', 'true', 'boolean', 'Permitir listas de invitados', 'events'),
@@ -847,6 +764,3 @@ INSERT INTO site_settings (clave, valor, tipo, descripcion, grupo) VALUES
 ('supplements_enabled', 'true', 'boolean', 'Permitir suplementos en eventos', 'events')
 ON DUPLICATE KEY UPDATE valor=valor;
 
--- ============================================
--- FIN DE LA MIGRACIÓN ADICIONAL
--- ============================================

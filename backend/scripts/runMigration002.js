@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-/**
- * Script para ejecutar la migración 002 - Agregar booking_id a payments
- * Uso: node scripts/runMigration002.js
- */
+// Migración 002 (payments.booking_id): node scripts/runMigration002.js
 
 import mysql from "mysql2/promise";
 import fs from "fs";
@@ -17,9 +14,8 @@ const __dirname = path.dirname(__filename);
 
 const runMigration = async () => {
   try {
-    console.log("🚀 Iniciando migración 002...\n");
+    console.log("Iniciando migración 002...\n");
 
-    // Conectar a la DB
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST || "localhost",
       user: process.env.DB_USER || "root",
@@ -28,20 +24,18 @@ const runMigration = async () => {
       port: process.env.DB_PORT || 3306,
     });
 
-    console.log("✅ Conectado a la base de datos\n");
+    console.log("Conectado a la base de datos\n");
 
-    // Leer archivo de migración
     const migrationPath = path.join(
       __dirname,
       "../src/migrations/002-add-booking-id-to-payments.sql",
     );
     const migrationSQL = fs.readFileSync(migrationPath, "utf8");
 
-    // Ejecutar migración línea por línea (para evitar errores de parsing)
+    // Sentencia a sentencia, sin las líneas de comentario
     const statements = migrationSQL
       .split(";")
       .map((stmt) => {
-        // Remover comentarios de línea
         return stmt
           .split("\n")
           .filter((line) => !line.trim().startsWith("--"))
@@ -55,18 +49,18 @@ const runMigration = async () => {
 
     for (const statement of statements) {
       try {
-        console.log(`📝 Ejecutando: ${statement.substring(0, 80)}...`);
+        console.log(`Ejecutando: ${statement.substring(0, 80)}...`);
         await connection.query(statement);
-        console.log("   ✅ OK\n");
+        console.log("OK\n");
         successCount++;
       } catch (error) {
         if (
           error.message.includes("Duplicate column name") ||
           error.message.includes("already exists")
         ) {
-          console.log("   ⚠️  Ya existe (ignorado)\n");
+          console.log("Ya existe (ignorado)\n");
         } else {
-          console.error(`   ❌ Error: ${error.message}\n`);
+          console.error(`Error: ${error.message}\n`);
           errorCount++;
         }
       }
@@ -75,7 +69,7 @@ const runMigration = async () => {
     await connection.end();
 
     console.log("\n========================================");
-    console.log(`✅ Migración completada`);
+    console.log(`Migración completada`);
     console.log(`   Statements ejecutados: ${successCount}`);
     if (errorCount > 0) {
       console.log(`   Errores: ${errorCount}`);
@@ -84,7 +78,7 @@ const runMigration = async () => {
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error fatal:", error.message);
+    console.error("Error fatal:", error.message);
     process.exit(1);
   }
 };

@@ -2,7 +2,7 @@ import express from 'express';
 import {
   registerBasic,
   registerSocio,
-  crearSolicitud,       // ✨ NUEVO
+  crearSolicitud,
   login,
   refreshToken,
   logout,
@@ -18,22 +18,16 @@ import {
   registerBasicValidator,
   registerSocioValidator,
   loginValidator,
-  solicitudSocioValidator  // ✨ NUEVO
+  solicitudSocioValidator
 } from '../validators/authValidator.js';
 import { handleValidationErrors } from '../middleware/validationMiddleware.js';
-import { uploadSolicitudDNI } from '../config/multer.js';  // ✨ NUEVO
+import { uploadSolicitudDNI } from '../config/multer.js';
 import { body } from 'express-validator';
 
 const router = express.Router();
 
-/**
- * ========================================
- * RUTAS PÚBLICAS DE AUTENTICACIÓN
- * ========================================
- */
+// Públicas
 
-// 🔒 Registro de administrador (protegido con secret key)
-// POST /api/auth/register/admin
 router.post(
   '/register/admin',
   authLimiter,
@@ -41,8 +35,6 @@ router.post(
   registerAdmin
 );
 
-// Registro de usuario básico (flujo antiguo — mantenido)
-// POST /api/auth/register/basic
 router.post(
   '/register/basic',
   authLimiter,
@@ -51,8 +43,6 @@ router.post(
   registerBasic
 );
 
-// Registro directo como socio (flujo antiguo — mantenido)
-// POST /api/auth/register/socio
 router.post(
   '/register/socio',
   authLimiter,
@@ -61,13 +51,11 @@ router.post(
   registerSocio
 );
 
-// ✨ NUEVO: Solicitud de socio (nuevo flujo de registro)
-// POST /api/auth/solicitud-socio
 // FormData: campos de texto + dni_front (imagen) + dni_back (imagen)
 router.post(
   '/solicitud-socio',
   authLimiter,
-  // Multer procesa las imágenes ANTES de que express-validator lea req.body
+  // Multer antes del validador: hasta entonces req.body no tiene los campos
   uploadSolicitudDNI.fields([
     { name: 'dni_front', maxCount: 1 },
     { name: 'dni_back',  maxCount: 1 }
@@ -77,8 +65,6 @@ router.post(
   crearSolicitud
 );
 
-// Login
-// POST /api/auth/login
 router.post(
   '/login',
   authLimiter,
@@ -87,17 +73,12 @@ router.post(
   login
 );
 
-// Renovar access token
-// POST /api/auth/refresh-token
 router.post('/refresh-token', refreshToken);
 
-// Verificar disponibilidad de email
-// GET /api/auth/check-email/:email
 router.get('/check-email/:email', checkEmail);
 
-// ─── Recuperación de contraseña ─────────────────────────────────
+// Recuperar contraseña
 
-// POST /api/auth/forgot-password
 router.post(
   '/forgot-password',
   authLimiter,
@@ -110,7 +91,6 @@ router.post(
   forgotPassword
 );
 
-// POST /api/auth/reset-password
 router.post(
   '/reset-password',
   authLimiter,
@@ -126,14 +106,8 @@ router.post(
   resetPassword
 );
 
-/**
- * ========================================
- * RUTAS PROTEGIDAS (requieren autenticación)
- * ========================================
- */
+// Con sesión
 
-// Logout
-// POST /api/auth/logout
 router.post('/logout', authenticate, logout);
 
 export default router;

@@ -7,32 +7,23 @@ import logger from '../config/logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * Generar código QR para una reserva
- * @param {String} codigoReserva - Código de la reserva
- * @param {Number} bookingId - ID de la reserva
- * @returns {Promise<String>} Ruta del archivo QR generado
- */
+// QR de una reserva como archivo PNG
 export const generateQRCode = async (codigoReserva, bookingId) => {
   try {
-    // Crear directorio si no existe
     const qrDir = path.join(__dirname, '../../uploads/qrcodes');
     if (!fs.existsSync(qrDir)) {
       fs.mkdirSync(qrDir, { recursive: true });
     }
 
-    // Nombre del archivo
     const filename = `qr-${bookingId}-${Date.now()}.png`;
     const filepath = path.join(qrDir, filename);
 
-    // Datos del QR (JSON con información de la reserva)
     const qrData = JSON.stringify({
       codigo: codigoReserva,
       booking_id: bookingId,
       timestamp: new Date().toISOString()
     });
 
-    // Generar QR code
     await QRCode.toFile(filepath, qrData, {
       errorCorrectionLevel: 'H',
       type: 'png',
@@ -45,7 +36,6 @@ export const generateQRCode = async (codigoReserva, bookingId) => {
       width: 300
     });
 
-    // Retornar ruta relativa
     return `/uploads/qrcodes/${filename}`;
   } catch (error) {
     logger.error('Error generando QR code:', error);
@@ -53,12 +43,7 @@ export const generateQRCode = async (codigoReserva, bookingId) => {
   }
 };
 
-/**
- * Generar QR code como base64 (útil para emails)
- * @param {String} codigoReserva - Código de la reserva
- * @param {Number} bookingId - ID de la reserva
- * @returns {Promise<String>} QR code en formato base64
- */
+// QR en base64
 export const generateQRCodeBase64 = async (codigoReserva, bookingId) => {
   try {
     const qrData = JSON.stringify({
@@ -86,11 +71,7 @@ export const generateQRCodeBase64 = async (codigoReserva, bookingId) => {
   }
 };
 
-/**
- * Verificar código QR
- * @param {String} qrData - Datos escaneados del QR
- * @returns {Object} Datos decodificados del QR
- */
+// Comprobar un QR
 export const verifyQRCode = (qrData) => {
   try {
     const data = JSON.parse(qrData);
@@ -106,11 +87,7 @@ export const verifyQRCode = (qrData) => {
   }
 };
 
-/**
- * Eliminar archivo QR
- * @param {String} qrPath - Ruta del archivo QR
- * @returns {Boolean} true si se eliminó
- */
+// Borrar el archivo del QR
 export const deleteQRCode = (qrPath) => {
   try {
     const fullPath = path.join(__dirname, '../..', qrPath);

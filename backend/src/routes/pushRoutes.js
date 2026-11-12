@@ -11,25 +11,12 @@ import { handleValidationErrors } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-/**
- * ========================================
- * RUTAS PÚBLICAS
- * ========================================
- */
+// Rutas públicas
 
-// Obtener clave pública VAPID
-// El frontend necesita esta clave para solicitar permisos
-// GET /api/push/vapid-key
 router.get('/vapid-key', getVapidKey);
 
-/**
- * ========================================
- * RUTAS PROTEGIDAS (requieren autenticación)
- * ========================================
- */
+// Con sesión
 
-// Suscribirse a notificaciones push
-// POST /api/push/subscribe
 // Body: { subscription: { endpoint, keys: { p256dh, auth } } }
 router.post(
   '/subscribe',
@@ -55,16 +42,12 @@ router.post(
   subscribe
 );
 
-// Desuscribirse de notificaciones push
-// POST /api/push/unsubscribe
 router.post(
   '/unsubscribe',
   authenticate,
   unsubscribe
 );
 
-// Enviar notificación de prueba
-// POST /api/push/test
 router.post(
   '/test',
   authenticate,

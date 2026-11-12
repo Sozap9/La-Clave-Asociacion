@@ -6,14 +6,8 @@ import { handleValidationErrors } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-/**
- * ================================================================
- * RUTAS DE CONTACTO (públicas)
- * ================================================================
- */
+// Pública
 
-// POST /api/contact
-// Enviar mensaje del formulario de contacto público
 router.post(
   '/',
   apiLimiter,

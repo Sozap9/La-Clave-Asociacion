@@ -1,16 +1,8 @@
 import { body } from 'express-validator';
 import { isValidSpanishDocument } from '../utils/validators.js';
 
-/**
- * ========================================
- * VALIDATORS PARA AUTENTICACIÓN
- * ========================================
- */
 
-/**
- * Validación para REGISTRO BÁSICO
- * Endpoint: POST /api/auth/register/basic
- */
+// Registro básico
 export const registerBasicValidator = [
   body('email')
     .notEmpty().withMessage('El email es obligatorio')
@@ -56,10 +48,7 @@ export const registerBasicValidator = [
     })
 ];
 
-/**
- * Validación para REGISTRO DE SOCIO (flujo antiguo - mantenido por retrocompatibilidad)
- * Endpoint: POST /api/auth/register/socio
- */
+// Registro de socio (flujo antiguo)
 export const registerSocioValidator = [
   ...registerBasicValidator,
 
@@ -97,26 +86,20 @@ export const registerSocioValidator = [
     .matches(/^pm_[a-zA-Z0-9]+$/).withMessage('El payment method ID de Stripe no es válido')
 ];
 
-/**
- * Validación para SOLICITUD DE SOCIO
- * Endpoint: POST /api/auth/solicitud-socio
- * Las imágenes del documento se validan por multer (no por express-validator)
- */
+// Solicitud de socio
+// Las fotos del DNI las valida multer
 export const solicitudSocioValidator = [
-  // EMAIL
   body('email')
     .notEmpty().withMessage('El email es obligatorio')
     .isEmail().withMessage('El email no es válido')
     .normalizeEmail()
     .isLength({ max: 100 }).withMessage('El email no puede superar 100 caracteres'),
 
-  // PASSWORD
   body('password')
     .notEmpty().withMessage('La contraseña es obligatoria')
     .isLength({ min: 8 }).withMessage('La contraseña debe tener al menos 8 caracteres')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('La contraseña debe contener al menos una mayúscula, una minúscula y un número'),
 
-  // NOMBRE
   body('nombre')
     .notEmpty().withMessage('El nombre es obligatorio')
     .trim()
@@ -124,7 +107,6 @@ export const solicitudSocioValidator = [
     .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/).withMessage('El nombre solo puede contener letras y espacios')
     .escape(),
 
-  // APELLIDOS
   body('apellidos')
     .notEmpty().withMessage('Los apellidos son obligatorios')
     .trim()
@@ -132,14 +114,12 @@ export const solicitudSocioValidator = [
     .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/).withMessage('Los apellidos solo pueden contener letras y espacios')
     .escape(),
 
-  // TELÉFONO
   body('telefono')
     .notEmpty().withMessage('El teléfono es obligatorio')
     .trim()
     .matches(/^[0-9+\s()-]+$/).withMessage('El teléfono no es válido')
     .isLength({ max: 20 }).withMessage('El teléfono no puede superar 20 caracteres'),
 
-  // FECHA DE NACIMIENTO
   body('fecha_nacimiento')
     .notEmpty().withMessage('La fecha de nacimiento es obligatoria')
     .isISO8601().withMessage('La fecha debe estar en formato YYYY-MM-DD')
@@ -152,9 +132,7 @@ export const solicitudSocioValidator = [
       return true;
     }),
 
-  // DNI / NIE
-  // Acepta DNI español (12345678A) o NIE (X1234567A), ambos con letra
-  // de control validada mediante el algoritmo oficial.
+  // DNI (12345678A) o NIE (X1234567A), con la letra de control comprobada
   body('dni')
     .notEmpty().withMessage('El documento de identidad es obligatorio')
     .trim()
@@ -165,23 +143,20 @@ export const solicitudSocioValidator = [
       return true;
     }),
 
-  // PREGUNTAS DEL REGISTRO (las tres obligatorias)
-  // ¿Tienes un proyecto artístico o cultural? ¿Formas parte de algún colectivo?
-  // Llega como "pregunta + Sí. detalle" o "pregunta + No".
+  // Preguntas del registro, las tres obligatorias. La primera llega como
+  // "pregunta + Sí. detalle" o "pregunta + No".
   body('motivacion')
     .trim()
     .notEmpty().withMessage('Responde si tienes un proyecto artístico o cultural o formas parte de algún colectivo')
     .isLength({ max: 500 }).withMessage('La respuesta sobre tu proyecto no puede superar 500 caracteres')
     .escape(),
 
-  // ¿Qué socio te ha invitado?
   body('invitado_por')
     .trim()
     .notEmpty().withMessage('Indica qué socio te ha invitado')
     .isLength({ max: 150 }).withMessage('El socio que te ha invitado no puede superar 150 caracteres')
     .escape(),
 
-  // ¿A qué evento deseas venir?
   body('evento_interes')
     .trim()
     .notEmpty().withMessage('Indica a qué evento deseas venir')
@@ -189,10 +164,7 @@ export const solicitudSocioValidator = [
     .escape()
 ];
 
-/**
- * Validación para LOGIN
- * Endpoint: POST /api/auth/login
- */
+// Login
 export const loginValidator = [
   body('email')
     .notEmpty().withMessage('El email es obligatorio')
@@ -204,10 +176,7 @@ export const loginValidator = [
     .isString().withMessage('La contraseña debe ser un texto')
 ];
 
-/**
- * Validación para CAMBIO DE CONTRASEÑA
- * Endpoint: PUT /api/users/me/password
- */
+// Cambio de contraseña
 export const changePasswordValidator = [
   body('currentPassword')
     .notEmpty().withMessage('La contraseña actual es obligatoria')

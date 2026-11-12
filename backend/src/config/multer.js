@@ -7,7 +7,6 @@ import logger from './logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Crear directorios si no existen
 const uploadsDir = path.join(__dirname, "../../uploads");
 const dirs = ["avatars", "dni", "events", "gallery", "solicitudes"];
 
@@ -18,9 +17,7 @@ dirs.forEach((dir) => {
   }
 });
 
-/**
- * Almacenamiento para avatares de usuario
- */
+// Almacenamiento para avatares de usuario
 const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(uploadsDir, "avatars"));
@@ -32,9 +29,7 @@ const avatarStorage = multer.diskStorage({
   },
 });
 
-/**
- * Almacenamiento para DNI de usuarios ya registrados
- */
+// Almacenamiento para DNI de usuarios ya registrados
 const dniStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(uploadsDir, "dni"));
@@ -47,11 +42,7 @@ const dniStorage = multer.diskStorage({
   },
 });
 
-/**
- * Almacenamiento para DNI en solicitudes de socio
- * No hay req.user.id disponible (usuario aún no creado),
- * se usa un identificador temporal basado en timestamp + random
- */
+// DNI de solicitudes: aún no hay usuario, el nombre usa fecha y aleatorio
 const solicitudDniStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(uploadsDir, "solicitudes"));
@@ -64,9 +55,7 @@ const solicitudDniStorage = multer.diskStorage({
   },
 });
 
-/**
- * Almacenamiento para imágenes de eventos
- */
+// Almacenamiento para imágenes de eventos
 const eventStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(uploadsDir, "events"));
@@ -78,9 +67,7 @@ const eventStorage = multer.diskStorage({
   },
 });
 
-/**
- * Almacenamiento para galería
- */
+// Almacenamiento para galería
 const galleryStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(uploadsDir, "gallery"));
@@ -92,9 +79,7 @@ const galleryStorage = multer.diskStorage({
   },
 });
 
-/**
- * Filtro para imágenes (jpeg, jpg, png, webp)
- */
+// Solo jpeg, jpg, png y webp
 const imageFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
   const extname = allowedTypes.test(
@@ -109,9 +94,7 @@ const imageFilter = (req, file, cb) => {
   }
 };
 
-/**
- * Filtro para PDFs
- */
+// Solo PDF
 const pdfFilter = (req, file, cb) => {
   const extname = /pdf/.test(path.extname(file.originalname).toLowerCase());
   const mimetype = file.mimetype === "application/pdf";
@@ -123,16 +106,11 @@ const pdfFilter = (req, file, cb) => {
   }
 };
 
-/**
- * Límites de tamaño
- */
+// Límites de tamaño
 const limits = {
-  fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB
+  fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5 MB
 };
 
-// ============================================================
-// EXPORTS
-// ============================================================
 
 export const uploadAvatar = multer({
   storage: avatarStorage,
@@ -146,10 +124,7 @@ export const uploadDNI = multer({
   fileFilter: imageFilter,
 });
 
-/**
- * Para subir DNI en el flujo de solicitud de socio (ruta pública)
- * Acepta los campos: dni_front, dni_back
- */
+// Solicitud de socio (pública): campos dni_front y dni_back
 export const uploadSolicitudDNI = multer({
   storage: solicitudDniStorage,
   limits,
@@ -171,9 +146,7 @@ export const uploadGalleryImage = multer({
 // Alias
 export const uploadGallery = uploadGalleryImage;
 
-/**
- * Eliminar un archivo del filesystem
- */
+// Borrar un archivo del disco
 export const deleteFile = (filePath) => {
   try {
     if (fs.existsSync(filePath)) {
@@ -187,9 +160,7 @@ export const deleteFile = (filePath) => {
   }
 };
 
-/**
- * Obtener URL pública de un archivo
- */
+// URL pública de un archivo
 export const getFileUrl = (filePath) => {
   if (!filePath) return null;
   const baseUrl = process.env.BACKEND_URL || "http://localhost:5000";

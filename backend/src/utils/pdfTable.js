@@ -195,9 +195,9 @@ export const finishPdf = (doc) => {
 
 // Colores de estado para las tablas
 export const STATUS_COLORS = {
-  ok: "#047857",      // verde
-  warning: "#b45309", // ámbar oscuro
-  danger: "#b91c1c",  // rojo
-  info: "#1d4ed8",    // azul
-  neutral: "#6b7280", // gris
+  ok: "#047857",
+  warning: "#b45309",
+  danger: "#b91c1c",
+  info: "#1d4ed8",
+  neutral: "#6b7280",
 };
