@@ -2,15 +2,9 @@ import { query } from "../config/database.js";
 import bcrypt from "bcryptjs";
 import logger from '../config/logger.js';
 
-/**
- * Modelo User - Manejo de la tabla users
- */
+// Tabla users
 class User {
-  /**
-   * Buscar usuario por email
-   * @param {String} email - Email del usuario
-   * @returns {Object|null} Usuario encontrado o null
-   */
+  // Buscar usuario por email
   static async findByEmail(email) {
     try {
       const sql = "SELECT * FROM users WHERE email = ? LIMIT 1";
@@ -22,11 +16,7 @@ class User {
     }
   }
 
-  /**
-   * Buscar usuario por ID
-   * @param {Number} id - ID del usuario
-   * @returns {Object|null} Usuario encontrado o null
-   */
+  // Buscar usuario por ID
   static async findById(id) {
     try {
       const sql = "SELECT * FROM users WHERE id = ? LIMIT 1";
@@ -39,10 +29,8 @@ class User {
   }
 
   /**
-   * Listar usuarios con filtros (rol, búsqueda) y paginación
-   * Usado por el selector de "Crear Socio Manual" (filtra role='basico')
-   * y por la gestión general de usuarios del panel admin.
-   * No devuelve password_hash ni datos sensibles del DNI.
+   * Listar usuarios (selector de alta manual de socios y gestión del admin).
+   * No devuelve password_hash ni las fotos del DNI.
    * @param {Object} options - { page, limit, role, search }
    * @returns {Object} { users, total, page, pages }
    */
@@ -96,11 +84,7 @@ class User {
     }
   }
 
-  /**
-   * Crear nuevo usuario
-   * @param {Object} userData - Datos del usuario
-   * @returns {Object} Usuario creado con su ID
-   */
+  // Crear usuario
   static async create(userData) {
     try {
       const {
@@ -119,14 +103,11 @@ class User {
         ip_registro = null,
       } = userData;
 
-      // El esquema exige username NOT NULL UNIQUE, pero la app no pide
-      // username en ningún flujo de registro. Se genera automáticamente
-      // a partir del email (parte antes de la @) si no se proporciona uno.
+      // username es NOT NULL UNIQUE pero la app no lo pide: se saca del email
       const username =
         userData.username ||
         `${email.split("@")[0]}_${Date.now().toString(36)}`;
 
-      // Hash de la contraseña
       const password_hash = await bcrypt.hash(password, 10);
 
       const sql = `
@@ -156,7 +137,6 @@ class User {
 
       const result = await query(sql, values);
 
-      // Retornar el usuario creado (sin contraseña)
       return await this.findById(result.insertId);
     } catch (error) {
       logger.error("Error en create:", error);
@@ -164,12 +144,7 @@ class User {
     }
   }
 
-  /**
-   * Actualizar usuario
-   * @param {Number} id - ID del usuario
-   * @param {Object} updateData - Datos a actualizar
-   * @returns {Boolean} true si se actualizó correctamente
-   */
+  // Actualizar usuario
   static async update(id, updateData) {
     try {
       const allowedFields = [
@@ -185,7 +160,6 @@ class User {
         "idioma_preferido",
       ];
 
-      // Filtrar solo campos permitidos
       const updates = {};
       Object.keys(updateData).forEach((key) => {
         if (allowedFields.includes(key)) {
@@ -197,7 +171,6 @@ class User {
         throw new Error("No hay campos válidos para actualizar");
       }
 
-      // Construir query dinámicamente
       const fields = Object.keys(updates)
         .map((key) => `${key} = ?`)
         .join(", ");
@@ -214,12 +187,7 @@ class User {
     }
   }
 
-  /**
-   * Actualizar contraseña
-   * @param {Number} id - ID del usuario
-   * @param {String} newPassword - Nueva contraseña
-   * @returns {Boolean} true si se actualizó correctamente
-   */
+  // Actualizar contraseña
   static async updatePassword(id, newPassword) {
     try {
       const password_hash = await bcrypt.hash(newPassword, 10);
@@ -232,12 +200,7 @@ class User {
     }
   }
 
-  /**
-   * Verificar contraseña
-   * @param {String} plainPassword - Contraseña en texto plano
-   * @param {String} hashedPassword - Contraseña hasheada
-   * @returns {Boolean} true si coinciden
-   */
+  // Comprobar contraseña
   static async verifyPassword(plainPassword, hashedPassword) {
     try {
       return await bcrypt.compare(plainPassword, hashedPassword);
@@ -247,11 +210,7 @@ class User {
     }
   }
 
-  /**
-   * Verificar si un email ya existe
-   * @param {String} email - Email a verificar
-   * @returns {Boolean} true si existe
-   */
+  // ¿Existe el email?
   static async emailExists(email) {
     try {
       const sql = "SELECT id FROM users WHERE email = ? LIMIT 1";
@@ -263,11 +222,7 @@ class User {
     }
   }
 
-  /**
-   * Verificar si un DNI ya existe
-   * @param {String} dni - DNI a verificar (se compara en mayúsculas)
-   * @returns {Boolean} true si existe
-   */
+  // ¿Existe el DNI?
   static async dniExists(dni) {
     try {
       const sql = "SELECT id FROM users WHERE dni = ? LIMIT 1";
@@ -279,11 +234,7 @@ class User {
     }
   }
 
-  /**
-   * Desactivar usuario (soft delete)
-   * @param {Number} id - ID del usuario
-   * @returns {Boolean} true si se desactivó correctamente
-   */
+  // Desactivar usuario (soft delete)
   static async deactivate(id) {
     try {
       const sql = "UPDATE users SET activo = false WHERE id = ?";
@@ -295,11 +246,7 @@ class User {
     }
   }
 
-  /**
-   * Soft delete del usuario (marca como inactivo y añade deleted_at)
-   * @param {Number} id - ID del usuario
-   * @returns {Boolean} true si se marcó correctamente
-   */
+  // Soft delete: inactivo y deleted_at
   static async softDelete(id) {
     try {
       const sql =
@@ -312,11 +259,7 @@ class User {
     }
   }
 
-  /**
-   * Eliminar usuario de la base de datos
-   * @param {Number} id - ID del usuario
-   * @returns {Boolean} true si se eliminó correctamente
-   */
+  // Borrar usuario de la base de datos
   static async delete(id) {
     try {
       const sql = "DELETE FROM users WHERE id = ?";
@@ -328,11 +271,7 @@ class User {
     }
   }
 
-  /**
-   * Activar usuario
-   * @param {Number} id - ID del usuario
-   * @returns {Boolean} true si se activó correctamente
-   */
+  // Activar usuario
   static async activate(id) {
     try {
       const sql = "UPDATE users SET activo = true WHERE id = ?";
@@ -344,11 +283,7 @@ class User {
     }
   }
 
-  /**
-   * Verificar email del usuario
-   * @param {Number} id - ID del usuario
-   * @returns {Boolean} true si se verificó correctamente
-   */
+  // Marcar el email como verificado
   static async verifyEmail(id) {
     try {
       const sql = `
@@ -364,12 +299,7 @@ class User {
     }
   }
 
-  /**
-   * Guardar token de verificación de email
-   * @param {Number} id - ID del usuario
-   * @param {String} token - Token de verificación
-   * @returns {Boolean} true si se guardó correctamente
-   */
+  // Guardar token de verificación de email
   static async saveEmailVerificationToken(id, token) {
     try {
       const sql = "UPDATE users SET email_verification_token = ? WHERE id = ?";
@@ -381,13 +311,7 @@ class User {
     }
   }
 
-  /**
-   * Guardar token de reset de contraseña
-   * @param {Number} userId - ID del usuario
-   * @param {String} hashedToken - Token hasheado
-   * @param {Date} expiresAt - Fecha de expiración
-   * @returns {Boolean} true si se guardó correctamente
-   */
+  // Guardar token de reset de contraseña
   static async savePasswordResetToken(userId, hashedToken, expiresAt) {
     try {
       const sql = `
@@ -404,11 +328,7 @@ class User {
     }
   }
 
-  /**
-   * Buscar usuario por token de reset válido
-   * @param {String} hashedToken - Token hasheado
-   * @returns {Object|null} Usuario o null
-   */
+  // Buscar por token de reset no caducado
   static async findByValidResetToken(hashedToken) {
     try {
       const sql = `
@@ -427,11 +347,7 @@ class User {
     }
   }
 
-  /**
-   * Limpiar token de reset de contraseña
-   * @param {Number} userId - ID del usuario
-   * @returns {Boolean} true si se limpió correctamente
-   */
+  // Borrar el token de reset
   static async clearPasswordResetToken(userId) {
     try {
       const sql = `
@@ -448,11 +364,7 @@ class User {
     }
   }
 
-  /**
-   * Obtener usuario sin datos sensibles
-   * @param {Object} user - Usuario completo
-   * @returns {Object} Usuario sin contraseña ni tokens
-   */
+  // Usuario sin datos sensibles
   static sanitizeUser(user) {
     if (!user) return null;
 

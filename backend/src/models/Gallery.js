@@ -1,15 +1,9 @@
 import { query } from '../config/database.js';
 import logger from '../config/logger.js';
 
-/**
- * Modelo Gallery - Gestión COMPLETA de carpetas, imágenes y artistas
- */
+// Galería: álbumes, imágenes y artistas etiquetados
 class Gallery {
-  /**
-   * ========================================
-   * FOLDERS - Gestión de carpetas/álbumes
-   * ========================================
-   */
+  // Álbumes
 
   static async listFolders(filters = {}) {
     try {
@@ -210,11 +204,7 @@ class Gallery {
     }
   }
 
-  /**
-   * ========================================
-   * IMAGES - Gestión de imágenes
-   * ========================================
-   */
+  // Imágenes
 
   static async listImages(folderId, visibleOnly = false) {
     try {
@@ -394,11 +384,7 @@ static async updateImage(id, updateData) {
     }
   }
 
-  /**
-   * ========================================
-   * Gestión Global
-   * ========================================
-   */
+  // Imágenes de todos los álbumes
 
   static async getAllImages(filters = {}) {
     try {
@@ -487,11 +473,7 @@ static async updateImage(id, updateData) {
     }
   }
 
-  /**
-   * ========================================
-   * ARTISTAS - Gestión de artistas en FOLDERS
-   * ========================================
-   */
+  // Artistas de un álbum
 
   static async getFolderArtists(folderId) {
     try {
@@ -565,11 +547,7 @@ static async updateImage(id, updateData) {
     }
   }
 
-  /**
-   * ========================================
-   * ARTISTAS - Gestión de artistas en IMÁGENES
-   * ========================================
-   */
+  // Artistas de una imagen
 
   static async getAllImagesWithArtists(filters = {}) {
     try {
@@ -725,11 +703,7 @@ static async updateImage(id, updateData) {
     }
   }
 
-  /**
-   * ========================================
-   * ESTADÍSTICAS
-   * ========================================
-   */
+  // Estadísticas
 
   static async getStats() {
     try {

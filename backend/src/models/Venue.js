@@ -1,15 +1,9 @@
 import { query } from "../config/database.js";
 import logger from '../config/logger.js';
 
-/**
- * Modelo Venue - Manejo de la tabla venues
- */
+// Tabla venues (salas)
 class Venue {
-  /**
-   * Buscar venue por ID
-   * @param {Number} id - ID del venue
-   * @returns {Object|null} Venue encontrado o null
-   */
+  // Buscar sala por ID
   static async findById(id) {
     try {
       const sql = `
@@ -32,8 +26,7 @@ class Venue {
   }
 
   /**
-   * Listar venues con filtros y paginación
-   * @param {Object} options - Opciones de filtrado
+   * Listar salas con filtros y paginación
    * @returns {Object} { venues, total, page, pages }
    */
   static async list(options = {}) {
@@ -48,7 +41,6 @@ class Venue {
         orderDir = "ASC",
       } = options;
 
-      // Convertir y validar números
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
 
@@ -61,7 +53,6 @@ class Venue {
 
       const offset = (pageNum - 1) * limitNum;
 
-      // Construir condiciones (SOLO para WHERE, no para LIMIT/OFFSET)
       const conditions = [];
       const params = [];
 
@@ -87,7 +78,7 @@ class Venue {
       const whereClause =
         conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
 
-      // Validar orderBy para evitar SQL injection
+      // orderBy contra lista blanca (inyección SQL)
       const validOrderFields = [
         "nombre",
         "ciudad",
@@ -101,10 +92,7 @@ class Venue {
       const safeOrderDir =
         orderDir && orderDir.toUpperCase() === "DESC" ? "DESC" : "ASC";
 
-      // ========================================
-      // FIX DEFINITIVO: NO usar placeholders para LIMIT/OFFSET
-      // Los insertamos directamente en el SQL (ya están validados como números)
-      // ========================================
+      // LIMIT y OFFSET en el SQL (ya validados): con placeholders mysql2 falla
 
       const sql =
         "SELECT v.*, " +
@@ -127,7 +115,6 @@ class Venue {
 
       const venues = await query(sql, params);
 
-      // Contar total
       const countSql = "SELECT COUNT(*) as total FROM venues v " + whereClause;
       const countResult = await query(countSql, params);
       const total = countResult[0].total;
@@ -144,11 +131,7 @@ class Venue {
     }
   }
 
-  /**
-   * Crear nuevo venue
-   * @param {Object} venueData - Datos del venue
-   * @returns {Object} Venue creado
-   */
+  // Crear sala
   static async create(venueData) {
     try {
       const {
@@ -210,12 +193,7 @@ class Venue {
     }
   }
 
-  /**
-   * Actualizar venue
-   * @param {Number} id - ID del venue
-   * @param {Object} updateData - Datos a actualizar
-   * @returns {Boolean} true si se actualizó
-   */
+  // Editar sala
   static async update(id, updateData) {
     try {
       const allowedFields = [
@@ -265,14 +243,9 @@ class Venue {
     }
   }
 
-  /**
-   * Eliminar venue (solo si no tiene eventos)
-   * @param {Number} id - ID del venue
-   * @returns {Boolean} true si se eliminó
-   */
+  // Borrar sala; no se puede si tiene eventos
   static async delete(id) {
     try {
-      // Verificar que no tenga eventos
       const checkSql =
         "SELECT COUNT(*) as total FROM events WHERE venue_id = ?";
       const checkResult = await query(checkSql, [id]);
@@ -290,11 +263,7 @@ class Venue {
     }
   }
 
-  /**
-   * Desactivar venue
-   * @param {Number} id - ID del venue
-   * @returns {Boolean} true si se desactivó
-   */
+  // Desactivar sala
   static async deactivate(id) {
     try {
       const sql = "UPDATE venues SET activo = false WHERE id = ?";
@@ -306,11 +275,7 @@ class Venue {
     }
   }
 
-  /**
- * Reactivar un venue (cambiar activo a true)
- * @param {Number} id - ID del venue
- * @returns {Object} Venue reactivado
- */
+  // Reactivar sala
 static async activate(id) {
   try {
     const sql = 'UPDATE venues SET activo = true WHERE id = ?';
@@ -322,10 +287,7 @@ static async activate(id) {
   }
 }
 
-  /**
-   * Obtener venues activos
-   * @returns {Array} Lista de venues activos
-   */
+  // Salas activas
   static async getActive() {
     try {
       const sql = `
@@ -345,11 +307,7 @@ static async activate(id) {
     }
   }
 
-  /**
-   * Buscar venues por ciudad
-   * @param {String} ciudad - Nombre de la ciudad
-   * @returns {Array} Venues encontrados
-   */
+  // Salas de una ciudad
   static async findByCiudad(ciudad) {
     try {
       const sql = `
@@ -365,11 +323,7 @@ static async activate(id) {
     }
   }
 
-  /**
-   * Obtener estadísticas de un venue
-   * @param {Number} id - ID del venue
-   * @returns {Object} Estadísticas del venue
-   */
+  // Estadísticas de una sala
   static async getStats(id) {
     try {
       const sql = `

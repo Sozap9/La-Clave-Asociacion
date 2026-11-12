@@ -1,15 +1,9 @@
 import { query } from '../config/database.js';
 import logger from '../config/logger.js';
 
-/**
- * Modelo Event - Manejo de la tabla events
- */
+// Tabla events
 class Event {
-  /**
-   * Buscar evento por ID
-   * @param {Number} id - ID del evento
-   * @returns {Object|null} Evento encontrado o null
-   */
+  // Buscar evento por ID
   static async findById(id) {
     try {
       const sql = `
@@ -34,7 +28,7 @@ class Event {
       
       if (results.length > 0) {
         const event = results[0];
-        // Calcular entradas disponibles reales
+        // Disponibles reales a partir de las reservas
         const reservadas = parseInt(event.entradas_reservadas_real) || 0;
         event.entradas_disponibles_real = event.aforo_maximo - reservadas;
         return event;
@@ -49,7 +43,6 @@ class Event {
 
   /**
    * Listar eventos con filtros y paginación
-   * @param {Object} options - Opciones de filtrado
    * @returns {Object} { events, total, page, pages }
    */
   static async list(options = {}) {
@@ -65,19 +58,17 @@ class Event {
         orderDir = 'ASC'
       } = options;
 
-      // Validar y sanitizar valores numéricos
       const validPage = Math.max(1, parseInt(page) || 1);
       const validLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
       const offset = (validPage - 1) * validLimit;
 
-      // Validar orderBy (prevenir SQL injection)
+      // orderBy contra lista blanca (inyección SQL)
       const allowedOrderBy = [
         'fecha_evento', 'titulo', 'created_at', 
         'precio_socio', 'aforo_maximo', 'estado'
       ];
       const validOrderBy = allowedOrderBy.includes(orderBy) ? orderBy : 'fecha_evento';
       
-      // Validar orderDir
       const validOrderDir = ['ASC', 'DESC'].includes(orderDir.toUpperCase()) 
         ? orderDir.toUpperCase() 
         : 'ASC';
@@ -85,7 +76,6 @@ class Event {
       const conditions = [];
       const params = [];
 
-      // Filtros
       if (estado) {
         conditions.push('e.estado = ?');
         params.push(estado);
@@ -110,9 +100,8 @@ class Event {
         ? 'WHERE ' + conditions.join(' AND ') 
         : '';
 
-      // Query principal - cuenta confirmadas Y esperando_pago (reservas con
-      // pago en curso también ocupan aforo, para no vender de más mientras
-      // alguien está pagando) y excluye admins
+      // Ocupan aforo las confirmadas y las esperando_pago (para no vender de
+      // más durante el pago); no cuentan las de admins
       const sql = `
         SELECT 
           e.*,
@@ -131,17 +120,14 @@ class Event {
         LIMIT ? OFFSET ?
       `;
 
-      // Añadir limit y offset a params
       const queryParams = [...params, validLimit, offset];
       const events = await query(sql, queryParams);
       
-      // Calcular disponibilidad real para cada evento
       events.forEach(event => {
         const reservadas = parseInt(event.entradas_reservadas_real) || 0;
         event.entradas_disponibles_real = event.aforo_maximo - reservadas;
       });
 
-      // Contar total
       const countSql = `SELECT COUNT(*) as total FROM events e ${whereClause}`;
       const countParams = [...params];
       const countResult = await query(countSql, countParams);
@@ -159,11 +145,7 @@ class Event {
     }
   }
 
-  /**
-   * Crear nuevo evento
-   * @param {Object} eventData - Datos del evento
-   * @returns {Object} Evento creado
-   */
+  // Crear evento
   static async create(eventData) {
     try {
       const {
@@ -231,15 +213,12 @@ class Event {
     }
   }
 
-  /**
-   * Actualizar evento
-   */
+  // Actualizar evento
   static async update(id, eventData) {
     try {
       const fields = [];
       const values = [];
 
-      // Campos permitidos para actualizar
       const allowedFields = [
         'titulo', 'descripcion', 'descripcion_corta', 'fecha_evento', 'hora_evento',
         'ubicacion', 'direccion', 'aforo_maximo', 'imagen_cartel_url',
@@ -269,9 +248,7 @@ class Event {
     }
   }
 
-  /**
-   * Eliminar evento
-   */
+  // Eliminar evento
   static async delete(id) {
     try {
       const sql = 'DELETE FROM events WHERE id = ?';
@@ -283,9 +260,7 @@ class Event {
     }
   }
 
-  /**
-   * Verificar disponibilidad de entradas
-   */
+  // ¿Quedan entradas?
   static async checkAvailability(eventId, numeroEntradas = 1) {
     try {
       const event = await this.findById(eventId);
@@ -301,9 +276,7 @@ class Event {
     }
   }
 
-  /**
-   * Obtener eventos destacados
-   */
+  // Eventos destacados
   static async getFeatured(limit = 6) {
     try {
       return await this.list({
@@ -319,9 +292,7 @@ class Event {
     }
   }
 
-  /**
-   * Buscar eventos por término
-   */
+  // Buscar eventos
   static async search(searchTerm, options = {}) {
     try {
       const {
@@ -363,13 +334,11 @@ class Event {
       
       const events = await query(sql, params);
       
-      // Calcular disponibilidad real
       events.forEach(event => {
         const reservadas = parseInt(event.entradas_reservadas_real) || 0;
         event.entradas_disponibles_real = event.aforo_maximo - reservadas;
       });
 
-      // Contar total
       const countSql = `
         SELECT COUNT(*) as total
         FROM events e

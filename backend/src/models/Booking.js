@@ -2,15 +2,9 @@ import { query } from '../config/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../config/logger.js';
 
-/**
- * Modelo Booking - Manejo de la tabla bookings
- */
+// Tabla bookings y lista de espera
 class Booking {
-  /**
-   * Buscar reserva por ID
-   * @param {Number} id - ID de la reserva
-   * @returns {Object|null} Reserva encontrada o null
-   */
+  // Buscar reserva por ID
   static async findById(id) {
     try {
       const sql = `
@@ -40,12 +34,8 @@ class Booking {
   }
 
   /**
-   * Buscar reserva por código de acceso (el que realmente codifica
-   * el QR: "LACLAVE-{id}-{codigo_acceso}"), validando también el id
-   * como comprobación extra de integridad.
-   * @param {Number} bookingId
-   * @param {String} codigoAcceso
-   * @returns {Object|null} Reserva encontrada o null
+   * Buscar por el código del QR (LACLAVE-{id}-{codigo_acceso}); también
+   * comprueba que el id coincida
    */
   static async findByAccessCode(bookingId, codigoAcceso) {
     try {
@@ -75,11 +65,7 @@ class Booking {
   }
 
 
-  /**
-   * Buscar reserva por código
-   * @param {String} codigoReserva - Código de reserva
-   * @returns {Object|null} Reserva encontrada o null
-   */
+  // Buscar por codigo_reserva
   static async findByCode(codigoReserva) {
     try {
       const sql = `
@@ -107,19 +93,11 @@ class Booking {
     }
   }
 
-  /**
-   * Verificar si un socio ya tiene reserva para un evento
-   * @param {Number} socioId - ID del socio
-   * @param {Number} eventId - ID del evento
-   * @returns {Object|null} Reserva si existe
-   */
+  // Reserva activa de un socio para un evento
   static async findBySocioAndEvent(socioId, eventId) {
     try {
-      // Incluye 'esperando_pago': mientras una reserva para este evento
-      // siga pendiente de pago (hasta 30 min, ver config/payment.js),
-      // no se puede abrir una segunda para el mismo evento — si no, se
-      // podrían acumular varias reservas del mismo socio al mismo evento
-      // mientras la primera sigue sin resolverse.
+      // Cuenta también esperando_pago: no se abre otra mientras la primera
+      // está pendiente (hasta 30 min)
       const sql = `
         SELECT * FROM bookings 
         WHERE socio_id = ? AND event_id = ? AND estado IN ('confirmada', 'esperando_pago')
@@ -133,11 +111,7 @@ class Booking {
     }
   }
 
-  /**
-   * Crear nueva reserva
-   * @param {Object} bookingData - Datos de la reserva
-   * @returns {Object} Reserva creada
-   */
+  // Crear reserva
   static async create(bookingData) {
     try {
       const {
@@ -148,7 +122,7 @@ class Booking {
         precio_pagado = 0.00
       } = bookingData;
 
-      // Generar código único de reserva (formato: LCV-YYYYMM-XXXXXXXX)
+      // Formato LCV-YYYYMM-XXXXXXXX
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -179,12 +153,7 @@ class Booking {
     }
   }
 
-  /**
-   * Cancelar reserva
-   * @param {Number} id - ID de la reserva
-   * @param {String} motivo - Motivo de cancelación
-   * @returns {Boolean} true si se canceló
-   */
+  // Cancelar reserva
   static async cancel(id, motivo = null) {
     try {
       const sql = `
@@ -202,11 +171,7 @@ class Booking {
     }
   }
 
-  /**
-   * Marcar reserva como asistida
-   * @param {Number} id - ID de la reserva
-   * @returns {Boolean} true si se marcó
-   */
+  // Marcar reserva como asistida
   static async markAsAttended(id) {
   try {
     const sql = `
@@ -222,12 +187,7 @@ class Booking {
   }
 }
 
-  /**
-   * Guardar URL del código QR
-   * @param {Number} id - ID de la reserva
-   * @param {String} qrUrl - URL del QR
-   * @returns {Boolean} true si se guardó
-   */
+  // Guardar el QR
   static async saveQRCode(id, qrUrl) {
     try {
       const sql = 'UPDATE bookings SET qr_code_url = ? WHERE id = ?';
@@ -239,12 +199,7 @@ class Booking {
     }
   }
 
-   /**
-   * Obtener reservas de un socio CON TODOS LOS DATOS DEL EVENTO
-   * @param {Number} socioId - ID del socio
-   * @param {String} estado - Filtrar por estado (opcional)
-   * @returns {Array} Lista de reservas
-   */
+  // Reservas de un socio con los datos del evento
   static async getBySocio(socioId, estado = null) {
     try {
       let sql = `
@@ -285,12 +240,7 @@ class Booking {
     }
   }
 
-  /**
-   * Obtener reservas de un evento
-   * @param {Number} eventId - ID del evento
-   * @param {String} estado - Filtrar por estado (opcional)
-   * @returns {Array} Lista de reservas
-   */
+  // Reservas de un evento
   static async getByEvent(eventId, estado = null) {
     try {
       let sql = `
@@ -323,11 +273,7 @@ class Booking {
     }
   }
 
-  /**
-   * Contar reservas confirmadas de un evento
-   * @param {Number} eventId - ID del evento
-   * @returns {Number} Total de reservas confirmadas
-   */
+  // Reservas confirmadas de un evento
   static async countConfirmedByEvent(eventId) {
     try {
       const sql = `
@@ -343,11 +289,7 @@ class Booking {
     }
   }
 
-  /**
-   * Obtener estadísticas de reservas de un socio
-   * @param {Number} socioId - ID del socio
-   * @returns {Object} Estadísticas
-   */
+  // Estadísticas de reservas de un socio
   static async getSocioStats(socioId) {
     try {
       const sql = `
@@ -368,15 +310,9 @@ class Booking {
     }
   }
 
-  /**
-   * Lista de espera - Agregar a lista
-   * @param {Number} socioId - ID del socio
-   * @param {Number} eventId - ID del evento
-   * @returns {Object} Registro de lista de espera
-   */
+  // Lista de espera: añadir
   static async addToWaitingList(socioId, eventId) {
     try {
-      // Obtener posición
       const positionSql = `
         SELECT COALESCE(MAX(posicion), 0) + 1 as next_position
         FROM waiting_list
@@ -403,12 +339,7 @@ class Booking {
     }
   }
 
-  /**
-   * Verificar si socio está en lista de espera
-   * @param {Number} socioId - ID del socio
-   * @param {Number} eventId - ID del evento
-   * @returns {Object|null} Registro si existe
-   */
+  // Lista de espera: ¿está el socio?
   static async checkWaitingList(socioId, eventId) {
     try {
       const sql = `
@@ -424,11 +355,7 @@ class Booking {
     }
   }
 
-  /**
-   * Obtener lista de espera de un evento
-   * @param {Number} eventId - ID del evento
-   * @returns {Array} Lista de espera
-   */
+  // Lista de espera de un evento
   static async getWaitingListByEvent(eventId) {
     try {
       const sql = `
@@ -451,12 +378,7 @@ class Booking {
     }
   }
 
-  /**
-   * Remover de lista de espera
-   * @param {Number} socioId - ID del socio
-   * @param {Number} eventId - ID del evento
-   * @returns {Boolean} true si se removió
-   */
+  // Lista de espera: quitar
   static async removeFromWaitingList(socioId, eventId) {
     try {
       const sql = `

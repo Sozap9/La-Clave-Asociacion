@@ -1,15 +1,9 @@
 import { query } from '../config/database.js';
 import logger from '../config/logger.js';
 
-/**
- * Modelo Artist - Manejo de la tabla artists
- */
+// Tabla artists
 class Artist {
-  /**
-   * Buscar artista por ID
-   * @param {Number} id - ID del artista
-   * @returns {Object|null} Artista encontrado o null
-   */
+  // Buscar artista por ID
   static async findById(id) {
     try {
       const sql = `
@@ -33,8 +27,7 @@ class Artist {
   }
 
   /**
-   * Listar artistas con filtros y búsqueda avanzada
-   * @param {Object} options - Opciones de filtrado
+   * Listar artistas con filtros
    * @returns {Object} { artists, total, page, pages, filters }
    */
   static async list(options = {}) {
@@ -42,11 +35,11 @@ class Artist {
       const {
         page = 1,
         limit = 20,
-        search = null,           // Búsqueda general en múltiples campos
-        genero = null,           // Filtro específico de género
-        sello = null,            // Filtro por sello/label
-        ciudad = null,           // Filtro por ciudad
-        pais_origen = null,      // Filtro por país
+        search = null, // nombre, géneros o sello
+        genero = null,
+        sello = null,
+        ciudad = null,
+        pais_origen = null,
         activo = null,
         verificado = null,
         destacado = null,
@@ -54,7 +47,6 @@ class Artist {
         orderDir = 'ASC'
       } = options;
 
-      // Convertir y validar números
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
       
@@ -67,14 +59,10 @@ class Artist {
       
       const offset = (pageNum - 1) * limitNum;
 
-      // ========================================
-      // CONSTRUIR CONDICIONES CON SISTEMA MEJORADO
-      // ========================================
       
       const conditions = [];
       const params = [];
 
-      // BÚSQUEDA GENERAL (busca en nombre, géneros y sello)
       if (search && search.trim().length > 0) {
         conditions.push(
           '(a.nombre_artistico LIKE ? OR a.nombre_real LIKE ? OR a.generos LIKE ? OR a.sello LIKE ?)'
@@ -83,7 +71,7 @@ class Artist {
         params.push(searchPattern, searchPattern, searchPattern, searchPattern);
       }
 
-      // FILTROS ESPECÍFICOS (se pueden combinar con search)
+      // Combinables con search
       
       if (genero && genero.trim().length > 0) {
         conditions.push('a.generos LIKE ?');
@@ -105,7 +93,6 @@ class Artist {
         params.push(`%${pais_origen.trim()}%`);
       }
 
-      // FILTROS BOOLEANOS (convertir a 0/1)
       
       if (activo !== null && activo !== undefined) {
         conditions.push('a.activo = ?');
@@ -129,12 +116,12 @@ class Artist {
         ? 'WHERE ' + conditions.join(' AND ') 
         : '';
 
-      // Validar orderBy para evitar SQL injection
+      // orderBy contra lista blanca (inyección SQL)
       const validOrderFields = ['nombre_artistico', 'nombre_real', 'pais_origen', 'ciudad', 'sello', 'created_at', 'id'];
       const safeOrderBy = validOrderFields.includes(orderBy) ? orderBy : 'nombre_artistico';
       const safeOrderDir = (orderDir && orderDir.toUpperCase() === 'DESC') ? 'DESC' : 'ASC';
 
-      // SQL con LIMIT/OFFSET directos (lección de Venues)
+      // LIMIT y OFFSET en el SQL: con placeholders mysql2 da errno 1210
       const sql = 
         'SELECT a.*, ' +
         'COUNT(DISTINCT ea.id) as total_eventos, ' +
@@ -149,7 +136,6 @@ class Artist {
       
       const artists = await query(sql, params);
 
-      // Contar total
       const countSql = 'SELECT COUNT(*) as total FROM artists a ' + whereClause;
       const countResult = await query(countSql, params);
       const total = countResult[0].total;
@@ -159,7 +145,6 @@ class Artist {
         total,
         page: pageNum,
         pages: Math.ceil(total / limitNum),
-        // Info de filtros aplicados para debugging
         filters: {
           search,
           genero,
@@ -178,11 +163,7 @@ class Artist {
     }
   }
 
-  /**
-   * Crear nuevo artista
-   * @param {Object} artistData - Datos del artista
-   * @returns {Object} Artista creado
-   */
+  // Crear nuevo artista
   static async create(artistData) {
     try {
       const {
@@ -191,8 +172,8 @@ class Artist {
         biografia = null,
         pais_origen = null,
         generos = null,
-        sello = null,            // ← NUEVO
-        ciudad = null,           // ← NUEVO
+        sello = null,
+        ciudad = null,
         imagen_url = null,
         website = null,
         spotify_url = null,
@@ -226,17 +207,12 @@ class Artist {
     }
   }
 
-  /**
-   * Actualizar artista
-   * @param {Number} id - ID del artista
-   * @param {Object} updateData - Datos a actualizar
-   * @returns {Boolean} true si se actualizó
-   */
+  // Actualizar artista
   static async update(id, updateData) {
     try {
       const allowedFields = [
         'nombre_artistico', 'nombre_real', 'biografia', 'pais_origen', 'generos',
-        'sello', 'ciudad',  // ← NUEVO
+        'sello', 'ciudad',
         'imagen_url', 'website', 'spotify_url', 'soundcloud_url',
         'instagram_handle', 'facebook_url', 'verificado', 'destacado', 'activo'
       ];
@@ -265,14 +241,9 @@ class Artist {
     }
   }
 
-  /**
-   * Eliminar artista (solo si no tiene eventos)
-   * @param {Number} id - ID del artista
-   * @returns {Boolean} true si se eliminó
-   */
+  // Borrar artista; no se puede si tiene eventos
   static async delete(id) {
     try {
-      // Verificar que no tenga eventos
       const checkSql = 'SELECT COUNT(*) as total FROM event_artists WHERE artist_id = ?';
       const checkResult = await query(checkSql, [id]);
       
@@ -289,11 +260,7 @@ class Artist {
     }
   }
 
-  /**
-   * Desactivar artista
-   * @param {Number} id - ID del artista
-   * @returns {Boolean} true si se desactivó
-   */
+  // Desactivar artista
   static async deactivate(id) {
     try {
       const sql = 'UPDATE artists SET activo = false WHERE id = ?';
@@ -305,11 +272,7 @@ class Artist {
     }
   }
 
-  /**
- * Reactivar un artista (cambiar activo a true)
- * @param {Number} id - ID del artista
- * @returns {Object} Artista reactivado
- */
+  // Reactivar artista
 static async activate(id) {
   try {
     const sql = 'UPDATE artists SET activo = true WHERE id = ?';
@@ -321,12 +284,7 @@ static async activate(id) {
   }
 }
 
-  /**
-   * Marcar/desmarcar como destacado
-   * @param {Number} id - ID del artista
-   * @param {Boolean} featured - true/false
-   * @returns {Boolean} true si se actualizó
-   */
+  // Marcar o quitar destacado
   static async setFeatured(id, featured = true) {
     try {
       const featuredValue = featured ? 1 : 0;
@@ -339,10 +297,7 @@ static async activate(id) {
     }
   }
 
-  /**
-   * Obtener artistas activos (para selects)
-   * @returns {Array} Lista de artistas activos
-   */
+  // Artistas activos, para los selects
   static async getActive() {
     try {
       const sql = `
@@ -362,11 +317,7 @@ static async activate(id) {
     }
   }
 
-  /**
-   * Obtener artistas destacados
-   * @param {Number} limit - Límite de resultados
-   * @returns {Array} Lista de artistas destacados
-   */
+  // Artistas destacados
   static async getFeatured(limit = 10) {
     try {
       const limitNum = parseInt(limit, 10);
@@ -388,11 +339,7 @@ static async activate(id) {
     }
   }
 
-  /**
-   * Buscar artistas por nombre
-   * @param {String} searchTerm - Término de búsqueda
-   * @returns {Array} Artistas encontrados
-   */
+  // Buscar artistas por nombre
   static async search(searchTerm) {
     try {
       const sql = `
@@ -412,12 +359,7 @@ static async activate(id) {
     }
   }
 
-  /**
-   * Obtener eventos de un artista
-   * @param {Number} id - ID del artista
-   * @param {Boolean} soloProximos - Solo eventos futuros
-   * @returns {Array} Eventos del artista
-   */
+  // Eventos de un artista
   static async getEventos(id, soloProximos = false) {
     try {
       let dateCondition = '';
@@ -445,11 +387,7 @@ static async activate(id) {
     }
   }
 
-  /**
-   * Obtener estadísticas de un artista
-   * @param {Number} id - ID del artista
-   * @returns {Object} Estadísticas del artista
-   */
+  // Estadísticas de un artista
   static async getStats(id) {
     try {
       const sql = `

@@ -8,54 +8,34 @@ import EmailService from './emailService.js';
 import { query } from '../config/database.js';
 
 /**
- * ================================================================
- * SERVICIO DE CRON JOBS - TAREAS PROGRAMADAS
- * ================================================================
- * 
- * Este servicio ejecuta tareas automáticamente:
- * 1. Recordatorios diarios de eventos (9:00 AM)
- * 2. Agenda mensual a socios (1er día del mes, 8:00 AM)
- * 3. Detección de morosidad (diario 00:00)
- * 4. Limpieza de tokens expirados (diario 03:00 AM)
+ * Tareas programadas (hora de Madrid): recordatorios del día (9:00), agenda
+ * mensual (día 1, 8:00), morosidad (0:00), tokens caducados (3:00) y
+ * reservas sin pagar (cada 15 min).
  */
 class CronService {
   
-  /**
-   * Inicializar todas las tareas programadas
-   * Se llama desde server.js al iniciar el servidor
-   */
+  // Arranca todas las tareas (desde server.js)
   static init() {
-    logger.info('🕐 Iniciando tareas programadas...');
+    logger.info('Iniciando tareas programadas...');
     
-    // Inicializar cada tarea
     this.scheduleEventReminders();
     this.scheduleMonthlyAgenda();
     this.scheduleMorosityCheck();
     this.scheduleTokenCleanup();
     this.scheduleExpiredBookingsCleanup();
     
-    logger.info('✅ Tareas programadas iniciadas correctamente');
+    logger.info('Tareas programadas iniciadas correctamente');
   }
   
-  /**
-   * Enviar recordatorios de eventos del día
-   * Formato cron: '0 9 * * *'
-   * - 0 = minuto 0
-   * - 9 = hora 9 (9:00 AM)
-   * - * = todos los días
-   * - * = todos los meses
-   * - * = todos los días de la semana
-   */
+  // Recordatorio a quien tiene entrada para hoy, a las 9:00
   static scheduleEventReminders() {
     cron.schedule('0 9 * * *', async () => {
       try {
-        logger.info('📧 Ejecutando: Envío de recordatorios de eventos');
+        logger.info('Ejecutando: Envío de recordatorios de eventos');
         
-        // Obtener fecha de HOY (sin hora)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        // SQL: Buscar reservas confirmadas para eventos de HOY
         const sql = `
           SELECT e.*, b.id as booking_id, b.socio_id, b.codigo_reserva,
                  u.email, u.nombre, u.apellidos, b.numero_entradas, b.qr_code_url
@@ -73,7 +53,6 @@ class CronService {
         let successCount = 0;
         let errorCount = 0;
         
-        // Enviar email a cada socio con reserva hoy
         for (const booking of bookingsToday) {
           try {
             const user = {
@@ -96,11 +75,10 @@ class CronService {
               qr_code_url: booking.qr_code_url
             };
             
-            // Enviar el recordatorio
             await EmailService.sendEventReminder(bookingData, event, user);
             successCount++;
             
-            // Pequeño delay entre emails (no saturar SMTP)
+            // Pausa entre emails para no saturar el envío
             await this.delay(100);
             
           } catch (emailError) {
@@ -112,44 +90,33 @@ class CronService {
           }
         }
         
-        logger.info(`✅ Recordatorios enviados: ${successCount} exitosos, ${errorCount} errores`);
+        logger.info(`Recordatorios enviados: ${successCount} exitosos, ${errorCount} errores`);
         
       } catch (error) {
-        logger.error('❌ Error en tarea de recordatorios:', error);
+        logger.error('Error en tarea de recordatorios:', error);
       }
     }, {
-      timezone: "Europe/Madrid" // Zona horaria de España
+      timezone: "Europe/Madrid"
     });
     
-    logger.info('📅 Tarea programada: Recordatorios de eventos (9:00 AM diario)');
+    logger.info('Tarea programada: Recordatorios de eventos (9:00 AM diario)');
   }
   
-  /**
-   * Enviar agenda mensual a todos los socios
-   * Formato cron: '0 8 1 * *'
-   * - 0 = minuto 0
-   * - 8 = hora 8 (8:00 AM)
-   * - 1 = día 1 del mes
-   * - * = todos los meses
-   * - * = todos los días de la semana
-   */
+  // Agenda del mes a todos los socios, el día 1 a las 8:00
   static scheduleMonthlyAgenda() {
     cron.schedule('0 8 1 * *', async () => {
       try {
-        logger.info('📧 Ejecutando: Envío de agenda mensual');
+        logger.info('Ejecutando: Envío de agenda mensual');
         
         const today = new Date();
         const year = today.getFullYear();
-        const month = today.getMonth() + 1; // getMonth() devuelve 0-11
+        const month = today.getMonth() + 1;
         
-        // Obtener todos los socios activos
         const socios = await Socio.getAllActive();
         
-        // Calcular primer y último día del mes
         const firstDay = new Date(year, month - 1, 1);
         const lastDay = new Date(year, month, 0);
         
-        // SQL: Obtener eventos del mes actual
         const eventsSql = `
           SELECT * FROM events
           WHERE estado IN ('publicado', 'scheduled', 'active')
@@ -160,16 +127,15 @@ class CronService {
         
         const events = await query(eventsSql, [firstDay, lastDay]);
         
-        // Si no hay eventos, no enviar nada
+        // Sin eventos no se envía nada
         if (events.length === 0) {
-          logger.info('ℹ️  No hay eventos para este mes, no se envían agendas');
+          logger.info('No hay eventos para este mes, no se envían agendas');
           return;
         }
         
         let successCount = 0;
         let errorCount = 0;
         
-        // Enviar agenda a cada socio
         for (const socio of socios) {
           try {
             const user = await User.findById(socio.user_id);
@@ -177,7 +143,6 @@ class CronService {
             await EmailService.sendMonthlyAgenda(user, events, month, year);
             successCount++;
             
-            // Delay entre emails
             await this.delay(100);
             
           } catch (emailError) {
@@ -189,31 +154,24 @@ class CronService {
           }
         }
         
-        logger.info(`✅ Agendas mensuales enviadas: ${successCount} exitosas, ${errorCount} errores`);
+        logger.info(`Agendas mensuales enviadas: ${successCount} exitosas, ${errorCount} errores`);
         
       } catch (error) {
-        logger.error('❌ Error en tarea de agenda mensual:', error);
+        logger.error('Error en tarea de agenda mensual:', error);
       }
     }, {
       timezone: "Europe/Madrid"
     });
     
-    logger.info('📅 Tarea programada: Agenda mensual (1er día del mes, 8:00 AM)');
+    logger.info('Tarea programada: Agenda mensual (1er día del mes, 8:00 AM)');
   }
   
-  /**
-   * Detección y actualización de socios morosos
-   * Formato cron: '0 0 * * *'
-   * - 0 = minuto 0
-   * - 0 = hora 0 (medianoche)
-   * - * = todos los días
-   */
+  // Morosidad, cada día a medianoche
   static scheduleMorosityCheck() {
     cron.schedule('0 0 * * *', async () => {
       try {
-        logger.info('🔍 Ejecutando: Detección de morosidad');
+        logger.info('Ejecutando: Detección de morosidad');
         
-        // SQL: Actualizar días de morosidad y estado según días pasados
         const sql = `
           UPDATE socios
           SET 
@@ -229,9 +187,9 @@ class CronService {
         
         const result = await query(sql);
         
-        logger.info(`✅ Actualización de morosidad: ${result.affectedRows} socios actualizados`);
+        logger.info(`Actualización de morosidad: ${result.affectedRows} socios actualizados`);
         
-        // Buscar socios que JUSTO HOY entraron en morosidad (día 30)
+        // Los que pasan hoy a morosos (día 30)
         const newMorososSql = `
           SELECT s.*, u.email, u.nombre, u.apellidos
           FROM socios s
@@ -243,33 +201,26 @@ class CronService {
         const newMorosos = await query(newMorososSql);
         
         if (newMorosos.length > 0) {
-          logger.warn(`⚠️  ${newMorosos.length} socios nuevos en morosidad`);
-          // TODO: Aquí podrías enviar email de aviso de morosidad
+          logger.warn(`${newMorosos.length} socios nuevos en morosidad`);
+          // Pendiente: email de aviso de morosidad
         }
         
       } catch (error) {
-        logger.error('❌ Error en tarea de morosidad:', error);
+        logger.error('Error en tarea de morosidad:', error);
       }
     }, {
       timezone: "Europe/Madrid"
     });
     
-    logger.info('📅 Tarea programada: Detección de morosidad (00:00 diario)');
+    logger.info('Tarea programada: Detección de morosidad (00:00 diario)');
   }
   
-  /**
-   * Limpieza de tokens de reset password expirados
-   * Formato cron: '0 3 * * *'
-   * - 0 = minuto 0
-   * - 3 = hora 3 (3:00 AM)
-   * - * = todos los días
-   */
+  // Borra los tokens de reset caducados, a las 3:00
   static scheduleTokenCleanup() {
     cron.schedule('0 3 * * *', async () => {
       try {
-        logger.info('🧹 Ejecutando: Limpieza de tokens expirados');
+        logger.info('Ejecutando: Limpieza de tokens expirados');
         
-        // SQL: Limpiar tokens que ya expiraron
         const sql = `
           UPDATE users
           SET 
@@ -280,26 +231,21 @@ class CronService {
         
         const result = await query(sql);
         
-        logger.info(`✅ Limpieza completada: ${result.affectedRows} tokens eliminados`);
+        logger.info(`Limpieza completada: ${result.affectedRows} tokens eliminados`);
         
       } catch (error) {
-        logger.error('❌ Error en tarea de limpieza de tokens:', error);
+        logger.error('Error en tarea de limpieza de tokens:', error);
       }
     }, {
       timezone: "Europe/Madrid"
     });
     
-    logger.info('📅 Tarea programada: Limpieza de tokens (03:00 AM diario)');
+    logger.info('Tarea programada: Limpieza de tokens (03:00 AM diario)');
   }
   
   /**
-   * Red de seguridad para el sistema de pagos: si por lo que sea el
-   * webhook checkout.session.expired de Stripe no llega (caída puntual,
-   * etc.), esto cancela reservas que llevan demasiado tiempo en
-   * 'esperando_pago' y libera el aforo que tenían bloqueado.
-   * Las Checkout Sessions expiran en Stripe a los 30 min (ver
-   * config/payment.js), así que 40 min da margen de sobra.
-   * Formato cron: cada 15 minutos
+   * Cada 15 min cancela las reservas esperando_pago de más de 40 min, por si
+   * no llega el webhook checkout.session.expired (Stripe las caduca a los 30)
    */
   static scheduleExpiredBookingsCleanup() {
     cron.schedule('*/15 * * * *', async () => {
@@ -329,32 +275,26 @@ class CronService {
           );
         }
 
-        logger.info(`🧹 Reservas pendientes de pago limpiadas: ${staleBookings.length}`);
+        logger.info(`Reservas pendientes de pago limpiadas: ${staleBookings.length}`);
       } catch (error) {
-        logger.error('❌ Error en limpieza de reservas pendientes de pago:', error);
+        logger.error('Error en limpieza de reservas pendientes de pago:', error);
       }
     }, {
       timezone: "Europe/Madrid"
     });
 
-    logger.info('📅 Tarea programada: Limpieza de reservas pendientes de pago (cada 15 min)');
+    logger.info('Tarea programada: Limpieza de reservas pendientes de pago (cada 15 min)');
   }
 
-  /**
-   * Función auxiliar para crear delays entre operaciones
-   * Evita saturar el servidor SMTP
-   */
+  // Pausa entre envíos
   static delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
   
-  /**
-   * Detener todas las tareas programadas
-   * Útil para testing o para apagar el servidor limpiamente
-   */
+  // Para todas las tareas (tests o apagado)
   static stop() {
     cron.getTasks().forEach((task) => task.stop());
-    logger.info('⏸️  Todas las tareas programadas detenidas');
+    logger.info('Todas las tareas programadas detenidas');
   }
 }
 

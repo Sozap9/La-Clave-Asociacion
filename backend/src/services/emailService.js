@@ -14,32 +14,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * Quita los segundos de la hora del evento para mostrarla ("17:00:00"
- * → "17:00"). La columna hora_evento viene de MySQL como "HH:MM:SS".
- * @param {String} horaEvento
- * @returns {String}
- */
+// "17:00:00" → "17:00"
 const formatHora = (horaEvento) => {
   if (!horaEvento) return '';
   return horaEvento.substring(0, 5);
 };
 
-/**
- * Convierte el texto combinado de motivación (varias preguntas +
- * respuestas seguidas, cada una empezando por "¿" — ver Register.jsx:
- * combinedMotivacion) en bloques HTML de pregunta/respuesta por
- * separado, en vez de un único párrafo con todo junto.
- *
- * Divide por cada "¿" en vez de por el separador \n\n original: el
- * salto de línea doble no sobrevive siempre el trayecto completo
- * (BD → API → email), así que dividir por el inicio de cada pregunta
- * es más fiable pase lo que pase con los saltos de línea intermedios.
- *
- * @param {String} motivacion - Texto tal como llega de Register.jsx
- * @param {String} accentColor - Color de acento a juego con el email
- * @returns {String} HTML con un bloque por cada pregunta respondida
- */
+// Separa la motivación en bloques de pregunta y respuesta. Se corta por cada
+// "¿" porque los saltos de línea no siempre llegan hasta el email.
 const formatMotivacionAsQA = (motivacion, accentColor = '#f59e0b') => {
   if (!motivacion) return '';
 
@@ -64,16 +46,9 @@ const formatMotivacionAsQA = (motivacion, accentColor = '#f59e0b') => {
     .join('');
 };
 
-/**
- * ================================================================
- * SERVICIO DE EMAIL - LA CLAVE 981
- * ================================================================
- */
 class EmailService {
   
-  /**
-   * EMAIL DE BIENVENIDA
-   */
+  // Bienvenida
   static async sendWelcomeEmail(user) {
     try {
       const mailOptions = {
@@ -165,10 +140,7 @@ class EmailService {
     
   }
 
-  /**
-   * EMAIL DE CONFIRMACIÓN DE RESERVA CON QR Y CARTEL
-   * Imagen del cartel inline y QR 
-   */
+  // Confirmación de reserva con cartel y QR
   static async sendBookingConfirmation(booking, event, user, esInvitacion = false) {
     try {
       const tipoEntradaLabel = esInvitacion ? 'Invitación' : 'Entrada';
@@ -179,16 +151,8 @@ class EmailService {
         day: 'numeric'
       });
 
-      // ===== IMAGEN DEL CARTEL: URL real, no base64 =====
-      // Gmail bloquea las imágenes "data:base64" incrustadas en el HTML
-      // del email (medida de seguridad de Google, no algo que podamos
-      // evitar desde aquí) — así que hay que enlazar a una URL real que
-      // el cliente de correo pueda cargar, igual que el QR de abajo.
-      //
-      // BACKEND_URL en Railway ya incluye "/api" al final (igual que
-      // VITE_API_URL en el frontend) — lo quitamos aquí antes de
-      // construir las rutas, porque si no se duplicaba a "/api/api/..."
-      // y todo devolvía 404 (visto en logs de producción).
+      // Cartel y QR como URL: Gmail bloquea las imágenes en base64.
+      // BACKEND_URL ya termina en /api; se quita para no generar /api/api.
       const backendUrl = (process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/api\/?$/, '');
       let cartelUrl = null;
 
@@ -203,18 +167,8 @@ class EmailService {
         }
       }
 
-      // ===== QR: URL real servida desde /api/bookings/qr/:id/:codigo.png =====
-      // Lee el QR guardado en base64 en la BD (persistente, no depende
-      // del disco de Railway) y lo sirve como PNG real — ver
-      // bookingController.getBookingQRImage. Por el mismo motivo que el
-      // cartel: Gmail no muestra "data:base64" incrustado, tiene que
-      // ser una URL HTTPS de verdad.
-      // Cache-busting: Brevo cachea la imagen por URL de origen. Como la
-      // URL del QR de una reserva es siempre la misma (mismo id, mismo
-      // codigo_acceso), si Brevo la pidió una vez cuando el endpoint aún
-      // fallaba, sirve esa copia rota para siempre en cualquier reenvío
-      // futuro — aunque el backend ya esté arreglado. Añadir un parámetro
-      // que cambia en cada envío obliga a Brevo a pedirla de nuevo.
+      // QR servido como PNG por getBookingQRImage. El parámetro que cambia en
+      // cada envío evita que Brevo reutilice una copia rota en caché.
       const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}?v=${Date.now()}`;
 
       const mailOptions = {
@@ -317,12 +271,7 @@ class EmailService {
                       </td>
                     </tr>
 
-                    <!-- BOTÓN DE RESPALDO: por si el QR no carga en el
-                         cliente de correo (Brevo a veces no consigue
-                         cargar imágenes generadas dinámicamente a
-                         tiempo al enviar, y cachea la copia rota para
-                         siempre). Mis Entradas siempre tiene el QR
-                         correcto y actualizado. -->
+                    <!-- Respaldo por si el QR no carga: enlace a Mis Entradas -->
                     <tr>
                       <td style="padding:0 30px 24px 30px;text-align:center;">
                         <p style="margin:0 0 10px 0;color:#666;font-size:12px;">
@@ -390,9 +339,7 @@ class EmailService {
     }
   }
 
-  /**
-   * EMAIL DE RECORDATORIO DE EVENTO
-   */
+  // Recordatorio de evento
   static async sendEventReminder(booking, event, user) {
     try {
       const fechaEvento = new Date(event.fecha_evento).toLocaleDateString('es-ES', {
@@ -509,7 +456,7 @@ class EmailService {
       return { success: true, messageId: info.messageId };
       
     } catch (error) {
-      logger.error('❌ Error al enviar email de recordatorio:', {
+      logger.error('Error al enviar email de recordatorio:', {
         error: error.message,
         userId: user?.id
       });
@@ -517,9 +464,7 @@ class EmailService {
     }
   }
 
-  /**
-   * EMAIL DE NUEVO EVENTO PUBLICADO
-   */
+  // Nuevo evento publicado
   static async sendNewEventNotification(user, event) {
     try {
       const fechaEvento = new Date(event.fecha_evento).toLocaleDateString('es-ES', {
@@ -634,7 +579,7 @@ class EmailService {
       return { success: true, messageId: info.messageId };
       
     } catch (error) {
-      logger.error('❌ Error al enviar email de nuevo evento:', {
+      logger.error('Error al enviar email de nuevo evento:', {
         error: error.message,
         userId: user?.id
       });
@@ -642,9 +587,7 @@ class EmailService {
     }
   }
 
-  /**
-   * EMAIL MENSUAL DE AGENDA
-   */
+  // Agenda mensual
   static async sendMonthlyAgenda(user, events, month, year) {
     try {
       const monthName = new Date(year, month - 1).toLocaleDateString('es-ES', { month: 'long' });
@@ -754,12 +697,9 @@ class EmailService {
     }
   }
 
-  /**
-   * EMAIL DE RECUPERACIÓN DE CONTRASEÑA 
-   */
+  // Recuperar contraseña
   static async sendPasswordReset(user, resetToken) {
     try {
-      // URL del frontend para resetear contraseña
       const resetUrl = `${process.env.FRONTEND_URL}/recuperar-password?token=${resetToken}`;
       
       const mailOptions = {
@@ -808,7 +748,7 @@ class EmailService {
                         </div>
                         
                         <p style="margin: 20px 0 0 0; color: #a0a0a0; font-size: 14px; line-height: 1.6;">
-                          <strong style="color: #FDE68A;">⏱ Importante:</strong> Este enlace expirará en <strong>1 hora</strong> por motivos de seguridad.
+                          <strong style="color: #FDE68A;">Importante:</strong> Este enlace expirará en <strong>1 hora</strong> por motivos de seguridad.
                         </p>
                         
                         <p style="margin: 16px 0 0 0; color: #a0a0a0; font-size: 14px; line-height: 1.6;">
@@ -864,15 +804,9 @@ class EmailService {
   }
 
 
-  /**
-   * ================================================================
-   * SOLICITUDES DE SOCIO 
-   * ================================================================
-   */
+  // Solicitudes de socio
 
-  /**
-   * Confirmar al solicitante que su solicitud fue recibida
-   */
+  // Al solicitante: solicitud recibida
   static async sendSolicitudRecibida(solicitud) {
     try {
       const mailOptions = {
@@ -931,9 +865,7 @@ class EmailService {
     }
   }
 
-  /**
-   * Notificar a los admins que hay una nueva solicitud pendiente
-   */
+  // A los admins: nueva solicitud
   static async sendAvisoNuevaSolicitudAdmins(solicitud) {
     try {
       const adminEmails = (process.env.ADMIN_NOTIFICATION_EMAILS || '')
@@ -1001,14 +933,12 @@ class EmailService {
       logger.info('Aviso nueva solicitud enviado', { to: adminEmails, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
-      logger.error('❌ Error sendAvisoNuevaSolicitudAdmins:', error.message);
+      logger.error('Error sendAvisoNuevaSolicitudAdmins:', error.message);
       return { success: false, error: error.message };
     }
   }
 
-  /**
-   * Bienvenida al nuevo socio tras aprobación
-   */
+  // Al solicitante: aprobada
   static async sendSolicitudAprobada(user) {
     try {
       const loginUrl = `${process.env.FRONTEND_URL}/login`;
@@ -1065,14 +995,12 @@ class EmailService {
       logger.info('Email solicitud aprobada enviado', { userId: user.id, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
-      logger.error('❌ Error sendSolicitudAprobada:', { error: error.message, userId: user?.id });
+      logger.error('Error sendSolicitudAprobada:', { error: error.message, userId: user?.id });
       return { success: false, error: error.message };
     }
   }
 
-  /**
-   * Notificar al solicitante que su solicitud fue rechazada
-   */
+  // Al solicitante: rechazada
   static async sendSolicitudRechazada(solicitud, motivoRechazo) {
     try {
       const mailOptions = {
@@ -1130,9 +1058,7 @@ class EmailService {
     }
   }
 
-  /**
-   * ENVÍO MASIVO DE EMAILS
-   */
+  // Envío masivo
   static async sendBulkEmails(users, emailType, data) {
     const results = { success: 0, failed: 0, errors: [] };
 
@@ -1179,13 +1105,7 @@ class EmailService {
     return results;
   }
 
-  /**
-   * ================================================================
-   * NOTIFICACIÓN DE NUEVO MENSAJE DE CONTACTO (A ADMINS)
-   * ================================================================
-   * Se envía cuando alguien rellena el formulario público /contacto.
-   * El mensaje ya está guardado en BD; este email es solo un aviso.
-   */
+  // A los admins: nuevo mensaje de contacto (ya guardado en la BD)
   static async sendContactNotificationAdmin(contactData, adminEmails) {
     try {
       const adminUrl = `${process.env.FRONTEND_URL}/admin`;

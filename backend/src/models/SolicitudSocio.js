@@ -2,16 +2,10 @@ import { query } from '../config/database.js';
 import bcrypt from 'bcryptjs';
 import logger from '../config/logger.js';
 
-/**
- * Modelo SolicitudSocio - Manejo de la tabla solicitudes_socios
- * Las solicitudes son registros pendientes de aprobación admin.
- * El usuario NO existe en 'users' hasta que el admin aprueba.
- */
+// Tabla solicitudes_socios. El usuario no se crea en users hasta aprobarla.
 class SolicitudSocio {
 
-  /**
-   * Buscar solicitud por ID
-   */
+  // Buscar solicitud por ID
   static async findById(id) {
     try {
       const sql = `
@@ -30,12 +24,10 @@ class SolicitudSocio {
     }
   }
 
-  /**
-   * Buscar solicitudes con filtros y paginación
-   */
+  // Listar solicitudes con filtros y paginación
   static async findAll({ estado, search, page = 1, limit = 20 } = {}) {
     try {
-      // Asegurar que page y limit son integers seguros para interpolar en SQL
+      // Enteros, porque se interpolan en el SQL
       const safePage  = Math.max(1, parseInt(page)  || 1);
       const safeLimit = Math.min(100, Math.max(1, parseInt(limit) || 20));
       const offset    = (safePage - 1) * safeLimit;
@@ -56,13 +48,11 @@ class SolicitudSocio {
 
       const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-      // Total para paginación
       const countSql = `SELECT COUNT(*) AS total FROM solicitudes_socios s ${where}`;
       const countResult = await query(countSql, values);
       const total = Number(countResult[0].total);
 
-      // Datos paginados — LIMIT y OFFSET se interpolan directamente (integers validados)
-      // ya que MySQL2 execute() puede tener problemas con placeholders en LIMIT/OFFSET
+      // LIMIT y OFFSET interpolados: execute() falla con placeholders ahí
       const dataSql = `
         SELECT 
           s.id, s.nombre, s.apellidos, s.email,
@@ -86,7 +76,7 @@ class SolicitudSocio {
           total,
           page:  safePage,
           limit: safeLimit,
-          pages: Math.ceil(total / safeLimit), // "pages" en lugar de "totalPages" — coincide con el frontend
+          pages: Math.ceil(total / safeLimit), // el frontend espera "pages"
         }
       };
     } catch (error) {
@@ -95,9 +85,7 @@ class SolicitudSocio {
     }
   }
 
-  /**
-   * Contar solicitudes pendientes (para badge en sidebar admin)
-   */
+  // Pendientes, para el contador del menú
   static async countPendientes() {
     try {
       const sql = `SELECT COUNT(*) AS total FROM solicitudes_socios WHERE estado = 'pendiente'`;
@@ -109,9 +97,7 @@ class SolicitudSocio {
     }
   }
 
-  /**
-   * Verificar si ya existe una solicitud pendiente para ese email o DNI
-   */
+  // ¿Hay ya una pendiente con ese email o DNI?
   static async existePendiente(email, dni) {
     try {
       const sql = `
@@ -127,10 +113,7 @@ class SolicitudSocio {
     }
   }
 
-  /**
-   * Crear nueva solicitud
-   * La contraseña se hashea aquí para guardarla lista para insertar en users al aprobar
-   */
+  // Crear solicitud
   static async create(solicitudData) {
     try {
       const {
@@ -149,7 +132,7 @@ class SolicitudSocio {
         ip_solicitud  = null
       } = solicitudData;
 
-      // Hashear contraseña ya aquí — al aprobar se inserta directamente
+      // Se guarda ya hasheada: al aprobar pasa tal cual a users
       const password_hash = await bcrypt.hash(password, 10);
 
       const sql = `
@@ -185,9 +168,7 @@ class SolicitudSocio {
     }
   }
 
-  /**
-   * Marcar solicitud como aprobada
-   */
+  // Marcar solicitud como aprobada
   static async aprobar(id, adminId) {
     try {
       const sql = `
@@ -205,9 +186,7 @@ class SolicitudSocio {
     }
   }
 
-  /**
-   * Marcar solicitud como rechazada
-   */
+  // Marcar solicitud como rechazada
   static async rechazar(id, adminId, motivoRechazo) {
     try {
       const sql = `
@@ -226,9 +205,7 @@ class SolicitudSocio {
     }
   }
 
-  /**
-   * Eliminar solicitud (solo para limpieza de datos — uso admin)
-   */
+  // Borrar solicitud (limpieza, admin)
   static async delete(id) {
     try {
       const sql = `DELETE FROM solicitudes_socios WHERE id = ?`;

@@ -2,19 +2,9 @@ import { query } from '../config/database.js';
 import logger from '../config/logger.js';
 
 /**
- * Modelo EventTicketTier - Tandas de precio por evento.
- *
- * Una tanda solo afecta al PRECIO, nunca al aforo (eso sigue siendo
- * events.aforo_maximo / entradas_disponibles, sin cambios).
- *
- * Resolución del precio vigente (ver resolveActiveTier):
- *   1) Si alguna tanda del evento está activada_manualmente -> esa gana,
- *      sin mirar fechas (el admin puede forzarla antes de su hora).
- *   2) Si no, la tanda con fecha_hora_inicio más reciente que ya haya
- *      pasado (fecha_hora_inicio <= NOW()).
- *   3) Si el evento no tiene tandas, o ninguna ha empezado aún -> no hay
- *      tanda activa, se usa el precio_socio base del evento (fallback,
- *      compatible con eventos que nunca usan tandas).
+ * Tandas de precio de un evento (no afectan al aforo).
+ * Precio vigente: la tanda forzada a mano; si no, la última que ya empezó;
+ * si no hay, el precio_socio del evento.
  */
 class EventTicketTier {
   static async getByEvent(eventId) {
@@ -32,10 +22,7 @@ class EventTicketTier {
   }
 
   /**
-   * Reemplaza todas las tandas de un evento por la lista recibida.
-   * Se usa al crear/editar el evento desde el admin (guarda de golpe
-   * todo el set de tandas del formulario).
-   * @param {Number} eventId
+   * Sustituye todas las tandas del evento (al guardar el formulario)
    * @param {Array} tandas - [{ nombre, precio, fecha_hora_inicio }]
    */
   static async replaceForEvent(eventId, tandas = []) {
@@ -49,7 +36,7 @@ class EventTicketTier {
       for (let i = 0; i < tandas.length; i++) {
         const t = tandas[i];
         if (!t || !t.nombre || t.precio === undefined || t.precio === null || !t.fecha_hora_inicio) {
-          continue; // fila incompleta, se ignora en vez de romper el guardado
+          continue; // las filas incompletas se ignoran
         }
         await query(
           `INSERT INTO event_ticket_tiers
@@ -73,10 +60,7 @@ class EventTicketTier {
     }
   }
 
-  /**
-   * Fuerza una tanda como vigente manualmente (desactiva cualquier otra
-   * forzada del mismo evento, solo puede haber una a la vez).
-   */
+  // Forzar una tanda como vigente; solo puede haber una forzada
   static async activateManually(eventId, tierId) {
     try {
       await query(
@@ -97,10 +81,7 @@ class EventTicketTier {
     }
   }
 
-  /**
-   * Quita cualquier forzado manual del evento, volviendo al modo
-   * automático por fecha/hora.
-   */
+  // Quitar el forzado: vuelve a ir por fecha
   static async deactivateManual(eventId) {
     try {
       await query(
@@ -138,11 +119,7 @@ class EventTicketTier {
     }
   }
 
-  /**
-   * Devuelve { precio, tier_id } vigente para un evento AHORA MISMO.
-   * Si no hay ninguna tanda aplicable, cae al precio_socio base
-   * recibido (así los eventos sin tandas siguen funcionando igual).
-   */
+  // { precio, tier_id } vigente ahora; sin tanda, el precio base recibido
   static async resolveActivePrice(eventId, precioBase) {
     const tier = await this.resolveActiveTier(eventId);
     return {

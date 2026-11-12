@@ -1,15 +1,9 @@
 import { query, transaction } from "../config/database.js";
 import logger from '../config/logger.js';
 
-/**
- * Modelo Payment - Gestión de pagos
- */
+// Tabla payments
 class Payment {
-  /**
-   * Crear un nuevo pago
-   * @param {Object} paymentData - Datos del pago
-   * @returns {Object} Pago creado con ID
-   */
+  // Crear pago
   static async create(paymentData) {
     try {
       const {
@@ -56,11 +50,7 @@ class Payment {
     }
   }
 
-  /**
-   * Buscar pago por ID
-   * @param {Number} id - ID del pago
-   * @returns {Object|null} Pago encontrado
-   */
+  // Buscar pago por ID
   static async findById(id) {
     try {
       const sql = `
@@ -74,11 +64,7 @@ class Payment {
     }
   }
 
-  /**
-   * Buscar pago por ID de Stripe
-   * @param {String} stripePaymentId - ID del pago en Stripe
-   * @returns {Object|null} Pago encontrado
-   */
+  // Buscar por ID de Stripe
   static async findByStripePaymentId(stripePaymentId) {
     try {
       const sql = `
@@ -92,12 +78,7 @@ class Payment {
     }
   }
 
-  /**
-   * Listar pagos de un socio
-   * @param {Number} socioId - ID del socio
-   * @param {Object} filters - Filtros opcionales
-   * @returns {Array} Lista de pagos
-   */
+  // Listar pagos de un socio
   static async findBySocio(socioId, filters = {}) {
     try {
       const {
@@ -128,7 +109,6 @@ class Payment {
 
       const results = await query(sql, params);
 
-      // Contar total
       let countSql =
         "SELECT COUNT(*) as total FROM payments WHERE socio_id = ?";
       const countParams = [socioId];
@@ -158,24 +138,17 @@ class Payment {
     }
   }
 
-  /**
-   * Actualizar estado de un pago
-   * @param {Number} id - ID del pago
-   * @param {String} estado - Nuevo estado
-   * @param {Object} datos - Datos adicionales a actualizar
-   * @returns {Object} Pago actualizado
-   */
+  // Cambiar el estado de un pago
   static async updateStatus(id, estado, datos = {}) {
     try {
       const updates = ["estado = ?"];
       const params = [estado];
 
-      // Agregar fecha_pago si cambia a completado o exitoso
+      // fecha_pago al pasar a completado o exitoso
       if (estado === "completado" || estado === "exitoso") {
         updates.push("fecha_pago = NOW()");
       }
 
-      // Agregar otros datos si se proporcionan
       for (const [key, value] of Object.entries(datos)) {
         updates.push(`${key} = ?`);
         params.push(value);
@@ -198,10 +171,7 @@ class Payment {
     }
   }
 
-  /**
-   * Listar pagos pendientes o fallidos
-   * @returns {Array} Pagos que requieren atención
-   */
+  // Listar pagos pendientes o fallidos
   static async findPending() {
     try {
       const sql = `
@@ -223,11 +193,7 @@ class Payment {
     }
   }
 
-  /**
-   * Obtener ingresos mensuales
-   * @param {Number} meses - Cuántos meses atrás incluir
-   * @returns {Array} Ingresos por mes
-   */
+  // Ingresos por mes
   static async getMonthlySummary(meses = 12) {
     try {
       const sql = `
@@ -251,12 +217,7 @@ class Payment {
     }
   }
 
-  /**
-   * Obtener ingresos totales en período
-   * @param {Date} desde - Fecha inicio
-   * @param {Date} hasta - Fecha fin
-   * @returns {Object} Resumen de ingresos
-   */
+  // Ingresos de un período
   static async getIncomeSummary(desde, hasta) {
     try {
       const sql = `
@@ -303,10 +264,7 @@ class Payment {
     }
   }
 
-  /**
-   * Obtener pagos fallidos para reintentos
-   * @returns {Array} Pagos que necesitan reintentos
-   */
+  // Pagos fallidos para reintentar
   static async getFailedForRetry() {
     try {
       const sql = `
@@ -328,12 +286,7 @@ class Payment {
     }
   }
 
-  /**
-   * Incrementar contador de reintentos
-   * @param {Number} id - ID del pago
-   * @param {Number} minutosDelay - Minutos para probar de nuevo
-   * @returns {Object} Pago actualizado
-   */
+  // Incrementar contador de reintentos
   static async incrementRetry(id, minutosDelay = 30) {
     try {
       const sql = `
@@ -352,11 +305,7 @@ class Payment {
     }
   }
 
-  /**
-   * Eliminar (soft delete) un pago
-   * @param {Number} id - ID del pago
-   * @returns {Boolean} Éxito de la operación
-   */
+  // Borrar pago (soft delete)
   static async delete(id) {
     try {
       const sql = "DELETE FROM payments WHERE id = ?";
@@ -368,13 +317,7 @@ class Payment {
     }
   }
 
-  /**
-   * Obtener pagos completados de un socio en un período
-   * @param {Number} socioId - ID del socio
-   * @param {Date} desde - Fecha inicio
-   * @param {Date} hasta - Fecha fin
-   * @returns {Array} Pagos completados
-   */
+  // Pagos completados de un socio en un período
   static async getCompletedByPeriod(socioId, desde, hasta) {
     try {
       const sql = `

@@ -2,71 +2,40 @@ import webpush from 'web-push';
 import { query } from '../config/database.js';
 import logger from '../config/logger.js';
 
-/**
- * ================================================================
- * SERVICIO DE NOTIFICACIONES PUSH (PWA)
- * ================================================================
- * 
- * Este servicio permite enviar notificaciones push a los navegadores
- * de los usuarios que se hayan suscrito.
- * 
- * Funciona con Progressive Web Apps (PWA) y requiere:
- * 1. Claves VAPID generadas (npx web-push generate-vapid-keys)
- * 2. Usuario acepte notificaciones en su navegador
- * 3. HTTPS en producción (localhost funciona sin HTTPS)
- * 
- * IMPORTANTE: Las notificaciones push solo funcionan si el usuario
- * las activa explícitamente en su navegador.
- */
+// Notificaciones push (PWA). Necesita claves VAPID
+// (npx web-push generate-vapid-keys) y HTTPS en producción.
 class PushService {
   
-  /**
-   * Inicializar servicio con claves VAPID
-   * Las claves VAPID identifican tu servidor de forma única
-   * Se llama desde server.js al iniciar
-   */
+  // Configura web-push con las claves VAPID (desde server.js)
   static init() {
-    // Obtener claves VAPID desde variables de entorno
     const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
     const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
     const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:admin@laclave.com';
     
-    // Validar que existan las claves
     if (!vapidPublicKey || !vapidPrivateKey) {
-      logger.warn('⚠️  Claves VAPID no configuradas. Las notificaciones push no funcionarán.');
-      logger.info('💡 Genera claves con: npx web-push generate-vapid-keys');
+      logger.warn('Claves VAPID no configuradas. Las notificaciones push no funcionarán.');
+      logger.info('Genera claves con: npx web-push generate-vapid-keys');
       return;
     }
     
-    // Configurar web-push con las claves
     webpush.setVapidDetails(
       vapidSubject,
       vapidPublicKey,
       vapidPrivateKey
     );
     
-    logger.info('✅ Servicio de Push Notifications configurado');
+    logger.info('Servicio de Push Notifications configurado');
   }
   
-  /**
-   * Guardar suscripción de un usuario
-   * Se llama cuando el usuario activa las notificaciones en el frontend
-   * 
-   * @param {Number} userId - ID del usuario
-   * @param {Object} subscription - Objeto de suscripción del navegador
-   * @returns {Object} Resultado de la operación
-   */
+  // Guardar la suscripción al activar las notificaciones
   static async subscribe(userId, subscription) {
     try {
-      // Extraer datos de la suscripción
       const { endpoint, keys } = subscription;
       
-      // Verificar que los datos estén completos
       if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
         throw new Error('Datos de suscripción incompletos');
       }
       
-      // Guardar en base de datos
       const sql = `
         INSERT INTO push_subscriptions 
         (user_id, endpoint, keys_p256dh, keys_auth, active)
@@ -81,23 +50,17 @@ class PushService {
       
       await query(sql, [userId, endpoint, keys.p256dh, keys.auth]);
       
-      logger.info('✅ Suscripción guardada:', { userId, endpoint: endpoint.substring(0, 50) + '...' });
+      logger.info('Suscripción guardada:', { userId, endpoint: endpoint.substring(0, 50) + '...' });
       
       return { success: true, message: 'Suscripción guardada correctamente' };
       
     } catch (error) {
-      logger.error('❌ Error guardando suscripción:', error);
+      logger.error('Error guardando suscripción:', error);
       throw error;
     }
   }
   
-  /**
-   * Eliminar suscripción de un usuario
-   * Se llama cuando el usuario desactiva las notificaciones
-   * 
-   * @param {Number} userId - ID del usuario
-   * @returns {Object} Resultado de la operación
-   */
+  // Borrar la suscripción al desactivarlas
   static async unsubscribe(userId) {
     try {
       const sql = `
@@ -108,26 +71,19 @@ class PushService {
       
       await query(sql, [userId]);
       
-      logger.info('✅ Suscripción desactivada:', { userId });
+      logger.info('Suscripción desactivada:', { userId });
       
       return { success: true, message: 'Suscripción eliminada correctamente' };
       
     } catch (error) {
-      logger.error('❌ Error eliminando suscripción:', error);
+      logger.error('Error eliminando suscripción:', error);
       throw error;
     }
   }
   
-  /**
-   * Enviar notificación a un usuario específico
-   * 
-   * @param {Number} userId - ID del usuario
-   * @param {Object} notification - Datos de la notificación
-   * @returns {Object} Resultado del envío
-   */
+  // A un usuario
   static async sendToUser(userId, notification) {
     try {
-      // Obtener suscripción activa del usuario
       const sql = `
         SELECT * FROM push_subscriptions
         WHERE user_id = ? AND active = 1
@@ -136,11 +92,10 @@ class PushService {
       const subscriptions = await query(sql, [userId]);
       
       if (subscriptions.length === 0) {
-        logger.warn('⚠️  Usuario sin suscripción activa:', { userId });
+        logger.warn('Usuario sin suscripción activa:', { userId });
         return { success: false, message: 'Usuario no suscrito' };
       }
       
-      // Reconstruir objeto de suscripción
       const subscription = subscriptions[0];
       const pushSubscription = {
         endpoint: subscription.endpoint,
@@ -150,7 +105,6 @@ class PushService {
         }
       };
       
-      // Preparar payload (datos de la notificación)
       const payload = JSON.stringify({
         title: notification.title,
         body: notification.body,
@@ -160,44 +114,36 @@ class PushService {
         timestamp: Date.now()
       });
       
-      // Enviar notificación
       await webpush.sendNotification(pushSubscription, payload);
       
-      logger.info('✅ Notificación enviada:', { userId, title: notification.title });
+      logger.info('Notificación enviada:', { userId, title: notification.title });
       
       return { success: true, message: 'Notificación enviada' };
       
     } catch (error) {
-      // Si el endpoint ya no es válido, desactivar la suscripción
+      // Endpoint caducado: se desactiva la suscripción
       if (error.statusCode === 410) {
-        logger.warn('⚠️  Endpoint inválido, desactivando suscripción:', { userId });
+        logger.warn('Endpoint inválido, desactivando suscripción:', { userId });
         await this.unsubscribe(userId);
       }
       
-      logger.error('❌ Error enviando notificación:', error);
+      logger.error('Error enviando notificación:', error);
       throw error;
     }
   }
   
-  /**
-   * Enviar notificación a múltiples usuarios
-   * 
-   * @param {Array} userIds - Array de IDs de usuarios
-   * @param {Object} notification - Datos de la notificación
-   * @returns {Object} Resultado del envío masivo
-   */
+  // A varios usuarios
   static async sendToMultiple(userIds, notification) {
     try {
       let successCount = 0;
       let errorCount = 0;
       
-      // Enviar a cada usuario
       for (const userId of userIds) {
         try {
           await this.sendToUser(userId, notification);
           successCount++;
           
-          // Pequeño delay para no saturar el servidor
+          // Pausa entre envíos
           await this.delay(50);
           
         } catch (error) {
@@ -205,7 +151,7 @@ class PushService {
         }
       }
       
-      logger.info(`✅ Notificaciones enviadas: ${successCount} exitosas, ${errorCount} errores`);
+      logger.info(`Notificaciones enviadas: ${successCount} exitosas, ${errorCount} errores`);
       
       return {
         success: true,
@@ -215,20 +161,14 @@ class PushService {
       };
       
     } catch (error) {
-      logger.error('❌ Error en envío masivo:', error);
+      logger.error('Error en envío masivo:', error);
       throw error;
     }
   }
   
-  /**
-   * Enviar notificación a TODOS los socios activos
-   * 
-   * @param {Object} notification - Datos de la notificación
-   * @returns {Object} Resultado del broadcast
-   */
+  // A todos los socios activos
   static async sendToAllSocios(notification) {
     try {
-      // Obtener todos los user_ids de socios activos
       const sql = `
         SELECT DISTINCT s.user_id
         FROM socios s
@@ -241,31 +181,26 @@ class PushService {
       const userIds = results.map(r => r.user_id);
       
       if (userIds.length === 0) {
-        logger.warn('⚠️  No hay socios con notificaciones activas');
+        logger.warn('No hay socios con notificaciones activas');
         return { success: false, message: 'No hay destinatarios' };
       }
       
-      logger.info(`📢 Enviando broadcast a ${userIds.length} socios`);
+      logger.info(`Enviando broadcast a ${userIds.length} socios`);
       
       return await this.sendToMultiple(userIds, notification);
       
     } catch (error) {
-      logger.error('❌ Error en broadcast:', error);
+      logger.error('Error en broadcast:', error);
       throw error;
     }
   }
   
-  // ===============================================
-  // NOTIFICACIONES PREDEFINIDAS
-  // ===============================================
+  // Notificaciones predefinidas
   
-  /**
-   * Notificar nuevo evento publicado
-   * Se llama cuando un admin publica un evento
-   */
+  // Nuevo evento publicado
   static async notifyNewEvent(event) {
     const notification = {
-      title: '✨ Nuevo evento disponible',
+      title: 'Nuevo evento disponible',
       body: `${event.titulo} - ${new Date(event.fecha_evento).toLocaleDateString('es-ES')}`,
       icon: event.imagen_url || '/icon-192x192.png',
       data: {
@@ -278,13 +213,10 @@ class PushService {
     return await this.sendToAllSocios(notification);
   }
   
-  /**
-   * Notificar recordatorio de evento
-   * Se llama desde el cron job diario
-   */
+  // Recordatorio de evento (cron diario)
   static async notifyEventReminder(userId, event, booking) {
     const notification = {
-      title: '📅 Recordatorio de evento',
+      title: 'Recordatorio de evento',
       body: `Hoy es tu evento: ${event.titulo}. ¡No olvides tu código QR!`,
       icon: event.imagen_url || '/icon-192x192.png',
       data: {
@@ -298,13 +230,10 @@ class PushService {
     return await this.sendToUser(userId, notification);
   }
   
-  /**
-   * Notificar evento cancelado
-   * Se llama cuando un admin cancela un evento
-   */
+  // Evento cancelado
   static async notifyEventCancelled(userId, event) {
     const notification = {
-      title: '❌ Evento cancelado',
+      title: 'Evento cancelado',
       body: `El evento "${event.titulo}" ha sido cancelado. Se te ha reembolsado el importe.`,
       icon: '/icon-192x192.png',
       data: {
@@ -317,13 +246,10 @@ class PushService {
     return await this.sendToUser(userId, notification);
   }
   
-  /**
-   * Notificar reserva confirmada
-   * Se llama al crear una reserva exitosamente
-   */
+  // Reserva confirmada
   static async notifyBookingConfirmed(userId, event, booking) {
     const notification = {
-      title: '✅ Reserva confirmada',
+      title: 'Reserva confirmada',
       body: `Tu reserva para "${event.titulo}" ha sido confirmada. Código: ${booking.codigo_reserva}`,
       icon: event.imagen_url || '/icon-192x192.png',
       data: {
@@ -337,9 +263,7 @@ class PushService {
     return await this.sendToUser(userId, notification);
   }
   
-  /**
-   * Función auxiliar para crear delays
-   */
+  // Pausa entre envíos
   static delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }

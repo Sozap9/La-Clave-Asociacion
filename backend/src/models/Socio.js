@@ -1,15 +1,9 @@
 import { query } from "../config/database.js";
 import logger from '../config/logger.js';
 
-/**
- * Modelo Socio - Manejo de la tabla socios
- */
+// Tabla socios
 class Socio {
-  /**
-   * Buscar socio por ID
-   * @param {Number} id - ID del socio
-   * @returns {Object|null} Socio encontrado o null
-   */
+  // Buscar socio por ID
   static async findById(id) {
     try {
       const sql = `
@@ -27,11 +21,7 @@ class Socio {
     }
   }
 
-  /**
-   * Buscar socio por user_id
-   * @param {Number} userId - ID del usuario
-   * @returns {Object|null} Socio encontrado o null
-   */
+  // Buscar socio por user_id
   static async findByUserId(userId) {
     try {
       const sql = `
@@ -49,11 +39,7 @@ class Socio {
     }
   }
 
-  /**
-   * Buscar socio por número de socio
-   * @param {String} numeroSocio - Número de socio (LC-YYYY-NNNN)
-   * @returns {Object|null} Socio encontrado o null
-   */
+  // Buscar por numero_socio
   static async findByNumeroSocio(numeroSocio) {
     try {
       const sql = "SELECT * FROM socios WHERE numero_socio = ? LIMIT 1";
@@ -66,19 +52,9 @@ class Socio {
   }
 
   /**
-   * Calcula el siguiente número de socio libre (formato LC-YYYY-NNNN).
-   *
-   * Ojo: el trigger `before_socio_insert` que hay en la base de datos
-   * (no versionado en las migraciones) calcula esto con COUNT(*) en vez
-   * de MAX(...) — si alguna vez se ha dado de baja/eliminado un socio,
-   * el conteo baja pero los números ya asignados siguen ahí, y el
-   * trigger puede intentar repetir un numero_socio ya usado (dio un
-   * error real de "Duplicate entry" en producción). Por eso, desde el
-   * código, generamos el número aquí mismo con la lógica correcta
-   * (MAX + 1) y lo pasamos explícito en el INSERT — el trigger solo
-   * actúa si NEW.numero_socio llega vacío, así que evitamos su bug
-   * sin tener que arreglarlo en la base de datos.
-   * @returns {String} numero_socio, ej. "LC-2026-0098"
+   * Siguiente numero_socio libre (LC-YYYY-NNNN), con MAX + 1.
+   * El trigger before_socio_insert (fuera de las migraciones) usa COUNT(*) y
+   * repetía números tras bajas; solo actúa si numero_socio llega vacío.
    */
   static async generarNumeroSocio() {
     const year = new Date().getFullYear();
@@ -92,11 +68,7 @@ class Socio {
     return `LC-${year}-${String(siguiente).padStart(4, "0")}`;
   }
 
-  /**
-   * Crear nuevo socio
-   * @param {Object} socioData - Datos del socio
-   * @returns {Object} Socio creado
-   */
+  // Crear socio
   static async create(socioData) {
     try {
       const {
@@ -107,8 +79,7 @@ class Socio {
         cuota_mensual = 10.0,
       } = socioData;
 
-      // Generamos el numero_socio aquí (ver generarNumeroSocio) en vez
-      // de dejarlo en manos del trigger, que tiene un bug de cálculo.
+      // numero_socio se genera aquí, no en el trigger (ver generarNumeroSocio)
       const numero_socio = await this.generarNumeroSocio();
 
       const sql = `
@@ -134,7 +105,6 @@ class Socio {
 
       const result = await query(sql, values);
 
-      // Obtener el socio recién creado
       return await this.findById(result.insertId);
     } catch (error) {
       logger.error("Error en create:", error);
@@ -142,12 +112,7 @@ class Socio {
     }
   }
 
-  /**
-   * Actualizar socio
-   * @param {Number} id - ID del socio
-   * @param {Object} updateData - Datos a actualizar
-   * @returns {Object} Socio actualizado
-   */
+  // Actualizar socio
   static async update(id, updateData) {
     try {
       const allowedFields = [
@@ -185,11 +150,7 @@ class Socio {
     }
   }
 
-  /**
-   * Cancelar socio (cambiar estado y fecha)
-   * @param {Number} id - ID del socio
-   * @returns {Object} Socio actualizado
-   */
+  // Cancelar socio
   static async cancel(id) {
     try {
       const sql = `
@@ -205,21 +166,14 @@ class Socio {
     }
   }
 
-  /**
-   * Dar de baja a un socio (marcar como cancelado y anotar motivo)
-   * @param {Number} id - ID del socio
-   * @param {String} motivo - Motivo de la baja
-   * @returns {Object} Socio actualizado
-   */
+  // Baja de un socio: estado cancelado, motivo y usuario inactivo
   static async darDeBaja(id, motivo = null) {
     try {
-      // Primero obtener el socio para tener el user_id
       const socio = await this.findById(id);
       if (!socio) {
         throw new Error("Socio no encontrado");
       }
 
-      // Actualizar tabla socios
       let sql = `
         UPDATE socios
         SET estado = 'inactivo',
@@ -238,7 +192,6 @@ class Socio {
 
       await query(sql, params);
 
-      // Actualizar tabla users para marcar como inactivo
       const userSql = `UPDATE users SET activo = false WHERE id = ?`;
       await query(userSql, [socio.user_id]);
 
@@ -249,20 +202,14 @@ class Socio {
     }
   }
 
-  /**
-   * Reactivar a un socio (volver a activo)
-   * @param {Number} id - ID del socio
-   * @returns {Object} Socio actualizado
-   */
+  // Reactivar socio y su usuario
   static async reactivar(id) {
     try {
-      // Primero obtener el socio para tener el user_id
       const socio = await this.findById(id);
       if (!socio) {
         throw new Error("Socio no encontrado");
       }
 
-      // Actualizar tabla socios
       const sql = `
         UPDATE socios
         SET estado = 'activo',
@@ -273,7 +220,6 @@ class Socio {
       `;
       await query(sql, [id]);
 
-      // Actualizar tabla users para marcar como activo
       const userSql = `UPDATE users SET activo = true WHERE id = ?`;
       await query(userSql, [socio.user_id]);
 
@@ -284,16 +230,11 @@ class Socio {
     }
   }
 
-  /**
-   * Eliminar socio (soft delete)
-   * @param {Number} id - ID del socio
-   * @returns {Boolean} true si se eliminó correctamente
-   */
+  // Eliminar socio (soft delete)
   static async delete(id) {
     try {
-      // Primero cambiar estado a inactivo
       await this.cancel(id);
-      // En este caso, no eliminamos físicamente, solo cancelamos
+      // No se borra la fila, solo se cancela
       return true;
     } catch (error) {
       logger.error("Error en delete:", error);
@@ -301,20 +242,7 @@ class Socio {
     }
   }
 
-  /**
-   * Listar todos los socios con paginación
-   *  Usa interpolación directa en LIMIT/OFFSET (sin placeholders)
-   * @param {Number} page - Página actual
-   * @param {Number} limit - Límite de resultados por página
-   * @param {String} estado - Filtro por estado (opcional)
-   * @returns {Object} { socios, total, page, pages }
-   */
-  /**
-   * Obtener todos los socios activos con su email (para envíos masivos,
-   * ej. agenda mensual del cron) — antes se llamaba a este método desde
-   * cronService.js pero no existía en absoluto.
-   * @returns {Array} Socios activos con datos de usuario
-   */
+  // Socios activos con su email, para los envíos del cron
   static async getAllActive() {
     try {
       const sql = `
@@ -330,37 +258,21 @@ class Socio {
     }
   }
 
-  /**
-   * Listado paginado de socios para el panel de admin.
-   *
-   * Todo el filtrado (pestaña, búsqueda) se hace aquí, en SQL, para que
-   * el total y el número de páginas sean siempre correctos, haya los
-   * socios que haya. El frontend solo pide una página cada vez.
-   *
-   * @param {Object}  opciones
-   * @param {Number}  opciones.page   - Página (empieza en 1)
-   * @param {Number}  opciones.limit  - Elementos por página (máx. 100)
-   * @param {String}  opciones.filtro - 'socio' | 'inactivo' | 'admin' | 'all'
-   * @param {String}  opciones.estado - Filtro antiguo por socios.estado (compatibilidad)
-   * @param {String}  opciones.search - Texto a buscar
-   * @returns {{ socios, total, page, pages, limit }}
-   */
+  // Listado paginado del admin. Se filtra en SQL para que total y páginas
+  // sean correctos
   static async list({ page = 1, limit = 20, filtro = null, estado = null, search = null } = {}) {
     try {
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const offset = (pageNum - 1) * limitNum;
 
-      // Arranca desde `users` (LEFT JOIN socios), no desde `socios`.
-      // Así un admin SIN fila de socio (ej. la cuenta raíz de gestión)
-      // también aparece en el listado, con los campos de socio a NULL.
+      // Desde users con LEFT JOIN: así salen también los admins sin fila de socio
       const where = ["u.role IN ('socio', 'admin')"];
       const params = [];
 
       switch (filtro) {
         case "socio":
-          // Socios activos. Un admin sin fila de socio queda fuera
-          // porque su s.estado es NULL.
+          // Un admin sin fila de socio queda fuera (s.estado es NULL)
           where.push("s.estado = 'activo'");
           break;
         case "inactivo":
@@ -370,7 +282,6 @@ class Socio {
           where.push("u.role = 'admin'");
           break;
         default:
-          // 'all' o sin filtro: no se añade nada
           if (estado) {
             where.push("s.estado = ?");
             params.push(estado);
@@ -434,12 +345,7 @@ class Socio {
     }
   }
 
-  /**
-   * Buscar socios (y admins sin fila de socio, mismo criterio que list())
-   * Incluye el campo 'role' del usuario
-   * @param {String} searchTerm - Término de búsqueda
-   * @returns {Array} Socios encontrados
-   */
+  // Buscar socios (y admins sin fila de socio, como list()), con su rol
   static async search(searchTerm) {
     try {
       const sql = `
@@ -477,11 +383,7 @@ class Socio {
     }
   }
 
-  /**
-   * Obtener socios morosos
-   * Incluye el campo 'role' del usuario
-   * @returns {Array} Lista de socios morosos
-   */
+  // Socios morosos, con su rol
   static async getMorosos() {
     try {
       const sql = `
@@ -502,11 +404,7 @@ class Socio {
     }
   }
 
-  /**
-   * Verificar si se puede crear un nuevo socio (límite configurable)
-   * @param {Number} limite - Máximo de socios activos permitidos
-   * @returns {Boolean}
-   */
+  // ¿Cabe otro socio? (límite configurable)
   static async puedeCrearNuevoSocio(
     limite = parseInt(process.env.MAX_SOCIOS_ACTIVOS || "10000", 10),
   ) {
@@ -521,11 +419,7 @@ class Socio {
     }
   }
 
-  /**
-   * Registrar pago exitoso para un socio
-   * @param {Number} id - ID del socio
-   * @returns {Object} Socio actualizado
-   */
+  // Anotar un pago correcto
   static async registrarPagoExitoso(id) {
     try {
       await query(
@@ -547,11 +441,7 @@ class Socio {
     }
   }
 
-  /**
-   * Incrementar contador de pagos fallidos para un socio
-   * @param {Number} id - ID del socio
-   * @returns {Object} Socio actualizado
-   */
+  // Sumar un pago fallido
   static async incrementarPagosFallidos(id) {
     try {
       const socio = await this.findById(id);
@@ -584,11 +474,7 @@ class Socio {
     }
   }
 
-  /**
-   * Marcar socio como moroso
-   * @param {Number} id - ID del socio
-   * @returns {Object} Socio actualizado
-   */
+  // Marcar socio como moroso
   static async marcarComoMoroso(id) {
     try {
       await query(
@@ -608,14 +494,9 @@ class Socio {
     }
   }
 
-  /**
-   * Actualizar días de morosidad de todos los socios
-   * Llamado por el cron job diario
-   * @returns {Object} Resumen de la actualización
-   */
+  // Recalcula los días de morosidad (cron diario)
   static async updateMorosidad() {
     try {
-      // Esta lógica puede ser más compleja según tus reglas de negocio
       const sql = `
         UPDATE socios s
         INNER JOIN (
