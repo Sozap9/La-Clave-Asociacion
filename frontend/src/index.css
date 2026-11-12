@@ -1,39 +1,22 @@
-/* ════════════════════════════════════════════════════════════
-   FUENTES ACTIVAS (Chakra Petch — una sola familia, dos roles)
-   Elegida por parecerse al cartel de marca: "square sans serif
-   con esquinas achaflanadas", igual que el título en Squartiqa
-   (de pago) de Canva. Bold = título, Light = el resto.
-   ════════════════════════════════════════════════════════════ */
+/* Fuente principal: Chakra Petch, la gratuita más parecida a Squartiqa
+   (la del cartel). Bold para títulos, Light para el resto. */
 @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap");
 
-/* ════════════════════════════════════════════════════════════
-   FUENTES DE MARCA (las del cartel de normas del local)
-   - Orbitron 900: "LACLAVE981" y "NORMAS". Es la gratuita más parecida
-     a la del cartel (A de techo plano, 9 y 8 cuadrados), que la
-     asociación no tiene.
-   - Saira Condensed: subtítulos en mayúsculas espaciadas, frase final,
-     web y números de las normas.
-   - Fira Sans: título y texto de cada norma (la misma que el cartel).
-   Se usan con las clases de Tailwind font-brand, font-label, font-num
-   y font-poster.
-   ════════════════════════════════════════════════════════════ */
+/* Fuentes del cartel de normas (clases font-brand, font-label, font-num y
+   font-poster): Orbitron para la marca, Saira Condensed para subtítulos y
+   números, Fira Sans para el texto de las normas. */
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Saira+Condensed:wght@500;600;800&family=Fira+Sans:wght@400;500;600&display=swap");
 
-/* ════════════════════════════════════════════════════════════
-   HISTÓRICO DE FUENTES — comentado, no se carga nada de aquí.
-   Para revertir a cualquiera de estas etapas anteriores:
-   1) Descomenta el @import correspondiente de abajo
-   2) Cambia los font-family del resto del archivo a los nombres
-      indicados en cada bloque
-   ════════════════════════════════════════════════════════════ */
+/* Fuentes de etapas anteriores, sin cargar. Se guardan para la
+   unificación del diseño. */
 
-/* -- Etapa 3 (Stalinist One / Share Tech Mono) -- */
+/* Etapa 3: Stalinist One + Share Tech Mono */
 /* @import url("https://fonts.googleapis.com/css2?family=Stalinist+One&family=Share+Tech+Mono&display=swap"); */
 
-/* -- Etapa 2 (Michroma / Rajdhani) -- */
+/* Etapa 2: Michroma + Rajdhani */
 /* @import url("https://fonts.googleapis.com/css2?family=Michroma&family=Rajdhani:wght@300;400;500;600;700&display=swap"); */
 
-/* -- Etapa 1 / original (Zen Dots / Kodchasan / Oxanium / Ubuntu) -- */
+/* Etapa 1 (original): Zen Dots, Kodchasan, Oxanium, Ubuntu */
 /* @import url("https://fonts.googleapis.com/css2?family=Zen+Dots&family=Roboto:wght@300;400;500;700;900&display=swap"); */
 /* @import url("https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Kodchasan:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&family=Orbitron:wght@400..900&family=Oxanium:wght@200..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"); */
 
@@ -52,7 +35,7 @@
     @apply font-light;
   }
 
-  /* Tipografías para títulos */
+  /* Títulos */
 
   h1,
   h2 {
@@ -69,7 +52,7 @@
     @apply font-semibold;
   }
 
-  /* MOBILE-FIRST */
+  /* Tamaños de título, de móvil a escritorio */
   h1 {
     @apply text-3xl sm:text-4xl md:text-6xl lg:text-7xl;
   }
@@ -82,8 +65,7 @@
     @apply text-xl sm:text-2xl md:text-4xl;
   }
 
-  /* Tipografías para párrafos y textos generales */
-
+  /* Texto general */
   button,
   span,
   li {
@@ -102,7 +84,7 @@
     @apply text-sm md:text-base font-light;
   }
 
-  /* Scrollbar personalizado */
+  /* Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
   }
@@ -121,7 +103,7 @@
 }
 
 @layer components {
-  /* Menú Hamburguesa */
+  /* Menú lateral */
   .menu-title {
     font-family: "Chakra Petch", sans-serif;
     @apply text-xl font-bold tracking-wider;
@@ -183,9 +165,8 @@
         transition-all duration-200;
   }
 
-  /* Autorrelleno del navegador: Chrome pinta los campos guardados con
-     fondo azul claro, y el texto y los iconos (como el ojo de la
-     contraseña) dejaban de verse. Se mantiene el fondo oscuro del .input. */
+  /* Chrome pone fondo claro a los campos autorrellenados y tapaba el texto
+     y el ojo de la contraseña. */
   .input:-webkit-autofill,
   .input:-webkit-autofill:hover,
   .input:-webkit-autofill:focus {
@@ -216,7 +197,7 @@
         bg-clip-text text-transparent;
   }
 
-  /* Datepicker selects (mes/año) */
+  /* Datepicker: selects de mes y año */
   .datepicker-select {
     background: #0f0f0f;
     color: #ffffff;
@@ -230,7 +211,7 @@
     display: none;
   }
 
-  /* Estilos del calendario */
+  /* Datepicker: calendario */
   .react-datepicker {
     background: #0f0f0f;
     border: 1px solid #2a2a2a;
@@ -340,7 +321,7 @@
   }
 }
 
-/* React Datepicker styles */
+/* Datepicker: tema oscuro */
 .react-datepicker {
   background-color: #1a1a1a !important;
   border: 1px solid #333333 !important;
@@ -406,7 +387,7 @@
   width: 100% !important;
 }
 
-/* Selector de hora (showTimeSelect) — mismo tema oscuro que el calendario */
+/* Datepicker: selector de hora (showTimeSelect) */
 .react-datepicker__time-container {
   border-left: 1px solid #333333 !important;
   background-color: #1a1a1a !important;
@@ -438,7 +419,7 @@
   color: #525252 !important;
 }
 
-/* Selector de hora manual (showTimeInput) — campo de texto en vez de lista */
+/* Datepicker: hora escrita a mano (showTimeInput) */
 .react-datepicker__input-time-container {
   display: flex !important;
   align-items: center !important;

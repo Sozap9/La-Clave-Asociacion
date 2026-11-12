@@ -1,20 +1,7 @@
 import PDFDocument from "pdfkit";
 
-/**
- * Utilidades para generar los PDF de listados del panel de admin
- * (socios, eventos, reservas y usuarios).
- *
- * Antes cada exportación dibujaba su tabla a mano y todas tenían el mismo
- * fallo: al llegar al final de la primera página, las filas siguientes se
- * pintaban en la parte de abajo de páginas nuevas, una o dos por página y
- * sin cabecera. Además los textos largos se cortaban con "...".
- *
- * Aquí la tabla:
- *  - calcula el alto real de cada fila y salta de página antes de que no quepa,
- *  - repite la cabecera de la tabla en cada página,
- *  - muestra los textos completos (si no caben en una línea, ocupan dos),
- *  - numera las páginas ("Página X de Y") en el pie.
- */
+// Tablas PDF para las exportaciones del admin. Cada fila mide su alto real,
+// así que salta de página sin cortar filas y repite la cabecera.
 
 const COLORS = {
   text: "#111111",
@@ -29,14 +16,8 @@ const PAD_X = 5;
 const PAD_Y = 4;
 
 /**
- * Crea el documento PDF, lo conecta a la respuesta HTTP y dibuja la cabecera.
- *
- * @param {Object}   opciones
- * @param {Object}   opciones.res       - Respuesta de Express
- * @param {String}   opciones.filename  - Nombre del archivo, sin fecha ni extensión (ej. "socios")
- * @param {String}   opciones.title     - Título grande del documento
- * @param {String[]} [opciones.lines]   - Líneas de resumen bajo el título (total, filtros...)
- * @returns {PDFDocument}
+ * Crea el PDF, lo envía en la respuesta y pinta título y resumen.
+ * @param {Object} opciones { res, filename (sin fecha ni extensión), title, lines }
  */
 export const createListPdf = ({ res, filename, title, lines = [] }) => {
   const doc = new PDFDocument({
@@ -85,20 +66,8 @@ export const createListPdf = ({ res, filename, title, lines = [] }) => {
 };
 
 /**
- * Dibuja una tabla que puede ocupar varias páginas.
- *
- * Cada columna:
- *   - header {String}            Texto de la cabecera
- *   - width  {Number}            Peso relativo del ancho (se reparte el ancho total)
- *   - value  {Function}          (fila) => texto a mostrar
- *   - align  {String}            'left' | 'center' | 'right' (por defecto 'left')
- *   - color  {Function}          (fila) => color del texto (opcional)
- *   - bold   {Boolean}           Texto en negrita (opcional)
- *
- * @param {PDFDocument} doc
- * @param {Object}      opciones
- * @param {Object[]}    opciones.columns
- * @param {Object[]}    opciones.rows
+ * Tabla de varias páginas.
+ * Columna: { header, width (peso relativo), value(fila), align?, color(fila)?, bold? }
  */
 export const drawTable = (doc, { columns, rows }) => {
   const left = doc.page.margins.left;
@@ -188,10 +157,7 @@ export const drawTable = (doc, { columns, rows }) => {
   doc.y = y;
 };
 
-/**
- * Añade el pie con "Página X de Y" a todas las páginas y cierra el PDF.
- * @param {PDFDocument} doc
- */
+// Pie "Página X de Y" en todas las páginas y cierre del PDF
 export const finishPdf = (doc) => {
   const range = doc.bufferedPageRange();
 
@@ -202,8 +168,7 @@ export const finishPdf = (doc) => {
     const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const y = doc.page.height - 30;
 
-    // Se quita el margen inferior un momento para poder escribir en el pie
-    // sin que PDFKit cree una página nueva.
+    // Sin margen inferior un momento: si no, PDFKit abre una página nueva
     const bottomMargin = doc.page.margins.bottom;
     doc.page.margins.bottom = 0;
 
@@ -228,9 +193,7 @@ export const finishPdf = (doc) => {
   doc.end();
 };
 
-/**
- * Colores para los estados que se muestran en las tablas.
- */
+// Colores de estado para las tablas
 export const STATUS_COLORS = {
   ok: "#047857",      // verde
   warning: "#b45309", // ámbar oscuro

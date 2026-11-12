@@ -3,34 +3,24 @@ import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js
 import EventTicketTier from '../models/EventTicketTier.js';
 import logger from '../config/logger.js';
 
-/**
- * Las tandas llegan dentro del FormData como un string JSON en el campo
- * "tandas" (ej: '[{"nombre":"Tanda 1","precio":10,"fecha_hora_inicio":"2026-09-01 20:00:00"}]').
- * Si no viene, o viene vacío/erróneo, se trata como "sin tandas" en vez
- * de romper la creación/edición del evento.
- */
+// Las tandas llegan del FormData como JSON en texto. Si faltan o no se pueden
+// leer, el evento se guarda sin tandas en vez de fallar.
 const parseTandas = (raw) => {
   if (!raw) return [];
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
     return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
-    logger.warn('⚠️ No se pudieron parsear las tandas recibidas, se ignoran:', { error: err.message });
+    logger.warn('No se pudieron parsear las tandas recibidas, se ignoran:', { error: err.message });
     return [];
   }
 };
 
-/**
- * VALID STATUS VALUES:
- * - 'draft': Draft (not published)
- * - 'scheduled': Scheduled/Published
- * - 'active': Currently happening
- * - 'completed': Finished
- * - 'cancelled': Cancelled
- */
+// Estados de un evento: draft, scheduled (publicado), active (en curso),
+// completed y cancelled.
 
 /**
- * @desc    Create new event
+ * @desc    Crear evento
  * @route   POST /api/admin/events
  * @access  Admin
  */
@@ -93,8 +83,7 @@ export const createEvent = async (req, res) => {
 
     logger.info('Evento creado', { eventId: result.insertId });
 
-    // Guardar tandas (si el evento no usa tandas, req.body.tandas viene
-    // vacío/ausente y replaceForEvent simplemente no crea ninguna)
+    // Sin tandas en el formulario, replaceForEvent no crea ninguna
     const tandas = parseTandas(req.body.tandas);
     if (tandas.length > 0) {
       await EventTicketTier.replaceForEvent(result.insertId, tandas);
@@ -129,7 +118,7 @@ export const createEvent = async (req, res) => {
 };
 
 /**
- * @desc    Update event
+ * @desc    Editar evento
  * @route   PUT /api/admin/events/:id
  * @access  Admin
  */
@@ -158,10 +147,8 @@ export const updateEvent = async (req, res) => {
       ? `/uploads/events/${req.file.filename}` 
       : events[0].imagen_cartel_url;
 
-    // Calculamos cuántas entradas están realmente ocupadas a partir de
-    // entradas_disponibles (que sí se mantiene bien sincronizado en todo
-    // el flujo de reservas), en vez de la columna entradas_reservadas
-    // que históricamente no se incrementaba nunca y podía estar mal.
+    // Las ocupadas se calculan desde entradas_disponibles: entradas_reservadas
+    // no se actualizaba y no es fiable.
     const aforoAnterior = events[0].aforo_maximo || 0;
     const disponiblesAnterior = events[0].entradas_disponibles ?? aforoAnterior;
     const entradasOcupadas = Math.max(aforoAnterior - disponiblesAnterior, 0);
@@ -187,10 +174,8 @@ export const updateEvent = async (req, res) => {
 
     logger.info('Evento actualizado', { eventId: id });
 
-    // Reemplazar tandas con lo que venga del formulario. Si "tandas" no
-    // viene en el body (undefined), NO se tocan las existentes — permite
-    // seguir editando el evento desde sitios que no envían ese campo.
-    // Si viene como array vacío "[]", sí se borran (el admin quitó todas).
+    // Sin campo "tandas" se conservan las actuales (otros formularios no lo
+    // envían); con "[]" se borran todas.
     if (req.body.tandas !== undefined) {
       const tandas = parseTandas(req.body.tandas);
       await EventTicketTier.replaceForEvent(id, tandas);
@@ -218,17 +203,14 @@ export const updateEvent = async (req, res) => {
 };
 
 /**
- * @desc    Get all events (admin)
+ * @desc    Listar eventos (admin)
  * @route   GET /api/admin/events
  * @access  Admin
- * 
- * No usa placeholders para LIMIT/OFFSET (evita errno 1210)
  */
 export const getAllEventsAdmin = async (req, res) => {
   try {
     const { page = '1', limit = '10', search = '', estado, destacado } = req.query;
 
-    // Validate and parse pagination parameters
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
     const validPage = (!isNaN(parsedPage) && parsedPage > 0) ? parsedPage : 1;
@@ -247,7 +229,6 @@ export const getAllEventsAdmin = async (req, res) => {
     `;
     const params = [];
 
-    // Filters with proper validation
     if (search && search.trim()) { 
       query += ` AND (e.titulo LIKE ? OR e.ubicacion LIKE ?)`; 
       const searchTerm = `%${search.trim()}%`;
@@ -262,15 +243,13 @@ export const getAllEventsAdmin = async (req, res) => {
       params.push(destacado === 'true' ? 1 : 0); 
     }
 
-    // Insert LIMIT and OFFSET directly (NOT as placeholders)
+    // LIMIT y OFFSET van en el SQL, no como placeholders: mysql2 da errno 1210
     query += ` GROUP BY e.id ORDER BY e.created_at DESC LIMIT ${validLimit} OFFSET ${offset}`;
 
-    // Execute query - usar pool.execute si hay params, pool.query si no
     const [events] = params.length > 0
       ? await pool.execute(query, params)
       : await pool.query(query);
 
-    // Count total events
     let countQuery = 'SELECT COUNT(DISTINCT e.id) as total FROM events e WHERE 1=1';
     const countParams = [];
     
@@ -315,7 +294,7 @@ export const getAllEventsAdmin = async (req, res) => {
 };
 
 /**
- * @desc    Delete event
+ * @desc    Borrar evento
  * @route   DELETE /api/admin/events/:id
  * @access  Admin
  */
@@ -323,7 +302,7 @@ export const deleteEvent = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check for confirmed bookings
+    // No se borra si tiene reservas confirmadas
     const [bookings] = await pool.execute(
       'SELECT COUNT(*) as count FROM bookings WHERE event_id = ? AND estado = "confirmada"', 
       [id]
@@ -360,7 +339,7 @@ export const deleteEvent = async (req, res) => {
 };
 
 /**
- * @desc    Get event details
+ * @desc    Detalle de un evento
  * @route   GET /api/admin/events/:id
  * @access  Admin
  */
@@ -395,8 +374,7 @@ export const getEventDetails = async (req, res) => {
 };
 
 /**
- * @desc    Forzar manualmente una tanda como vigente (independiente de
- *          su fecha_hora_inicio)
+ * @desc    Forzar una tanda como vigente, sin mirar su fecha de inicio
  * @route   PATCH /api/admin/events/:id/tandas/:tierId/activar
  * @access  Admin
  */
@@ -422,7 +400,7 @@ export const activateTanda = async (req, res) => {
 };
 
 /**
- * @desc    Quitar el forzado manual, volver al modo automático por fecha/hora
+ * @desc    Quitar el forzado: las tandas vuelven a ir por fecha
  * @route   PATCH /api/admin/events/:id/tandas/desactivar
  * @access  Admin
  */
@@ -448,7 +426,7 @@ export const deactivateTanda = async (req, res) => {
 };
 
 /**
- * @desc    Publish event
+ * @desc    Publicar evento
  * @route   PATCH /api/admin/events/:id/publish
  * @access  Admin
  */
@@ -480,7 +458,7 @@ export const publishEvent = async (req, res) => {
 };
 
 /**
- * @desc    Unpublish event
+ * @desc    Despublicar evento
  * @route   PATCH /api/admin/events/:id/unpublish
  * @access  Admin
  */
@@ -512,7 +490,7 @@ export const unpublishEvent = async (req, res) => {
 };
 
 /**
- * @desc    Toggle publish status
+ * @desc    Publicar o despublicar
  * @route   PATCH /api/admin/events/:id/toggle-publish
  * @access  Admin
  */
@@ -526,9 +504,7 @@ export const togglePublishEvent = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
     
-    // isPublished se decide por visible_desde, igual que en el frontend
-    // (AdminEvents.jsx), no por "estado", para que ambos queden siempre
-    // sincronizados.
+    // Publicado = tiene visible_desde (mismo criterio que AdminEvents.jsx)
     const isPublished = events[0].visible_desde !== null;
     const newStatus = isPublished ? 'draft' : 'scheduled';
     
@@ -560,7 +536,7 @@ export const togglePublishEvent = async (req, res) => {
 };
 
 /**
- * @desc    Cancel event
+ * @desc    Cancelar evento
  * @route   PATCH /api/admin/events/:id/cancel
  * @access  Admin
  */
@@ -574,7 +550,7 @@ export const cancelEvent = async (req, res) => {
       [motivo || 'Cancelled by administration', id]
     );
     
-    // Cancel all confirmed bookings
+    // También se cancelan sus reservas confirmadas
     await pool.execute(
       'UPDATE bookings SET estado = "cancelada", motivo_cancelacion = ? WHERE event_id = ? AND estado = "confirmada"', 
       [motivo || 'Event cancelled', id]
@@ -599,7 +575,7 @@ export const cancelEvent = async (req, res) => {
 };
 
 /**
- * @desc    Feature event
+ * @desc    Destacar evento
  * @route   PATCH /api/admin/events/:id/feature
  * @access  Admin
  */
@@ -619,7 +595,7 @@ export const featureEvent = async (req, res) => {
 };
 
 /**
- * @desc    Unfeature event
+ * @desc    Quitar destacado
  * @route   PATCH /api/admin/events/:id/unfeature
  * @access  Admin
  */
@@ -639,7 +615,7 @@ export const unfeatureEvent = async (req, res) => {
 };
 
 /**
- * @desc    Toggle featured status
+ * @desc    Destacar o quitar destacado
  * @route   PATCH /api/admin/events/:id/toggle-feature
  * @access  Admin
  */
@@ -674,7 +650,7 @@ export const toggleFeatureEvent = async (req, res) => {
 };
 
 /**
- * @desc    Get events statistics
+ * @desc    Estadísticas de eventos
  * @route   GET /api/admin/events/stats
  * @access  Admin
  */
@@ -728,7 +704,7 @@ export const getEventsStats = async (req, res) => {
   }
 };
 
-// Compatibility aliases
+// Alias con los nombres antiguos de las funciones
 export const getEventById = getEventDetails;
 export const getEvents = getAllEventsAdmin;
 export const removeEvent = deleteEvent;
