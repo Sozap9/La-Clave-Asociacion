@@ -19,7 +19,7 @@ import FilterBar from "../components/UI/FilterBar";
 import Pagination from "../components/UI/Pagination";
 import { usePagination } from "../hooks/usePagination";
 
-// ✅ CORRECCIÓN: URL base sin /api para servir archivos estáticos
+// Los archivos se sirven sin /api
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace("/api", "");
 
 const Gallery = () => {
@@ -38,10 +38,9 @@ const Gallery = () => {
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortOrder, setSortOrder] = useState("all"); // 'all', 'desc', 'asc'
+  const [sortOrder, setSortOrder] = useState("all"); // all | desc | asc
   
-  // Estados para botones admin
-  const [activeAdminAction, setActiveAdminAction] = useState(null); // 'upload' | 'create' | null
+  const [activeAdminAction, setActiveAdminAction] = useState(null); // upload | create | null
 
   // Modales
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -127,7 +126,6 @@ const Gallery = () => {
       );
     }
 
-    // Ordenar solo si no es "all"
     if (sortOrder !== "all") {
       filtered.sort((a, b) => {
         const dateA = new Date(a.created_at || a.fecha_evento);
@@ -194,7 +192,7 @@ const Gallery = () => {
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
         
-        {/* Header: título a la izquierda, controles a la derecha (misma altura) */}
+        {/* Título a la izquierda, controles a la derecha */}
         <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div>
             <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Galería</h1>
@@ -204,7 +202,7 @@ const Gallery = () => {
           </div>
 
           <div className="flex flex-col items-stretch sm:items-end gap-3">
-            {/* Botones Admin - Estilo filtros (negros) */}
+            {/* Acciones de admin */}
             {isAdmin && (
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
@@ -234,7 +232,7 @@ const Gallery = () => {
 
             {/* Búsqueda + filtro */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              {/* Filtros: select en mobile, desplegable en desktop */}
+              {/* Select en móvil, desplegable en escritorio */}
               <FilterBar
                 customFilters={[
                   { value: "all", label: "Todos" },
@@ -283,7 +281,7 @@ const Gallery = () => {
           </div>
         </div>
 
-        {/* Alerts */}
+        {/* Avisos */}
         {error && (
           <Alert type="error" message={error} onClose={() => setError("")} />
         )}
@@ -296,7 +294,7 @@ const Gallery = () => {
           />
         )}
 
-        {/* Grid de álbumes */}
+        {/* Álbumes */}
         {filteredFolders.length === 0 ? (
           <EmptyState
             icon={Image}
@@ -373,7 +371,6 @@ const AlbumCard = ({ folder }) => {
     }
   };
 
-  // Construir URL completa de imagen de portada
   const coverImageUrl = folder.imagen_portada_url
     ? folder.imagen_portada_url.startsWith("http")
       ? folder.imagen_portada_url

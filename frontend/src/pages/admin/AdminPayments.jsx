@@ -22,14 +22,14 @@ import { exportReservas } from "../../api/adminApi";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// ─── Filtros: solo los estados reales de booking que nos interesan ─────────────
+// Estados de reserva que se pueden filtrar
 const estadoFilters = [
   { value: "all",        label: "Todos" },
   { value: "confirmada", label: "Confirmadas" },
   { value: "cancelada",  label: "Canceladas" },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 const getEstadoBadgeColor = (estado) => {
   const map = {
     confirmada:      "green",
@@ -77,7 +77,7 @@ const formatCurrency = (amount) => {
 
 const getEventName = (event) => event.titulo || event.nombre || "Sin nombre";
 
-// ─── Ordenar eventos: más próximo al día de hoy primero ──────────────────────
+// Eventos ordenados por cercanía a hoy
 const sortEventsByProximity = (events) => {
   const now = new Date();
   return [...events].sort((a, b) => {
@@ -89,7 +89,6 @@ const sortEventsByProximity = (events) => {
   });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 
 const AdminPayments = () => {
   const [events, setEvents]               = useState([]);
@@ -106,12 +105,12 @@ const AdminPayments = () => {
   const [page, setPage]                   = useState(1);
   const [pagination, setPagination]       = useState({ total: 0, pages: 1 });
 
-  // Sidebar: filtro por fecha y control del DatePicker
+  // Filtro por mes del lateral
   const [dateFilter, setDateFilter]           = useState(null);
   const [showDatePicker, setShowDatePicker]   = useState(false);
   const datePickerRef                         = useRef(null);
 
-  // Cerrar el datepicker si se hace click fuera
+  // Cierra el calendario al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (datePickerRef.current && !datePickerRef.current.contains(e.target)) {
@@ -122,10 +121,8 @@ const AdminPayments = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Cargar eventos al iniciar
   useEffect(() => { fetchEvents(); }, []);
 
-  // Cargar entradas cuando cambia el evento, filtro, búsqueda o página
   useEffect(() => {
     if (selectedEvent) {
       fetchEventPayments();
@@ -136,7 +133,6 @@ const AdminPayments = () => {
     // eslint-disable-next-line
   }, [selectedEvent, estadoFilter, search, page]);
 
-  // ── API calls ───────────────────────────────────────────────────────────────
 
   const fetchEvents = async () => {
     setLoadingEvents(true);
@@ -197,7 +193,7 @@ const AdminPayments = () => {
     }
   };
 
-  // ── Export: usa exportReservas de adminApi (igual que Gestión de Exportaciones) ─
+  // Exportación (la misma que en Exportaciones)
   const handleExport = async () => {
     if (!selectedEvent) return;
     setLoadingExport(true);
@@ -210,7 +206,6 @@ const AdminPayments = () => {
     }
   };
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleFilterChange = (value) => { setEstadoFilter(value); setPage(1); };
   const handleSearchChange = (value) => { setSearch(value); setPage(1); };
@@ -230,8 +225,7 @@ const AdminPayments = () => {
     }
   };
 
-  // ── Eventos filtrados para el sidebar ───────────────────────────────────────
-  // Ordena por proximidad a hoy, filtra por mes si hay dateFilter, máx 10
+  // Lateral: por cercanía a hoy, filtrados por mes, máximo 10
   const visibleEvents = (() => {
     let list = sortEventsByProximity(events);
     if (dateFilter) {
@@ -251,7 +245,7 @@ const AdminPayments = () => {
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
 
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8">
         <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
           Gestión de Pagos por Evento
@@ -271,18 +265,17 @@ const AdminPayments = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
 
-        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+        {/* Lateral */}
         <div className="lg:col-span-1">
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 sm:p-6 lg:sticky lg:top-8">
 
-            {/* Título + botón calendario */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Calendar size={20} className="text-primary-300" />
                 Eventos
               </h2>
 
-              {/* Filtro por mes con DatePicker */}
+              {/* Filtro por mes */}
               <div className="relative" ref={datePickerRef}>
                 <button
                   onClick={() => setShowDatePicker((v) => !v)}
@@ -320,7 +313,7 @@ const AdminPayments = () => {
               </div>
             </div>
 
-            {/* Indicador del mes activo */}
+            {/* Mes activo */}
             {dateFilter && (
               <div className="mb-3 px-2 py-1.5 bg-primary-500/10 border border-primary-500/20 rounded-lg flex items-center justify-between">
                 <span className="text-primary-300 text-xs font-medium">
@@ -365,7 +358,7 @@ const AdminPayments = () => {
                   </button>
                 ))}
 
-                {/* Indicador si hay más de 10 */}
+                {/* Aviso si hay más de 10 */}
                 {!dateFilter && events.length > 10 && (
                   <p className="text-center text-xs text-gray-600 pt-1">
                     Mostrando 10 de {events.length} eventos
@@ -376,7 +369,7 @@ const AdminPayments = () => {
           </div>
         </div>
 
-        {/* ── Contenido principal ─────────────────────────────────────────── */}
+        {/* Contenido principal */}
         <div className="lg:col-span-3">
           {!selectedEvent ? (
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
@@ -391,10 +384,9 @@ const AdminPayments = () => {
             </div>
           ) : (
             <>
-              {/* ── Header del evento ──────────────────────────────────────── */}
+              {/* Cabecera del evento */}
               <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-6">
 
-                {/* Título + botón export */}
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-1">
                   <h3 className="text-2xl font-bold text-white">
                     {getEventName(selectedEvent)}
@@ -417,7 +409,7 @@ const AdminPayments = () => {
                     : ""}
                 </p>
 
-                {/* Stats: Total, Ingresos, Confirmadas y Asistidas */}
+                {/* Totales */}
                 {eventStats && (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div className="bg-[#0a0a0a] rounded-lg p-4">
@@ -448,7 +440,7 @@ const AdminPayments = () => {
                 )}
               </div>
 
-              {/* ── Filtros ────────────────────────────────────────────────── */}
+              {/* Filtros */}
               <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4">
                 <FilterBar
                   customFilters={estadoFilters}
@@ -466,7 +458,7 @@ const AdminPayments = () => {
                 </div>
               </div>
 
-              {/* ── Loading ────────────────────────────────────────────────── */}
+              {/* Cargando */}
               {loadingEntries && (
                 <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4" />
@@ -474,7 +466,7 @@ const AdminPayments = () => {
                 </div>
               )}
 
-              {/* ── Lista de entradas ──────────────────────────────────────── */}
+              {/* Entradas */}
               {!loadingEntries && entries.length === 0 ? (
                 <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
                   <CreditCard className="mx-auto mb-4 text-gray-600" size={48} />
@@ -562,7 +554,7 @@ const AdminPayments = () => {
         </div>
       </div>
 
-      {/* ── Modal de detalles ───────────────────────────────────────────────── */}
+      {/* Detalle */}
       {selectedEntry && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"

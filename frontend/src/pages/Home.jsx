@@ -9,12 +9,7 @@ const Home = () => {
 
   return (
     <div className="bg-black">
-      {/*
-        Una sola sección que ocupa al menos la pantalla (menos el navbar,
-        que mide h-20) y crece si el contenido no cabe (móviles pequeños).
-        Todo el contenido va en un bloque centrado, así no queda hueco
-        entre la descripción y el "Únete".
-      */}
+      {/* Al menos una pantalla menos el navbar (h-20); crece si no cabe */}
       <section className="relative min-h-[calc(100svh-5rem)] py-12 md:py-16 flex items-center justify-center overflow-hidden">
         {/* Imagen de fondo */}
         <div className="absolute inset-0 z-0">
@@ -32,14 +27,13 @@ const Home = () => {
             <KeyLogo className="h-14 sm:h-16 md:h-20 w-auto" />
           </div>
 
-          {/* Nombre de la asociación */}
-          {/* Nombre: mismas letras que el cartel (SVG). El texto oculto es para lectores de pantalla y buscadores */}
+          {/* Nombre con las letras del cartel (SVG); el texto oculto es para lectores de pantalla */}
           <h1 className="animate-fade-in mt-6 md:mt-8 flex justify-center text-white">
             <span className="sr-only">LaClave981</span>
             <LaClaveWordmark decorative className="h-9 sm:h-14 md:h-[4.5rem] lg:h-20 w-auto max-w-full" />
           </h1>
 
-          {/* Subtítulo con líneas doradas a los lados, como en el cartel */}
+          {/* Subtítulo con líneas doradas, como en el cartel */}
           <div className="animate-fade-in mt-5 md:mt-7 flex items-center justify-center gap-3 sm:gap-4">
             <span className="h-px w-6 sm:w-12 md:w-16 bg-gradient-to-r from-transparent to-primary-500" />
             <p className="font-label font-medium text-gray-400 uppercase tracking-[0.3em] sm:tracking-[0.4em] text-sm sm:text-base md:text-lg">
@@ -58,7 +52,7 @@ const Home = () => {
             {t('home.unete.text')}
           </p>
 
-          {/* Botón con el mismo estilo de siempre */}
+          {/* Botón */}
           <div className="animate-slide-up mt-10 md:mt-12 flex justify-center">
             <Button
               variant="primary"

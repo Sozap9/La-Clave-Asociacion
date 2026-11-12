@@ -25,14 +25,13 @@ import { respuestasRegistro } from "../../utils/registroRespuestas";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
 
-// Socios por página. La paginación se hace en el servidor, así que el
-// total y el número de páginas son siempre reales, haya los que haya.
+// Socios por página (paginación en el servidor)
 const PER_PAGE = 20;
 
-// La búsqueda necesita al menos 2 letras (el backend rechaza 1)
+// Mínimo 2 letras: el backend rechaza 1
 const MIN_SEARCH_LENGTH = 2;
 
-// Filtros disponibles para socios (el valor se envía tal cual al backend)
+// Filtros; el valor va tal cual al backend
 const socioFilters = [
   { value: "all", label: "Todos" },
   { value: "socio", label: "Socios Activos" },
@@ -51,19 +50,18 @@ const AdminSocios = () => {
   const [socios, setSocios] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 });
   const [page, setPage] = useState(1);
-  // Lo que hay escrito en el buscador / lo que de verdad se busca
+  // Lo escrito en el buscador y lo que se busca
   const [searchText, setSearchText] = useState("");
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("socio");
-  // Primera carga: pantalla de carga completa. Después, solo se atenúa
-  // la lista, para que el buscador no desaparezca mientras se escribe.
+  // Tras la primera carga solo se atenúa la lista, para no perder el buscador
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedSocio, setSelectedSocio] = useState(null);
   const [roleSelections, setRoleSelections] = useState({});
 
-  // Evita que una respuesta antigua (más lenta) pise a una más reciente
+  // Que una respuesta lenta no pise a una más nueva
   const requestIdRef = useRef(0);
 
   useEffect(() => {
@@ -92,8 +90,7 @@ const AdminSocios = () => {
         const pag = result.data?.pagination || {};
         const pages = Math.max(1, pag.pages || 1);
 
-        // Si la página actual se ha quedado vacía (p. ej. tras eliminar
-        // al último socio de la última página), se va a la anterior.
+        // Página vacía tras borrar: se vuelve a la anterior
         if (sociosData.length === 0 && page > pages) {
           setPage(pages);
           return;
@@ -253,7 +250,7 @@ const AdminSocios = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
         <div>
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de Socios</h1>
@@ -264,7 +261,7 @@ const AdminSocios = () => {
           </p>
         </div>
 
-        {/* Filtros y búsqueda */}
+        {/* Filtros */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:pt-1">
           <FilterBar
             customFilters={socioFilters}
@@ -290,7 +287,7 @@ const AdminSocios = () => {
         </div>
       )}
 
-      {/* Lista de socios */}
+      {/* Socios */}
       {socios.length === 0 ? (
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Users className="mx-auto mb-4 text-gray-600" size={48} />
@@ -340,10 +337,7 @@ const AdminSocios = () => {
                   : []
               }
               actions={[
-                // Estas 3 acciones requieren una fila real en `socios`
-                // (ver/dar de baja/reactivar/eliminar operan sobre
-                // socios.id). Un admin sin membresía (ej. la cuenta raíz
-                // de gestión) no la tiene, así que no se muestran.
+                // Necesitan fila en socios: un admin sin membresía no las tiene
                 ...(socio.id
                   ? [
                       {
@@ -422,7 +416,7 @@ const AdminSocios = () => {
         </div>
       )}
 
-      {/* Modal de detalles */}
+      {/* Detalle */}
       {selectedSocio && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -541,7 +535,7 @@ const AdminSocios = () => {
                 </div>
               </div>
 
-              {/* Respuestas del formulario de registro */}
+              {/* Respuestas del registro */}
               <div className="pt-2">
                 <p className="text-gray-500 text-xs uppercase tracking-wider mb-3">
                   Respuestas del registro

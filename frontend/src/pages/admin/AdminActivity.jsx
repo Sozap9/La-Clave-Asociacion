@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Activity, User, Calendar, Filter, RefreshCw } from 'lucide-react';
+import {
+  Activity, User, Calendar, Filter, RefreshCw,
+  Plus, Pencil, Trash2, LogIn, LogOut, Check, X, Ban, CheckCheck, FileText,
+} from 'lucide-react';
 import Loader from '../../components/common/Loader';
 import Pagination from '../../components/UI/Pagination';
 import { usePagination } from '../../hooks/usePagination';
@@ -58,20 +61,22 @@ const AdminActivity = () => {
   const { pageItems: paginatedActivities, page, pages, total, setPage } =
     usePagination(filteredActivities, 20);
 
+  const ACCION_ICONS = {
+    crear: Plus,
+    editar: Pencil,
+    actualizar: Pencil,
+    eliminar: Trash2,
+    login: LogIn,
+    logout: LogOut,
+    aprobar: Check,
+    rechazar: X,
+    cancelar: Ban,
+    verificar: CheckCheck,
+  };
+
   const getAccionIcon = (accion) => {
-    switch (accion) {
-      case 'crear':     return '➕';
-      case 'editar':
-      case 'actualizar': return '✏️';
-      case 'eliminar':  return '🗑️';
-      case 'login':     return '🔐';
-      case 'logout':    return '🚪';
-      case 'aprobar':   return '✅';
-      case 'rechazar':  return '❌';
-      case 'cancelar':  return '🚫';
-      case 'verificar': return '✔️';
-      default:          return '📝';
-    }
+    const Icon = ACCION_ICONS[accion] || FileText;
+    return <Icon size={12} className="text-primary-400" aria-hidden="true" />;
   };
 
   const getAccionColor = (accion) => {
@@ -111,7 +116,7 @@ const AdminActivity = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -190,7 +195,7 @@ const AdminActivity = () => {
         )}
       </div>
 
-      {/* Timeline */}
+      {/* Actividad */}
       {filteredActivities.length === 0 ? (
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Activity className="mx-auto mb-4 text-gray-600" size={48} />
@@ -207,7 +212,7 @@ const AdminActivity = () => {
             {paginatedActivities.map((activity, index) => (
               <div key={activity.id || index} className="relative pl-16">
                 <div className="absolute left-3 top-2 w-6 h-6 rounded-full bg-gray-900 border-2 border-primary-500 flex items-center justify-center">
-                  <span className="text-xs">{getAccionIcon(activity.accion)}</span>
+                  {getAccionIcon(activity.accion)}
                 </div>
                 <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-4 hover:border-primary-500/50 transition-all">
                   <div className="flex items-start justify-between mb-2">

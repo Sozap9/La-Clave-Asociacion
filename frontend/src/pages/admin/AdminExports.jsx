@@ -21,7 +21,6 @@ const AdminExports = () => {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  // Filtros para reservas
   const [reservasFilters, setReservasFilters] = useState({
     fecha_desde: "",
     fecha_hasta: "",
@@ -67,7 +66,7 @@ const AdminExports = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8">
         <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Exportaciones CSV</h1>
         <p className="text-gray-400 text-sm md:text-lg">
@@ -75,7 +74,7 @@ const AdminExports = () => {
         </p>
       </div>
 
-      {/* Alertas */}
+      {/* Avisos */}
       {success && (
         <Alert
           type="success"
@@ -113,9 +112,9 @@ const AdminExports = () => {
         </div>
       </div>
 
-      {/* Cards de exportación */}
+      {/* Exportaciones */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        {/* Exportar Socios */}
+        {/* Socios */}
         <ExportCard
           title="Exportar Socios CSV"
           description="Lista completa de socios con datos personales, cuotas y estado"
@@ -133,7 +132,7 @@ const AdminExports = () => {
           onExport={() => handleExport("socios")}
         />
 
-        {/* Exportar Usuarios */}
+        {/* Usuarios */}
         <ExportCard
           title="Exportar Usuarios CSV"
           description="Todos los usuarios registrados (básicos, socios y admins)"
@@ -150,7 +149,7 @@ const AdminExports = () => {
           onExport={() => handleExport("usuarios")}
         />
 
-        {/* Exportar Eventos */}
+        {/* Eventos */}
         <ExportCard
           title="Exportar Eventos CSV"
           description="Lista de eventos con fechas, aforo y estadísticas"
@@ -168,7 +167,7 @@ const AdminExports = () => {
           onExport={() => handleExport("eventos")}
         />
 
-        {/* Exportar Reservas (con filtros) */}
+        {/* Reservas, con filtros */}
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">
           <div className="flex items-start gap-4 mb-4">
             <div className="bg-primary-500/20 p-3 rounded-lg">
@@ -298,7 +297,7 @@ const AdminExports = () => {
         </div>
       </div>
 
-      {/* Instrucciones de uso */}
+      {/* Instrucciones */}
       <div className="mt-8 bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-4">
           Cómo usar los archivos CSV
@@ -329,7 +328,7 @@ const AdminExports = () => {
   );
 };
 
-// Componente reutilizable para cards de exportación
+// Tarjeta de exportación
 const ExportCard = ({
   title,
   description,

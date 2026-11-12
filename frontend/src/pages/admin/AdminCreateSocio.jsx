@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 const AdminCreateSocio = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1: seleccionar usuario, 2: confirmar
+  const [step, setStep] = useState(1); // 1 elegir usuario, 2 confirmar
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -42,8 +42,7 @@ const AdminCreateSocio = () => {
           usersData = result.data.items;
         }
 
-        // El backend ya filtra por role=basico; este filtro extra
-        // se mantiene como red de seguridad por si acaso.
+        // El backend ya filtra role=basico; esto es por seguridad
         setUsers(usersData.filter((u) => u.role === "basico"));
       }
     } catch (err) {
@@ -119,7 +118,7 @@ const AdminCreateSocio = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-3 bg-primary-500/20 rounded-lg">
@@ -173,7 +172,7 @@ const AdminCreateSocio = () => {
         </div>
       </div>
 
-      {/* Seleccionar usuario */}
+      {/* Paso 1: elegir usuario */}
       {step === 1 && (
         <div>
           {/* Búsqueda */}
@@ -189,7 +188,7 @@ const AdminCreateSocio = () => {
           </div>
         </div>
 
-        {/* Lista de usuarios */}
+        {/* Usuarios */}
           {loading ? (
             <div className="text-center py-12">
               <p className="text-gray-400">Cargando usuarios...</p>
@@ -255,7 +254,7 @@ const AdminCreateSocio = () => {
         </div>
       )}
 
-      {/* Paso 2: Confirmar datos */}
+      {/* Paso 2: confirmar */}
       {step === 2 && selectedUser && (
         <div className="max-w-2xl mx-auto">
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8">
@@ -263,7 +262,6 @@ const AdminCreateSocio = () => {
               Confirmar Datos del Socio
             </h2>
 
-            {/* Datos del usuario */}
             <div className="space-y-6">
               <div className="flex items-center gap-4 pb-6 border-b border-[#262626]">
                 <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-full flex items-center justify-center">
@@ -283,7 +281,6 @@ const AdminCreateSocio = () => {
                 </div>
               </div>
 
-              {/* Información adicional */}
               <div className="grid grid-cols-2 gap-4">
                 {selectedUser.telefono && (
                   <div>
@@ -323,7 +320,6 @@ const AdminCreateSocio = () => {
                 </p>
               </div>
 
-              {/* Advertencia */}
               <div className="bg-primary-500/20 border border-primary-500/50 rounded-lg p-4">
                 <p className="text-primary-200 text-sm">
                   <strong>Importante:</strong> Este usuario se convertirá en

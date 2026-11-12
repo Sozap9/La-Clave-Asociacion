@@ -42,7 +42,7 @@ const AdminDashboard = () => {
     setError("");
 
     try {
-      // Fetch stats and recent events in parallel
+      // Estadísticas y eventos recientes en paralelo
       const [statsResult, eventsResult] = await Promise.all([
         getAdminStats(),
         getAllEventsAdmin({ limit: 5 }),
@@ -89,7 +89,7 @@ const AdminDashboard = () => {
 
       if (result.success) {
         setSuccess(result.message);
-        fetchData(); // Reload data
+        fetchData();
         setTimeout(() => setSuccess(""), 3000);
       } else {
         setError(result.message || "Error al cambiar estado");
@@ -144,8 +144,7 @@ const AdminDashboard = () => {
     });
   };
 
-  // Mismo criterio que en AdminEvents.jsx: comparar fecha_evento contra
-  // el inicio del día de hoy.
+  // Pasado = fecha_evento antes de hoy (como en AdminEvents.jsx)
   const isEventPast = (event) => {
     if (!event.fecha_evento) return false;
     const startOfToday = new Date();
@@ -157,13 +156,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8">
         <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Dashboard Admin</h1>
         <p className="text-gray-400 text-sm md:text-lg">Resumen general del sistema</p>
       </div>
 
-      {/* Alerts */}
+      {/* Avisos */}
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-3">
           <AlertCircle size={20} />
@@ -187,10 +186,10 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Stats Cards */}
+      {/* Tarjetas de estadísticas */}
       {stats && <AdminStats stats={stats} />}
 
-      {/* Acciones Rápidas */}
+      {/* Acciones rápidas */}
       <div className="mt-8">
         <h2 className="text-2xl font-bold text-white mb-6">Acciones Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -244,7 +243,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Eventos Recientes */}
+      {/* Eventos recientes */}
       {recentEvents.length > 0 && (
         <div className="mt-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -305,9 +304,7 @@ const AdminDashboard = () => {
                     {
                       icon: <Users size={14} className="text-primary-300" />,
                       label: "Asistencia",
-                      // Evento futuro/en curso: entradas confirmadas hasta
-                      // ahora. Evento ya pasado: quiénes asistieron de
-                      // verdad (check-in por QR).
+                      // Futuro: confirmadas. Pasado: asistentes (check-in por QR).
                       value: `${
                         (isPast ? event.entradas_asistidas : event.confirmed_bookings) || 0
                       }/${event.aforo_maximo}`,

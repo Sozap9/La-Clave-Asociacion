@@ -22,7 +22,7 @@ const AdminBookings = () => {
   const [filter, setFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState(null);
 
-  // Modal de invitación (entrada gratuita para un socio elegido por el admin)
+  // Modal de invitación (entrada de 0 € para un socio)
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [socioSearchTerm, setSocioSearchTerm] = useState('');
   const [socioResults, setSocioResults] = useState([]);
@@ -35,8 +35,7 @@ const AdminBookings = () => {
   useEffect(() => { fetchEvents(); }, []);
   useEffect(() => { if (selectedEvent) fetchBookings(selectedEvent.id); }, [selectedEvent]);
 
-  // Búsqueda de socio con debounce, reutilizando el mismo endpoint que
-  // usa el resto del panel de admin para buscar socios
+  // Búsqueda de socio con debounce
   useEffect(() => {
     if (!showInviteModal || !socioSearchTerm.trim()) {
       setSocioResults([]);
@@ -137,7 +136,7 @@ const AdminBookings = () => {
     }
   };
 
-  // Modal de reenviar entrada (regenera QR + reenvía email)
+  // Modal de reenviar entrada (QR nuevo y email)
   const [resendModalBooking, setResendModalBooking] = useState(null);
   const [resendStatus, setResendStatus] = useState('idle'); // idle | sending | success | error
   const [resendMessage, setResendMessage] = useState('');
@@ -530,7 +529,7 @@ const AdminBookings = () => {
         </>
       )}
 
-      {/* Modal selector de eventos */}
+      {/* Selector de eventos */}
       {showEventSelector && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowEventSelector(false)}>
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -573,7 +572,7 @@ const AdminBookings = () => {
         </div>
       )}
 
-      {/* Modal detalles reserva */}
+      {/* Detalle de la reserva */}
       {selectedBooking && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBooking(null)}>
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-8 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
@@ -639,7 +638,7 @@ const AdminBookings = () => {
         </div>
       )}
 
-      {/* Modal reenviar entrada */}
+      {/* Reenviar entrada */}
       {resendModalBooking && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -721,7 +720,7 @@ const AdminBookings = () => {
           </div>
         </div>
       )}
-      {/* Modal invitar socio (entrada gratuita) */}
+      {/* Invitar a un socio */}
       {showInviteModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"

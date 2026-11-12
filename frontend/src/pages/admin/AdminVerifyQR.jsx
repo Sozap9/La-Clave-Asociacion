@@ -15,7 +15,7 @@ const AdminVerifyQR = () => {
   const scannerRef = useRef(null);
   const html5QrRef = useRef(null);
 
-  // Limpiar escáner al desmontar
+  // Para el escáner al desmontar
   useEffect(() => {
     return () => {
       stopScanner();
@@ -26,28 +26,27 @@ const AdminVerifyQR = () => {
     setScannerError('');
     setScannerActive(true);
 
-    // Esperar a que el div esté en el DOM
+    // Espera a que el div esté en el DOM
     setTimeout(async () => {
       try {
         html5QrRef.current = new Html5Qrcode('qr-reader');
 
-        // Guard para evitar que el callback se dispare múltiples veces
+        // Que el callback no se dispare varias veces
         let yaEscaneado = false;
 
         const onQRSuccess = (decodedText) => {
           if (yaEscaneado) return;
           yaEscaneado = true;
 
-          // Extraer el código: el QR puede ser JSON o texto plano
+          // El QR puede ser JSON o texto
           let codigoExtraido = decodedText.trim();
           try {
             const parsed = JSON.parse(decodedText);
             if (parsed.codigo) codigoExtraido = parsed.codigo.trim();
           } catch {
-            // No es JSON, usar el texto directamente
           }
 
-          // Detener el escáner de forma diferida para no interrumpir el callback
+          // Se para después, para no cortar el callback
           setTimeout(() => stopScanner(), 0);
 
           setCodigo(codigoExtraido);
@@ -56,17 +55,15 @@ const AdminVerifyQR = () => {
 
         const scanConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-        // Intentar con cámara trasera (móviles).
-        // En webcams de PC, 'environment' puede no estar disponible — fallback a primera cámara disponible.
+        // Cámara trasera; si no existe (webcam de PC), la primera que haya
         try {
           await html5QrRef.current.start(
             { facingMode: 'environment' },
             scanConfig,
             onQRSuccess,
-            () => {} // Ignorar errores de frame individuales
+            () => {} // errores de un fotograma: se ignoran
           );
         } catch {
-          // Fallback: listar cámaras y usar la primera disponible (webcam de PC)
           const cameras = await Html5Qrcode.getCameras();
           if (!cameras || cameras.length === 0) {
             throw new Error('No se encontró ninguna cámara disponible');
@@ -92,7 +89,7 @@ const AdminVerifyQR = () => {
         await html5QrRef.current.stop();
         html5QrRef.current.clear();
       } catch {
-        // Ignorar errores al parar
+        // Errores al parar: se ignoran
       }
       html5QrRef.current = null;
     }
@@ -156,7 +153,7 @@ const AdminVerifyQR = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8 text-center">
         <div className="inline-block p-4 bg-primary-500/20 rounded-full mb-4">
           <QrCode size={48} className="text-primary-300" />
@@ -167,7 +164,7 @@ const AdminVerifyQR = () => {
 
       <div className="max-w-2xl mx-auto">
 
-        {/* Botón escáner de cámara */}
+        {/* Escáner */}
         <div className="mb-4 flex justify-center">
           {!scannerActive ? (
             <button
@@ -190,7 +187,7 @@ const AdminVerifyQR = () => {
           )}
         </div>
 
-        {/* Visor de cámara */}
+        {/* Cámara */}
         {scannerActive && (
           <div className="mb-6 bg-[#1a1a1a] border border-[#262626] rounded-xl p-4">
             <p className="text-gray-400 text-sm text-center mb-3">
@@ -206,7 +203,7 @@ const AdminVerifyQR = () => {
           </div>
         )}
 
-        {/* Formulario manual */}
+        {/* Código a mano */}
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 sm:p-8 mb-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -261,7 +258,7 @@ const AdminVerifyQR = () => {
           </div>
         )}
 
-        {/* Resultado exitoso */}
+        {/* Resultado */}
         {result?.success && result.booking && (
           <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-6">
             <div className="flex items-start gap-4 mb-6">

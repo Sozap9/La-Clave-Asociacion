@@ -82,7 +82,7 @@ const Events = () => {
   return (
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div>
             <h1 className="text-gradient mb-2 text-2xl md:text-4xl">{t('events.title')}</h1>
@@ -119,10 +119,10 @@ const Events = () => {
           </div>
         )}
 
-        {/* Loading */}
+        {/* Cargando */}
         {loading && <Loader size="lg" />}
 
-        {/* Grid de eventos */}
+        {/* Eventos */}
         {!loading && events.length > 0 && (
           <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -164,7 +164,7 @@ const Events = () => {
         )}
       </div>
 
-      {/* Modal de detalle */}
+      {/* Detalle */}
       <EventDetail
         event={selectedEvent}
         isOpen={isDetailOpen}

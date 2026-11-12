@@ -39,8 +39,7 @@ const Register = () => {
   const [esArtista, setEsArtista] = useState(""); // "si" | "no" | ""
 
   const [loading, setLoading] = useState(false);
-  // error puede ser un string (error general) o un array de strings
-  // (uno por cada campo que falló la validación)
+  // Texto o lista de errores por campo
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [successEmail, setSuccessEmail] = useState("");
@@ -86,8 +85,7 @@ const Register = () => {
 
     try {
       const body = new FormData();
-      // Se guarda pregunta + respuesta en español para que el admin
-      // la lea igual sea cual sea el idioma del formulario.
+      // Pregunta y respuesta en castellano, para el admin, sea cual sea el idioma
       const combinedMotivacion =
         esArtista === "si"
           ? `${PREGUNTA_PROYECTO} Sí. ${formData.artistQuestion.trim()}`
@@ -111,10 +109,7 @@ const Register = () => {
         setSuccess(true);
         setSuccessEmail(data.data?.email || formData.email);
       } else if (Array.isArray(data.errors) && data.errors.length > 0) {
-        // El backend devuelve un array con el detalle por campo
-        // (ej: { field: "password", message: "La contraseña debe..." }).
-        // Guardamos cada mensaje por separado (sin duplicados) para
-        // poder mostrarlos como una lista, uno por línea.
+        // Un mensaje por campo, sin duplicados
         const mensajes = [...new Set(data.errors.map((err) => err.message))];
         setError(mensajes);
       } else {
@@ -128,7 +123,7 @@ const Register = () => {
     }
   };
 
-  // ── Pantalla de éxito ────────────────────────────────────────────
+  // Enviada
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-20">
@@ -162,7 +157,7 @@ const Register = () => {
     );
   }
 
-  // ── Formulario ───────────────────────────────────────────────────
+  // Formulario
   return (
     <div className="min-h-screen py-16 px-4 relative overflow-hidden">
       {/* Fondo */}
@@ -194,7 +189,7 @@ const Register = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* ── Datos personales ── */}
+            {/* Datos personales */}
             <p className="text-primary-400 text-xs font-semibold uppercase tracking-widest flex items-center gap-2">
               <User size={14} /> {t("register.sectionPersonal")}
             </p>
@@ -284,7 +279,7 @@ const Register = () => {
               />
             </div>
 
-            {/* ── Cuenta ── */}
+            {/* Cuenta */}
             <p className="text-primary-400 text-xs font-semibold uppercase tracking-widest flex items-center gap-2 pt-2">
               <Lock size={14} /> {t("register.sectionAccess")}
             </p>
@@ -352,7 +347,7 @@ const Register = () => {
               </div>
             </div>
 
-            {/* ── Preguntas ── */}
+            {/* Preguntas */}
             <div>
               <label className="block text-gray-400 text-sm mb-2">
                 {t("register.artistQuestion")}
@@ -400,7 +395,7 @@ const Register = () => {
               )}
             </div>
 
-            {/* ── ¿Qué socio te ha invitado? (obligatoria) ── */}
+            {/* Socio que invita */}
             <div>
               <label className="block text-gray-400 text-sm mb-2">
                 {t("register.invitedBy")}
@@ -416,7 +411,7 @@ const Register = () => {
               />
             </div>
 
-            {/* ── ¿A qué evento deseas venir? (obligatoria) ── */}
+            {/* Evento */}
             <div>
               <label className="block text-gray-400 text-sm mb-2">
                 {t("register.eventWanted")}
@@ -432,7 +427,7 @@ const Register = () => {
               />
             </div>
 
-            {/* ── DNI fotos ── */}
+            {/* Fotos del DNI */}
             <p className="text-primary-400 text-xs font-semibold uppercase tracking-widest flex items-center gap-2 pt-2">
               <CreditCard size={14} /> {t("register.sectionIdentity")}
             </p>
@@ -441,7 +436,7 @@ const Register = () => {
             </p>
 
             <div className="max-w-sm mx-auto">
-              {/* Foto de DNI (única cara requerida) */}
+              {/* Solo es obligatoria la cara delantera */}
               <div>
                 <label className="cursor-pointer block">
                   <input
@@ -469,7 +464,7 @@ const Register = () => {
               </div>
             </div>
 
-            {/* ── Submit ── */}
+            {/* Enviar */}
             <div className="pt-2">
               <Button
                 type="submit"

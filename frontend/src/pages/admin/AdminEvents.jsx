@@ -68,9 +68,7 @@ const AdminEvents = () => {
 
     try {
       const params = {};
-      // Pedimos todos los eventos de una vez (límite alto): los filtros
-      // de "próximos"/"pasados" se aplican después en el cliente, así
-      // que paginar en el propio backend aquí daría resultados incompletos.
+      // Todos de una vez: próximos y pasados se filtran en el cliente
       params.limit = 100;
 
       if (filters.status === "draft" || filters.status === "cancelled") {
@@ -129,8 +127,7 @@ const AdminEvents = () => {
     }
   };
 
-  // "Ver todos" lleva a la página pública de eventos, la misma que ven
-  // los socios, para comprobar cómo se muestran.
+  // "Ver todos" abre la página pública de eventos
   const handleViewAll = () => {
     navigate("/eventos");
   };
@@ -191,8 +188,7 @@ const AdminEvents = () => {
     });
   };
 
-  // Mismo criterio que el filtro "Próximos"/"Pasados" de arriba: comparar
-  // fecha_evento contra el inicio del día de hoy.
+  // Pasado = fecha_evento antes de hoy
   const isEventPast = (event) => {
     if (!event.fecha_evento) return false;
     const startOfToday = new Date();
@@ -233,7 +229,7 @@ const AdminEvents = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
         <div>
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestión de eventos</h1>
@@ -255,7 +251,7 @@ const AdminEvents = () => {
         </div>
       </div>
 
-      {/* Alerts */}
+      {/* Avisos */}
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
           {error}
@@ -301,7 +297,7 @@ const AdminEvents = () => {
         </div>
       </div>
 
-      {/* Lista de eventos */}
+      {/* Eventos */}
       {events.length === 0 ? (
         <div className="text-center py-20">
           <Calendar className="mx-auto mb-4 text-gray-600" size={48} />

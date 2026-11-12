@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// ─── Form de contacto ───
+// Formulario
 const ContactForm = () => {
   const { t } = useLanguage();
   const [form, setForm] = useState({ nombre: '', email: '', asunto: '', mensaje: '' });
@@ -163,7 +163,7 @@ const Contacto = () => {
   return (
     <div className="bg-black min-h-screen">
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <section className="relative py-14 md:py-24 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-black z-10" />
@@ -181,7 +181,7 @@ const Contacto = () => {
         </div>
       </section>
 
-      {/* ── Contacto ── */}
+      {/* Contacto */}
       <section className="py-10 bg-black">
         <div className="container-custom px-6">
           <div className="max-w-2xl mx-auto space-y-4">

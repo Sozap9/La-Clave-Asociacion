@@ -4,7 +4,7 @@ import Button from '../components/common/Button';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-// ─── Paso 1: Solicitar email ──────────────────────────────────────────────────
+// Paso 1: pedir el email
 const ForgotStep = ({ onSuccess }) => {
   const [email, setEmail]       = useState('');
   const [loading, setLoading]   = useState(false);
@@ -84,7 +84,7 @@ const ForgotStep = ({ onSuccess }) => {
   );
 };
 
-// ─── Confirmación de email enviado ───────────────────────────────────────────
+// Email enviado
 const EmailSentStep = ({ email }) => (
   <>
     <div className="mb-8 text-center">
@@ -113,7 +113,7 @@ const EmailSentStep = ({ email }) => (
   </>
 );
 
-// ─── Paso 2: Nueva contraseña (llega con ?token=xxx en la URL) ────────────────
+// Paso 2: nueva contraseña (?token= en la URL)
 const ResetStep = ({ token }) => {
   const [password, setPassword]         = useState('');
   const [confirm, setConfirm]           = useState('');
@@ -123,7 +123,6 @@ const ResetStep = ({ token }) => {
   const [error, setError]               = useState('');
   const [success, setSuccess]           = useState(false);
 
-  // Validaciones en tiempo real
   const checks = {
     length:    password.length >= 8,
     uppercase: /[A-Z]/.test(password),
@@ -246,7 +245,7 @@ const ResetStep = ({ token }) => {
           </div>
         </div>
 
-        {/* Checklist de requisitos */}
+        {/* Requisitos */}
         {password.length > 0 && (
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-4 space-y-2">
             {[
@@ -274,7 +273,7 @@ const ResetStep = ({ token }) => {
   );
 };
 
-// ─── Token inválido / expirado ────────────────────────────────────────────────
+// Token inválido o caducado
 const InvalidToken = () => (
   <>
     <div className="mb-8 text-center">
@@ -298,18 +297,16 @@ const InvalidToken = () => (
   </>
 );
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+// Página
 const RecuperarPassword = () => {
   const [step, setStep]         = useState('forgot'); // forgot | sent | reset | invalid
   const [sentEmail, setSentEmail] = useState('');
 
-  // Detectar si venimos con ?token=xxx en la URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get('token');
 
     if (token) {
-      // Verificar rápidamente que el token no está vacío
       if (token.length < 10) {
         setStep('invalid');
       } else {

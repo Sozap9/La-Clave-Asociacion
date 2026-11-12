@@ -10,7 +10,7 @@ const MONTH_NAMES = [
 ];
 
 const formatMes = (mesStr) => {
-  // mesStr comes as 'YYYY-MM-01'
+  // mesStr llega como 'YYYY-MM-01'
   if (!mesStr) return '';
   const [year, month] = mesStr.split('-');
   return `${MONTH_NAMES[parseInt(month, 10) - 1]} ${year}`;
@@ -71,7 +71,7 @@ const AdminStatsPagos = () => {
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
 
-      {/* Stat Cards */}
+      {/* Tarjetas de estadísticas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
         <StatCard
           title="Total Año Actual"

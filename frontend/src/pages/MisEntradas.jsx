@@ -21,12 +21,8 @@ import Pagination from "../components/UI/Pagination";
 import { usePagination } from "../hooks/usePagination";
 import EmptyState from "../components/common/EmptyState";
 
-/**
- * Un evento no se considera "pasado" solo por su fecha — la venta/vigencia
- * de una entrada sigue hasta hora_fin (mismo criterio que usa el backend en
- * createBooking/sendBookingInvitation). Si hora_fin es anterior a
- * hora_evento, el evento cruza la medianoche y termina al día siguiente.
- */
+// Un evento acaba en hora_fin, como en el backend; si hora_fin < hora_evento,
+// acaba al día siguiente
 const esEventoFinalizado = (booking) => {
   if (!booking?.fecha_evento) return false;
   const fechaEvento = new Date(booking.fecha_evento);
@@ -59,17 +55,12 @@ const MisEntradas = () => {
   const [filter, setFilter] = useState("upcoming");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Guardamos si veníamos de un pago exitoso ANTES de limpiar la URL,
-  // para poder seguir reintentando la carga en segundo plano sin
-  // mostrar ningún aviso al socio.
+  // Se lee antes de limpiar la URL
   const [cameFromSuccessfulPayment] = useState(
     () => searchParams.get("pago") === "exitoso"
   );
 
-  // Si venimos de un enlace del email ("Ver mi entrada online"), trae
-  // ?ver={booking.id} — guardamos el id para abrir directamente el QR
-  // de ESA reserva en cuanto lleguen las reservas, en vez de dejar que
-  // el socio tenga que buscarla a mano en la lista.
+  // ?ver={id} viene del email: se abre el QR de esa reserva
   const [verBookingId] = useState(() => searchParams.get("ver"));
 
   // Modal Evento
@@ -86,18 +77,12 @@ const MisEntradas = () => {
   const [cancelling, setCancelling] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(false);
 
-  // Reanudar pago de una reserva "esperando_pago"
+  // Reanudar el pago de una reserva esperando_pago
   const [payingBookingId, setPayingBookingId] = useState(null);
   const [payError, setPayError] = useState("");
 
-  // Si el usuario le da "atrás" después de pulsar "Pagar ahora" (antes de
-  // que llegue a cargar Stripe), el navegador a veces restaura esta página
-  // desde el caché (bfcache) en vez de recargarla. Como nunca volvíamos a
-  // poner payingBookingId a null (dábamos por hecho que la página se iba),
-  // el botón se quedaba congelado en "Redirigiendo..." sin poder volver a
-  // pulsarlo. El evento 'pageshow' con persisted=true detecta justo ese
-  // caso y libera el botón. También refrescamos las reservas por si el
-  // estado cambió mientras tanto.
+  // Al volver atrás desde Stripe, el navegador puede restaurar la página
+  // desde la bfcache con el botón en "Redirigiendo...": pageshow lo libera
   useEffect(() => {
     const handlePageShow = (event) => {
       if (event.persisted) {
@@ -110,8 +95,7 @@ const MisEntradas = () => {
     // eslint-disable-next-line
   }, []);
 
-  // Limpiamos los parámetros ?pago=... / ?ver=... de la URL en cuanto
-  // entramos, para que no queden visibles en la barra de direcciones.
+  // Quita ?pago y ?ver de la URL
   useEffect(() => {
     if (searchParams.get("pago") || searchParams.get("ver")) {
       setSearchParams({}, { replace: true });
@@ -123,10 +107,7 @@ const MisEntradas = () => {
     fetchBookings();
   }, []);
 
-  // Si volvemos de un pago exitoso, el webhook de Stripe puede tardar
-  // unos segundos en confirmar la reserva — reintentamos la carga en
-  // segundo plano un par de veces, sin mostrar nada al socio, para que
-  // la reserva aparezca como "Confirmada" sin que tenga que recargar.
+  // Tras pagar, el webhook tarda unos segundos: se recarga un par de veces
   useEffect(() => {
     if (!cameFromSuccessfulPayment) return;
 
@@ -141,10 +122,6 @@ const MisEntradas = () => {
     applyFilters();
   }, [filter, bookings, searchTerm]);
 
-  // Si llegamos desde el enlace "Ver mi entrada online" del email
-  // (?ver={booking.id}), abrimos directamente el modal del QR de esa
-  // reserva en cuanto tengamos las reservas cargadas, en vez de dejar
-  // que el socio tenga que encontrarla a mano en la lista.
   useEffect(() => {
     if (!verBookingId || bookings.length === 0) return;
 
@@ -295,9 +272,7 @@ const MisEntradas = () => {
     setPayError("");
     setPayingBookingId(booking.id);
 
-    // Salvaguarda: si por lo que sea la redirección no llega a completarse
-    // (red lenta, la pestaña sigue viva más de la cuenta, etc.), liberamos
-    // el botón a los 10s en vez de dejarlo bloqueado indefinidamente.
+    // Si la redirección no llega, el botón se libera a los 10 s
     const safetyTimeout = setTimeout(() => {
       setPayingBookingId((current) => (current === booking.id ? null : current));
     }, 10000);
@@ -307,8 +282,6 @@ const MisEntradas = () => {
       const result = await retryBookingPayment(booking.id, token);
 
       if (result.success && result.data?.checkout_url) {
-        // Redirigimos a la nueva sesión de pago de Stripe, igual que
-        // en la primera compra
         window.location.href = result.data.checkout_url;
       } else {
         clearTimeout(safetyTimeout);
@@ -376,8 +349,7 @@ const MisEntradas = () => {
 
   const canCancel = (booking) => {
     const isFuture = !esEventoFinalizado(booking);
-    // Una reserva pendiente de pago se puede cancelar siempre (no depende
-    // de si el evento ya pasó — nunca llegó a confirmarse ni a cobrarse)
+    // Las esperando_pago se pueden cancelar siempre
     if (booking.estado === "esperando_pago") return true;
     return booking.estado === "confirmada" && isFuture;
   };
@@ -396,14 +368,14 @@ const MisEntradas = () => {
     ).length,
   };
 
-  // Filtros con contadores para FilterBar
+  // Filtros con su contador
   const entradaFilters = [
     { value: "upcoming", label: "Próximos", count: counts.upcoming },
     { value: "past",     label: "Pasados",  count: counts.past     },
     { value: "all",      label: "Todos",    count: counts.all      },
   ];
 
-  // Mensaje del estado vacío según filtro activo
+  // Texto vacío según el filtro
   const emptyTitle = searchTerm
     ? "No se encontraron eventos"
     : filter === "upcoming"
@@ -424,7 +396,7 @@ const MisEntradas = () => {
   return (
     <div className="min-h-screen py-20 px-4 bg-black">
       <div className="container-custom max-w-6xl">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           <div>
             <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Mis Entradas</h1>
@@ -466,10 +438,10 @@ const MisEntradas = () => {
           </div>
         )}
 
-        {/* Loading */}
+        {/* Cargando */}
         {loading && <Loader size="lg" />}
 
-        {/* Lista de entradas */}
+        {/* Entradas */}
         {!loading && filteredBookings.length > 0 && (
           <div className="space-y-4">
             {paginatedBookings.map((booking) => (
@@ -600,14 +572,14 @@ const MisEntradas = () => {
         )}
       </div>
 
-      {/* Modal del Evento */}
+      {/* Modal del evento */}
       <EventDetail
         event={selectedEvent}
         isOpen={showEventModal}
         onClose={() => setShowEventModal(false)}
       />
 
-      {/* Modal QR Code */}
+      {/* Modal del QR */}
       {showQRModal && selectedBooking && (
         <>
           <div
@@ -650,10 +622,10 @@ const MisEntradas = () => {
                         alt="QR Code"
                         className="w-full h-auto"
                         onError={(e) => {
-                          console.error("❌ Error cargando QR:", e);
-                          console.error("📍 URL completa:", e.target.src);
+                          console.error("Error cargando QR:", e);
+                          console.error("URL completa:", e.target.src);
                           console.error(
-                            "📍 QR path en BD:",
+                            "QR path en BD:",
                             selectedBooking.qr_code_url
                           );
                           e.target.style.display = "none";
@@ -711,7 +683,7 @@ const MisEntradas = () => {
         </>
       )}
 
-      {/* Modal Cancelar Reserva */}
+      {/* Modal de cancelar */}
       {showCancelModal && selectedBooking && (
         <>
           <div

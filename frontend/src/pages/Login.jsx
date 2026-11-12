@@ -16,7 +16,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  // Si venimos de una redirección por sesión expirada/token inválido, mostrar el motivo
+  // Motivo de la redirección (sesión caducada o token inválido)
   useEffect(() => {
     const authMessage = sessionStorage.getItem('authMessage');
     if (authMessage) {

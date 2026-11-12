@@ -56,7 +56,7 @@ const AdminStatsGenerales = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8">
         <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Estadísticas Generales</h1>
         <p className="text-gray-400 text-sm md:text-lg">Vista general completa del sistema</p>
@@ -73,7 +73,7 @@ const AdminStatsGenerales = () => {
 
       {stats && (
         <>
-          {/* Usuarios y Socios */}
+          {/* Usuarios y socios */}
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
               <Users className="w-6 h-6 text-primary-300" />
@@ -282,7 +282,7 @@ const AdminStatsGenerales = () => {
   );
 };
 
-// Componente reutilizable para tarjetas de estadísticas
+// Tarjeta de estadística
 const StatCard = ({ title, value, icon: Icon, color, subtitle }) => {
   return (
     <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 hover:border-primary-500/50 transition-all">

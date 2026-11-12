@@ -285,7 +285,7 @@ const AdminGalleryImages = () => {
   return (
     <div className="min-h-screen bg-black pt-24 pb-12">
       <div className="container mx-auto px-6 space-y-8">
-        {/* Header */}
+        {/* Cabecera */}
         <button
           onClick={() => navigate('/admin/galeria')}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
@@ -329,7 +329,7 @@ const AdminGalleryImages = () => {
           </div>
         </div>
 
-        {/* Barra de Acciones en Lote */}
+        {/* Acciones en lote */}
         {selectedImages.length > 0 && (
           <BulkActionsBar
             selectedCount={selectedImages.length}
@@ -344,7 +344,7 @@ const AdminGalleryImages = () => {
           />
         )}
 
-        {/* Mensajes - MÁS ESPACIO (space-y-4) */}
+        {/* Mensajes */}
         <div className="space-y-4">
           {error && (
             <Alert type="error" message={error} onClose={() => setError('')} />
@@ -401,7 +401,7 @@ const AdminGalleryImages = () => {
       </div>
 
       <div className="container mx-auto px-6 mt-8">
-        {/* Grid de Imágenes */}
+        {/* Imágenes */}
         {filteredImages.length === 0 ? (
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
             <Image size={64} className="text-gray-600 mx-auto mb-4" />
@@ -462,9 +462,7 @@ const AdminGalleryImages = () => {
   );
 };
 
-/**
- * Barra de Acciones - SOLO GRIS Y MORADO
- */
+// Barra de acciones
 const BulkActionsBar = ({ 
   selectedCount, 
   onSelectAll, 
@@ -543,9 +541,7 @@ const BulkActionsBar = ({
   );
 };
 
-/**
- * Card de Imagen — imagen + badges + botón Editar
- */
+// Tarjeta de imagen
 const ImageCard = ({ 
   image, 
   isSelected,
@@ -561,7 +557,7 @@ const ImageCard = ({
     <div className={`bg-[#1a1a1a] rounded-xl overflow-hidden relative border transition-all ${
       isSelected ? 'ring-2 ring-primary-600 border-primary-500/50' : 'border-[#262626] hover:border-primary-500/30'
     }`}>
-      {/* Checkbox selección */}
+      {/* Selección */}
       {isSelectionMode && (
         <div className="absolute top-2 left-2 z-10">
           <button

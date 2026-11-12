@@ -17,7 +17,7 @@ const AdminPaymentsMonthly = () => {
   const [exporting,   setExporting]   = useState(false);
   const [exportError, setExportError] = useState('');
 
-  // Mes seleccionado para el export — Date object, por defecto mes actual
+  // Mes a exportar, por defecto el actual
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
@@ -82,7 +82,6 @@ const AdminPaymentsMonthly = () => {
     return ((current - previous) / previous * 100).toFixed(1);
   };
 
-  // Label del mes seleccionado para el texto informativo
   const selectedLabel = selectedDate.toLocaleDateString('es-ES', {
     month: 'long',
     year: 'numeric',
@@ -105,7 +104,7 @@ const AdminPaymentsMonthly = () => {
 
       {data && (
         <>
-          {/* ── KPI Cards ── */}
+          {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-lg p-6 hover:border-primary-500/50 transition-all">
               <div className="flex items-center gap-3 mb-2">
@@ -156,12 +155,12 @@ const AdminPaymentsMonthly = () => {
             </div>
           </div>
 
-          {/* ── Evolución mensual ── */}
+          {/* Evolución mensual */}
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 mb-8 hover:border-primary-500/50 transition-all">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <h2 className="text-xl font-bold text-white">Evolucion Mensual</h2>
 
-              {/* Month-year picker + botón exportar */}
+              {/* Mes y exportar */}
               <div className="flex items-center gap-2">
                 <div className="month-year-picker-wrapper">
                   <DatePicker
@@ -208,13 +207,11 @@ const AdminPaymentsMonthly = () => {
               </div>
             )}
 
-            {/* Info del mes seleccionado */}
             <p className="text-gray-500 text-xs mb-4 capitalize">
               El PDF se generará con los datos de{' '}
               <span className="text-primary-300 font-medium">{selectedLabel}</span>
             </p>
 
-            {/* Barras de evolución */}
             {data.monthly_data?.length > 0 ? (
               <div className="space-y-4">
                 {data.monthly_data.map((month, index) => {
@@ -251,7 +248,7 @@ const AdminPaymentsMonthly = () => {
             )}
           </div>
 
-          {/* ── Desglose por tipo de pago ── */}
+          {/* Desglose por tipo de pago */}
           {data.by_payment_type?.length > 0 && (
             <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6">
               <h2 className="text-xl font-bold text-white mb-6">Desglose por Tipo de Pago</h2>
@@ -275,7 +272,7 @@ const AdminPaymentsMonthly = () => {
         </>
       )}
 
-      {/* Estilos del month-year picker */}
+      {/* Estilos del selector de mes */}
       <style>{`
         .month-year-picker-wrapper .react-datepicker-wrapper,
         .month-year-picker-wrapper .react-datepicker__input-container {

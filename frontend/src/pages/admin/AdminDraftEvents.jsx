@@ -38,7 +38,7 @@ const AdminDraftEvents = () => {
     fetchDraftEvents();
   }, []);
 
-  // debounce búsqueda
+  // Búsqueda con debounce
   useEffect(() => {
     const t = setTimeout(() => {
       fetchDraftEvents();
@@ -128,8 +128,7 @@ const AdminDraftEvents = () => {
     });
   };
 
-  // Mismo criterio que en AdminEvents.jsx: comparar fecha_evento contra
-  // el inicio del día de hoy.
+  // Pasado = fecha_evento antes de hoy (como en AdminEvents.jsx)
   const isEventPast = (event) => {
     if (!event.fecha_evento) return false;
     const startOfToday = new Date();
@@ -141,7 +140,7 @@ const AdminDraftEvents = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
         <div>
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Eventos en borrador</h1>
@@ -171,7 +170,7 @@ const AdminDraftEvents = () => {
         </div>
       </div>
 
-      {/* Alerts */}
+      {/* Avisos */}
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
           {error}
@@ -293,9 +292,7 @@ const AdminDraftEvents = () => {
                   {
                     icon: <Users size={14} className="text-primary-300" />,
                     label: "Asistencia",
-                    // Evento futuro/en curso: entradas confirmadas hasta
-                    // ahora. Evento ya pasado: quiénes asistieron de
-                    // verdad (check-in por QR).
+                    // Futuro: confirmadas. Pasado: asistentes (check-in por QR).
                     value: `${
                       (isPast ? event.entradas_asistidas : event.confirmed_bookings) || 0
                     }/${event.aforo_maximo || 0}`,

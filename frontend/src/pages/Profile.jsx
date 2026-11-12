@@ -40,7 +40,7 @@ const Profile = () => {
       setUserData(profileData);
       
     } catch (error) {
-      console.error('❌ Error al cargar perfil:', error);
+      console.error('Error al cargar perfil:', error);
       setError(error.response?.data?.message || 'Error al cargar perfil');
     } finally {
       setLoading(false);
@@ -110,20 +110,19 @@ const Profile = () => {
     <div className="min-h-screen p-4 md:p-8 bg-[#0a0a0a]">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header */}
+        {/* Cabecera */}
         <div className="mb-8">
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl"> Mi Perfil</h1>
           <p className="text-gray-400 text-sm md:text-lg"> Información de tu cuenta.</p>
         </div>
 
-        {/* Card Principal */}
+        {/* Tarjeta principal */}
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl overflow-hidden shadow-2xl">
           
-          {/* Header con avatar y nombre */}
+          {/* Avatar y nombre */}
           <div className="relative p-4 sm:p-8 border-b border-[#262626]">
             <div className="flex flex-col lg:flex-row items-start gap-8">
               
-              {/* Avatar con badge */}
               <div className="relative flex-shrink-0">
                 <div className="w-20 h-20 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-2xl sm:text-4xl font-bold shadow-2xl">
                   {userData.avatar_url ? (
@@ -140,23 +139,20 @@ const Profile = () => {
                   )}
                 </div>
                 
-                {/* Badge simple - sin funcionalidad de click */}
                 <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 ${config.bgColor} ${config.borderColor} border-2 rounded-full px-3 py-1 flex items-center gap-1.5 shadow-lg backdrop-blur-sm whitespace-nowrap`}>
                   <RoleIcon className="w-4 h-4 flex-shrink-0" />
                   <span className="text-xs font-semibold text-white">{config.label}</span>
                 </div>
               </div>
 
-              {/* Información */}
               <div className="flex-1 w-full">
                 <div>
                   <h2 className="text-xl sm:text-3xl font-bold text-white mb-2">
                     {userData.nombre || 'Usuario'} {userData.apellidos || ''}
                   </h2>
-                  {/* Línea más fina y solo morado */}
                   <div className="h-0.5 w-20 bg-primary-500 rounded-full mb-4"></div>
                   
-                  {/* Botones debajo del nombre */}
+                  {/* Botones */}
                   <div className="flex flex-wrap gap-3">
                     <button
                       onClick={() => setShowEditModal(true)}
@@ -178,11 +174,10 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Información del perfil */}
+          {/* Datos */}
           <div className="p-4 sm:p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               
-              {/* Email */}
               <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Mail className="w-5 h-5 text-primary-400" />
@@ -193,7 +188,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Teléfono */}
               <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Phone className="w-5 h-5 text-primary-400" />
@@ -206,7 +200,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Fecha de Nacimiento */}
               <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-5 h-5 text-primary-400" />
@@ -225,7 +218,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* DNI */}
               <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                 <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
                   <CreditCard className="w-5 h-5 text-primary-400" />
@@ -238,7 +230,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Miembro desde */}
               {userData.created_at && (
                 <div className="flex items-start gap-4 p-4 rounded-lg bg-[#0a0a0a] border border-[#262626]">
                   <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center flex-shrink-0">
@@ -259,7 +250,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Call-to-Action grande para usuarios básicos - ÚNICA OPCIÓN */}
+          {/* Llamada a hacerse socio (usuarios básicos) */}
           {isBasicUser && (
             <div className="p-8 pt-0">
               <div className="bg-gradient-to-br from-primary-600/30 via-primary-700/20 to-primary-800/30 backdrop-blur-sm rounded-xl p-6 border border-primary-500/20 text-center">

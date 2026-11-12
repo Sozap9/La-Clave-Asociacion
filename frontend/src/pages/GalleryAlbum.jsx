@@ -6,7 +6,7 @@ import Loader from '../components/common/Loader';
 import Alert from '../components/common/Alert';
 import EmptyState from '../components/common/EmptyState';
 
-// URL base sin /api para servir archivos estáticos
+// Los archivos se sirven sin /api
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
 
 const GalleryAlbum = () => {
@@ -124,7 +124,7 @@ const GalleryAlbum = () => {
               )}
             </div>
             
-            {/* Badge de destacado solo si es 1 o true */}
+            {/* destacado puede llegar como 1 o true */}
             {(folder.destacado === 1 || folder.destacado === true) && (
               <div className="bg-primary-600/20 border border-primary-500/50 px-4 py-2 rounded-lg">
                 <span className="text-primary-400 font-semibold">DESTACADO</span>
@@ -184,13 +184,12 @@ const GalleryAlbum = () => {
           />
         )}
 
-        {/* Grid de imágenes */}
+        {/* Imágenes */}
         {images.length === 0 ? (
           <EmptyState icon={Image} title="No hay imágenes en este álbum" />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {images.map((image, index) => {
-              // Construir URL completa
               const imageUrl = image.thumbnail_url || image.imagen_url;
               const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
               
@@ -245,7 +244,6 @@ const GalleryAlbum = () => {
           {/* Imagen y detalles */}
           <div className="max-w-6xl w-full">
             {(() => {
-              // Construir URL completa para modal
               const modalImageUrl = selectedImage.imagen_url.startsWith('http') 
                 ? selectedImage.imagen_url 
                 : `${API_BASE_URL}${selectedImage.imagen_url}`;

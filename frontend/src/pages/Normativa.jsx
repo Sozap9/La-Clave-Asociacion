@@ -23,23 +23,13 @@ const NORMAS_ICONS = [
   IconAviso,
 ];
 
-/**
- * Página de Normas con el mismo diseño que el cartel del local:
- * marco "tech" con esquinas, llave y título arriba, las 7 normas con su
- * icono en un octógono, el número y una línea vertical, y la frase final.
- *
- * Tipografías, las más parecidas a las del cartel:
- *  - font-brand (Orbitron): "LACLAVE981" y "NORMAS"
- *  - font-label (Saira Condensed): subtítulo, frase final, web y laterales
- *  - font-num (Saira Condensed, extra negrita): números de las normas
- *  - font-poster (Fira Sans): título y texto de cada norma
- */
+// Normas con el diseño del cartel del local (fuentes en index.css)
 
 const POSTER_BG =
   'radial-gradient(120% 80% at 50% 0%, #1d1b1b 0%, #141313 55%, #0e0d0d 100%)';
 const TEXT = '#ece9e6';
 
-/* ---------- Marco decorativo (se adapta al tamaño del cartel) ---------- */
+// Marco del cartel, dibujado a la medida
 const PosterFrame = ({ width: w, height: h }) => {
   if (!w || !h) return null;
 
@@ -117,7 +107,7 @@ const PosterFrame = ({ width: w, height: h }) => {
   );
 };
 
-/* ---------- Octógono con el icono de cada norma ---------- */
+// Octógono con el icono de la norma
 const IconBadge = ({ Icon }) => (
   <div className="relative flex-shrink-0 w-12 h-12 sm:w-[60px] sm:h-[60px] flex items-center justify-center" style={{ color: TEXT }}>
     <svg viewBox="0 0 60 60" className="absolute inset-0 w-full h-full" aria-hidden="true">
@@ -133,7 +123,7 @@ const IconBadge = ({ Icon }) => (
   </div>
 );
 
-/* ---------- Etiqueta vertical "LACLAVE981" de los laterales ---------- */
+// Etiqueta vertical de los laterales
 const SideLabel = ({ side }) => (
   <div
     className={`hidden sm:flex absolute top-1/2 -translate-y-1/2 border border-white/40 rounded-full px-[5px] py-3 ${
@@ -152,7 +142,7 @@ const Normativa = () => {
   const { t, language } = useLanguage();
   const normas = t('normativa.normas') || [];
 
-  // Tamaño del cartel, para dibujar el marco a la medida
+  // Tamaño del cartel para el marco
   const posterRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
@@ -186,7 +176,7 @@ const Normativa = () => {
             <div className="mt-3 flex justify-center">
               <LaClaveWordmark className="h-4 sm:h-5 md:h-6 w-auto" />
             </div>
-            {/* "NORMAS" con las letras del cartel; en otros idiomas, texto en Orbitron */}
+            {/* En castellano, las letras del cartel; en otros idiomas, texto */}
             <h1 className="mt-2 sm:mt-3 flex justify-center" style={{ color: TEXT }}>
               {language === 'es' ? (
                 <>

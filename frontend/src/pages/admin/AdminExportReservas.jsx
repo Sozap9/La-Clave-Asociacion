@@ -19,7 +19,6 @@ const AdminExportReservas = () => {
     fetchEvents();
   }, []);
 
-  // Recalcula el dropdown cuando cambia el filtro de fecha
   useEffect(() => {
     if (!allEvents.length) return;
 
@@ -35,14 +34,14 @@ const AdminExportReservas = () => {
 
       setVisibleEvents(matched);
 
-      // Si solo hay un resultado, seleccionarlo automáticamente
+      // Con un solo resultado, se selecciona
       if (matched.length === 1) {
         setFilters((prev) => ({ ...prev, event_id: String(matched[0].id) }));
       } else {
         setFilters((prev) => ({ ...prev, event_id: "" }));
       }
     } else {
-      // Sin filtro: top 10 más recientes (el array ya viene ORDER BY fecha_evento DESC)
+      // Sin filtro, los 10 más recientes (ya vienen ordenados)
       setVisibleEvents(allEvents.slice(0, 10));
     }
   }, [dateFilter, allEvents]);
@@ -96,7 +95,6 @@ const AdminExportReservas = () => {
   const showingCount = visibleEvents.length;
   const isDateFiltering = dateFilter !== null;
 
-  // Nombre del evento seleccionado para mostrarlo como info al usuario
   const selectedEventName =
     filters.event_id
       ? allEvents.find((e) => String(e.id) === filters.event_id)?.titulo || ""
@@ -145,7 +143,7 @@ const AdminExportReservas = () => {
             Filtros (opcional)
           </h4>
 
-          {/* Dropdown top 10 más recientes */}
+          {/* 10 más recientes */}
           <div>
             <label className="block text-white font-medium mb-2">
               <Calendar className="w-4 h-4 inline mr-2 text-primary-300" />
@@ -182,7 +180,7 @@ const AdminExportReservas = () => {
             )}
           </div>
 
-          {/* DatePicker para buscar por fecha de evento */}
+          {/* Buscar por fecha */}
           <div className="border-t border-[#262626] pt-5">
             <label className="block text-white font-medium mb-2">
               <Search className="w-4 h-4 inline mr-2 text-primary-300" />

@@ -52,7 +52,7 @@ const ESTADO_CONFIG = {
   },
 };
 
-// ── Modal Detalle ────────────────────────────────────────────────────────────
+// Modal de detalle
 const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
   const [motivoRechazo, setMotivoRechazo] = useState("");
   const [showReject, setShowReject] = useState(false);
@@ -97,7 +97,7 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Header */}
+        {/* Cabecera */}
         <div className="flex items-center justify-between p-6 border-b border-[#262626]">
           <div>
             <h2 className="text-xl font-bold text-white">
@@ -166,7 +166,7 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
             </div>
           </section>
 
-          {/* Respuestas del formulario de registro */}
+          {/* Respuestas del registro */}
           <section>
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Respuestas del registro
@@ -186,7 +186,7 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
             </div>
           </section>
 
-          {/* DNI Imágenes */}
+          {/* Fotos del DNI */}
           <section>
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Documento de identidad
@@ -215,7 +215,7 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
             </div>
           </section>
 
-          {/* Info revisión */}
+          {/* Revisión */}
           {solicitud.estado !== "pendiente" && (
             <section className="bg-[#111] border border-[#262626] rounded-xl p-4 text-sm">
               <p className="text-gray-500 text-xs mb-2">
@@ -240,7 +240,7 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
             </div>
           )}
 
-          {/* Acciones — solo si está pendiente */}
+          {/* Acciones, solo si está pendiente */}
           {solicitud.estado === "pendiente" && (
             <section className="space-y-3 pt-2 border-t border-[#262626]">
               {!showReject ? (
@@ -299,7 +299,7 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
   );
 };
 
-// ── Página principal ─────────────────────────────────────────────────────────
+// Página
 const AdminSolicitudes = () => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1 });
@@ -317,7 +317,6 @@ const AdminSolicitudes = () => {
   const [selected, setSelected] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // ── Cargar datos ──────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -340,7 +339,6 @@ const AdminSolicitudes = () => {
     load();
   }, [load]);
 
-  // ── Handlers ──────────────────────────────────────────────────────
   const handleEstado = (estado) =>
     setFilters((f) => ({ ...f, estado, page: 1 }));
 
@@ -370,7 +368,7 @@ const AdminSolicitudes = () => {
       const res = await getSolicitudDetails(id);
       if (res.success) setSelected(res.data);
     } catch {
-      /* usa los datos de la lista si falla */
+      /* si falla, se usan los datos de la lista */
     }
   };
 
@@ -389,7 +387,7 @@ const AdminSolicitudes = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
         <div>
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
@@ -530,7 +528,7 @@ const AdminSolicitudes = () => {
         itemLabel="solicitudes"
       />
 
-      {/* Modal detalle */}
+      {/* Detalle */}
       {selected && (
         <SolicitudModal
           solicitud={selected}
@@ -540,7 +538,7 @@ const AdminSolicitudes = () => {
         />
       )}
 
-      {/* Confirm eliminar */}
+      {/* Confirmar borrado */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
           <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-6 max-w-sm w-full text-center space-y-4">

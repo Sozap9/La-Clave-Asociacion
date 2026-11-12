@@ -10,7 +10,7 @@ import DatePickerInput from '../../components/common/DatePickerInput';
 import Pagination from '../../components/UI/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 
-// ✅ CORRECCIÓN: Obtener URL base sin /api
+// Los archivos se sirven sin /api
 const API_BASE_URL = import.meta.env.VITE_API_URL.replace('/api', '');
 
 const AdminGallery = () => {
@@ -78,7 +78,7 @@ const AdminGallery = () => {
         return;
       }
 
-      // Si hay archivo de portada, subirlo y establecerlo como cover
+      // Portada: se sube y se marca como cover
       if (coverFile && folderId) {
         try {
           const imageFormData = new FormData();
@@ -94,7 +94,7 @@ const AdminGallery = () => {
           }
         } catch (coverErr) {
           console.warn('Error subiendo portada:', coverErr);
-          // No bloqueamos: el álbum ya se guardó
+          // El álbum ya está guardado; no se bloquea
         }
       }
 
@@ -131,7 +131,6 @@ const AdminGallery = () => {
     navigate(`/admin/galeria/${folder.id}/imagenes`);
   };
 
-  // Filtrar álbumes
   const filteredFolders = folders.filter(folder => {
     const matchesSearch = !searchTerm.trim() ||
       folder.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -155,7 +154,7 @@ const AdminGallery = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
         <div>
           <h1 className="text-gradient mb-2 text-2xl md:text-4xl">Gestionar Álbumes</h1>
@@ -180,9 +179,8 @@ const AdminGallery = () => {
             <Alert type="success" message={success} onClose={() => setSuccess('')} />
           )}
 
-          {/* Filtros y Búsqueda */}
+          {/* Filtros */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            {/* Búsqueda por nombre */}
             <div className="relative w-full sm:w-80">
               <input
                 type="text"
@@ -208,7 +206,7 @@ const AdminGallery = () => {
               )}
             </div>
 
-            {/* Filtro por fecha (mes/año) */}
+            {/* Mes y año */}
             <div className="w-full sm:w-44">
               <DatePickerInput
                 selected={dateFilter}
@@ -234,7 +232,7 @@ const AdminGallery = () => {
         </div>
       </div>
 
-      {/* Grid de álbumes */}
+      {/* Álbumes */}
       {filteredFolders.length === 0 ? (
         <div className="bg-[#1a1a1a] border border-[#262626] rounded-xl p-12 text-center">
           <Image size={64} className="text-gray-600 mx-auto mb-4" />
@@ -255,7 +253,6 @@ const AdminGallery = () => {
         <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {paginatedFolders.map((folder) => {
-            // ✅ CORRECCIÓN: Construir URL completa
             const coverImageUrl = folder.imagen_portada_url 
               ? (folder.imagen_portada_url.startsWith('http') 
                   ? folder.imagen_portada_url 
@@ -267,7 +264,7 @@ const AdminGallery = () => {
                 key={folder.id}
                 className="bg-[#1a1a1a] border border-[#262626] rounded-xl overflow-hidden hover:border-primary-500/50 transition-all"
               >
-                {/* Imagen de portada */}
+                {/* Portada */}
                 <div className="h-32 bg-[#262626] flex items-center justify-center relative overflow-hidden">
                   {coverImageUrl ? (
                     <img
@@ -284,18 +281,15 @@ const AdminGallery = () => {
                   )}
                   
                   <div className="absolute top-2 right-2 flex gap-2">
-                    {/* Badge de visibilidad */}
                     <div className="px-2 py-1 rounded text-white text-xs font-semibold bg-primary-600">
                       {folder.visible ? 'VISIBLE' : 'OCULTO'}
                     </div>
                     
-                    {/* Badge de fotos */}
                     <div className="bg-black/60 px-2 py-1 rounded text-white text-xs">
                       {folder.total_imagenes || 0} fotos
                     </div>
                   </div>
                   
-                  {/* Badge destacado */}
                   {folder.destacado === 1 && (
                     <div className="absolute top-2 left-2 bg-primary-600 px-2 py-1 rounded text-white text-xs font-semibold">
                       DESTACADO
@@ -357,7 +351,7 @@ const AdminGallery = () => {
         </div>
       )}
 
-      {/* Modal de Crear/Editar Álbum */}
+      {/* Crear o editar álbum */}
       {showModal && (
         <FolderModal
           folder={editingFolder}

@@ -12,13 +12,13 @@ import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import DatePickerInput from "../../components/common/DatePickerInput";
 
-// Fila vacía nueva para el formulario de tandas (sin id: aún no existe en BD)
+// Tanda nueva, sin id hasta guardarla
 const nuevaTanda = () => ({
   id: null,
   nombre: "",
   precio: "",
-  fecha_inicio: null, // Date | null — solo fecha, la hora va aparte
-  hora_inicio: "", // string "HH:MM", mismo patrón que hora_inicio/hora_fin del evento
+  fecha_inicio: null, // Date, solo el día
+  hora_inicio: "", // "HH:MM"
   activada_manualmente: false,
 });
 
@@ -80,9 +80,7 @@ const AdminEventForm = () => {
         setSelectedDate(fecha);
         setImagePreview(event.imagen_cartel_url || event.imagen_url);
 
-        // Tandas ya guardadas — fecha_hora_inicio viene "YYYY-MM-DD HH:MM:SS"
-        // desde MySQL; se separa en fecha (Date, para el calendario) y
-        // hora_inicio (string "HH:MM", campo de texto aparte).
+        // fecha_hora_inicio se separa en día (calendario) y hora (texto)
         setTandas(
           (event.tandas || []).map((t) => {
             const dt = t.fecha_hora_inicio
@@ -113,15 +111,12 @@ const AdminEventForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Manejar blur (cuando el usuario sale del campo) para autocompletar minutos
-  // Autocompletar hora_inicio cuando se escriben 2 dígitos
+  // Con 2 dígitos se completa la hora: "23" → "23:00"
   const handleHoraInicioChange = (e) => {
     let value = e.target.value;
 
-    // Solo permitir números y dos puntos
     value = value.replace(/[^0-9:]/g, "");
 
-    // Si escribe 2 dígitos (ej: "23"), añadir :00
     if (value.length === 2 && !value.includes(":")) {
       const hora = parseInt(value);
       if (hora >= 0 && hora <= 23) {
@@ -132,14 +127,12 @@ const AdminEventForm = () => {
     setFormData((prev) => ({ ...prev, hora_inicio: value }));
   };
 
-  // Autocompletar hora_fin cuando se escriben 2 dígitos
+  // Igual para hora_fin
   const handleHoraFinChange = (e) => {
     let value = e.target.value;
 
-    // Solo permitir números y dos puntos
     value = value.replace(/[^0-9:]/g, "");
 
-    // Si escribe 2 dígitos (ej: "14"), añadir :00
     if (value.length === 2 && !value.includes(":")) {
       const hora = parseInt(value);
       if (hora >= 0 && hora <= 23) {
@@ -177,7 +170,7 @@ const AdminEventForm = () => {
     }
   };
 
-  // ── Tandas ──────────────────────────────────────────────────────
+  // Tandas
   const handleAddTanda = () => {
     setTandas((prev) => [...prev, nuevaTanda()]);
   };
@@ -192,8 +185,7 @@ const AdminEventForm = () => {
     );
   };
 
-  // Autocompletar hora de tanda cuando se escriben 2 dígitos (mismo
-  // patrón que handleHoraInicioChange/handleHoraFinChange del evento)
+  // Igual para la hora de cada tanda
   const handleTandaHoraChange = (index, e) => {
     let value = e.target.value;
     value = value.replace(/[^0-9:]/g, "");
@@ -208,8 +200,7 @@ const AdminEventForm = () => {
     handleTandaChange(index, "hora_inicio", value);
   };
 
-  // Solo tiene sentido en modo edición y para tandas ya guardadas (con id):
-  // fuerza esa tanda como vigente ya mismo, sin esperar a su hora.
+  // Forzar una tanda guardada como vigente ya (solo al editar)
   const handleActivarTanda = async (tandaId) => {
     setTandaActionLoading(tandaId);
     try {
@@ -252,7 +243,6 @@ const AdminEventForm = () => {
     try {
       const formDataToSend = new FormData();
 
-      // Mapear a los nombres de la BD
       formDataToSend.append("titulo", formData.nombre);
       formDataToSend.append("descripcion", formData.descripcion);
       formDataToSend.append("fecha_evento", formData.fecha);
@@ -268,10 +258,7 @@ const AdminEventForm = () => {
         formDataToSend.append("imagen", formData.imagen);
       }
 
-      // Tandas: solo se envían las filas completas (nombre + precio +
-      // fecha + hora). fecha_inicio es un Date (solo día) y hora_inicio
-      // es texto "HH:MM" (mismo patrón que hora_inicio/hora_fin del
-      // evento); se combinan en "YYYY-MM-DD HH:MM:SS" para MySQL.
+      // Solo tandas completas; día y hora se unen en "YYYY-MM-DD HH:MM:SS"
       const combinarFechaHora = (date, horaTexto) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -316,7 +303,7 @@ const AdminEventForm = () => {
 
   return (
     <div className="p-4 md:p-8 bg-black min-h-screen">
-      {/* Header */}
+      {/* Cabecera */}
       <div className="mb-8">
         <h1 className="text-gradient mb-2 text-2xl md:text-4xl">
           {isEditMode ? "Editar Evento" : "Crear Evento"}
@@ -328,7 +315,7 @@ const AdminEventForm = () => {
         </p>
       </div>
 
-      {/* Alertas */}
+      {/* Avisos */}
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
           {error}
@@ -341,7 +328,6 @@ const AdminEventForm = () => {
         </div>
       )}
 
-      {/* Formulario */}
       <form
         onSubmit={handleSubmit}
         className="card p-4 sm:p-8 space-y-6 max-w-4xl mx-auto"
@@ -371,7 +357,7 @@ const AdminEventForm = () => {
           />
         </div>
 
-        {/* Fecha y Horarios */}
+        {/* Fecha y horario */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div>
             <label className="label"> Fecha </label>
@@ -410,7 +396,7 @@ const AdminEventForm = () => {
           </div>
         </div>
 
-        {/* Ubicación y Aforo */}
+        {/* Ubicación y aforo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <div>
             <label className="label"> Ubicación </label>
@@ -452,7 +438,7 @@ const AdminEventForm = () => {
           />
         </div>
 
-        {/* Tramos de precio */}
+        {/* Tandas */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <div>
