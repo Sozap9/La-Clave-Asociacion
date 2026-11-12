@@ -35,10 +35,6 @@ const parseTandas = (raw) => {
  */
 export const createEvent = async (req, res) => {
   try {
-    console.log(' ========== CREATING EVENT ==========');
-    console.log('req.body:', req.body);
-    console.log('req.file:', req.file);
-
     if (!req.body || typeof req.body !== 'object') {
       console.error('req.body is undefined');
       return res.status(400).json({
@@ -103,7 +99,6 @@ export const createEvent = async (req, res) => {
       await EventTicketTier.replaceForEvent(result.insertId, tandas);
       console.log('Tandas guardadas:', tandas.length);
     }
-    console.log('========================================');
 
     registrarActividad({
       userId: req.user?.id || null,

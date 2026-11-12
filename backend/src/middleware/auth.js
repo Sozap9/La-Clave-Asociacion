@@ -37,7 +37,6 @@ export const authenticateToken = (req, res, next) => {
         role: decoded.role
       };
 
-      console.log('✅ Usuario autenticado:', req.user);
       next();
     });
   } catch (error) {

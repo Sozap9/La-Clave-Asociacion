@@ -1,5 +1,6 @@
 import { verifyAccessToken } from '../utils/tokenService.js';
 import { query } from '../config/database.js';
+import logger from '../config/logger.js';
 
 /**
  * Middleware para verificar autenticación
@@ -53,8 +54,6 @@ export const authenticate = async (req, res, next) => {
       nombre: users[0].nombre,
       role: users[0].role  // IMPORTANTE: Asegurar que el role viene de la DB
     };
-
-    console.log('🔐 Usuario autenticado:', req.user.email, '- Role:', req.user.role); // LOG temporal
 
     // Actualizar último acceso (opcional, en background)
     query('UPDATE users SET ultimo_acceso = NOW() WHERE id = ?', [users[0].id])
@@ -176,14 +175,13 @@ export const requireRole = (...allowedRoles) => {
 
     // Verificar que el usuario tiene uno de los roles permitidos
     if (!roles.includes(req.user.role)) {
-      console.log(`🚫 Acceso denegado: Usuario ${req.user.email} con role ${req.user.role} intentó acceder a ruta que requiere ${roles.join(' o ')}`);
+      logger.warn(`Acceso denegado: usuario ${req.user.id} (${req.user.role}) a ruta que requiere ${roles.join(' o ')}`);
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para acceder a este recurso'
       });
     }
 
-    console.log(`✅ Acceso permitido: Usuario ${req.user.email} con role ${req.user.role}`);
     next();
   };
 };

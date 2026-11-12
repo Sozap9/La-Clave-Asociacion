@@ -1700,7 +1700,7 @@ export const resendBookingTicket = async (req, res) => {
 
     logger.info("📧 Entrada reenviada con QR regenerado:", {
       bookingId: booking.id,
-      email: user.email,
+      userId: user.id,
     });
 
     return res.status(200).json({

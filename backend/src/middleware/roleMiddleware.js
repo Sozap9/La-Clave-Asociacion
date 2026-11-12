@@ -21,15 +21,8 @@ const ROLE_HIERARCHY = {
  */
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
-    // Log temporal para debug
-    console.log('🔍 Verificando permisos:');
-    console.log('   - Usuario:', req.user?.email || 'NO AUTENTICADO');
-    console.log('   - Role actual:', req.user?.role || 'NINGUNO');
-    console.log('   - Roles permitidos:', allowedRoles);
-
     // Verificar que el usuario está autenticado
     if (!req.user) {
-      console.log('❌ RECHAZADO: Usuario no autenticado');
       return res.status(401).json({
         success: false,
         message: 'Debes estar autenticado para acceder a este recurso'
@@ -40,14 +33,12 @@ export const authorize = (...allowedRoles) => {
 
     // Verificar si el rol del usuario está en los roles permitidos
     if (!allowedRoles.includes(userRole)) {
-      console.log('❌ RECHAZADO: Role no autorizado');
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para acceder a este recurso'
       });
     }
 
-    console.log('✅ AUTORIZADO');
     next();
   };
 };

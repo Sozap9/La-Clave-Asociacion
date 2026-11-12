@@ -64,7 +64,6 @@ export const submitContact = async (req, res) => {
 
     logger.info('Nuevo mensaje de contacto recibido', {
       contactId: result.insertId,
-      email: email.trim().toLowerCase(),
       asunto: asunto.trim(),
     });
 

@@ -145,8 +145,7 @@ async function registerBasicOriginal(req, res) {
     const sanitizedUser = User.sanitizeUser(user);
 
     logger.info('Usuario básico registrado', {
-      userId: user.id,
-      email: user.email
+      userId: user.id
     });
 
     return res.status(201).json({
@@ -240,8 +239,7 @@ export const login = async (req, res) => {
     const sanitizedUser = User.sanitizeUser(user);
 
     logger.info('Login exitoso', {
-      userId: user.id,
-      email: user.email
+      userId: user.id
     });
 
     return res.status(200).json({
@@ -455,7 +453,6 @@ export const registerAdmin = async (req, res) => {
 
     logger.info('Administrador registrado exitosamente', {
       userId: user.id,
-      email: user.email,
       ip: req.ip
     });
 
@@ -502,7 +499,7 @@ export const forgotPassword = async (req, res) => {
     const genericMessage = 'Si el email existe, recibirás instrucciones para recuperar tu contraseña';
  
     if (!user) {
-      logger.info('Intento de reset para email no existente:', { email });
+      logger.info('Intento de reset de contraseña para un email no registrado');
       return res.status(200).json({ success: true, message: genericMessage });
     }
  
@@ -526,7 +523,7 @@ export const forgotPassword = async (req, res) => {
         if (!emailResult.success) {
           logger.warn('Email de reset no enviado (mock o error SMTP):', { userId: user.id });
         } else {
-          logger.info('Email de reset enviado:', { userId: user.id, email: user.email });
+          logger.info('Email de reset enviado', { userId: user.id });
         }
       })
       .catch((emailError) => {
@@ -719,7 +716,6 @@ export const crearSolicitud = async (req, res) => {
 
     logger.info('Nueva solicitud de socio creada', {
       solicitudId: solicitud.id,
-      email: solicitud.email,
       ip: req.ip
     });
 

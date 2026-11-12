@@ -148,7 +148,7 @@ class EmailService {
 
       const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de bienvenida enviado', {
-        to: user.email,
+        userId: user?.id,
         messageId: info.messageId
       });
       
@@ -157,7 +157,7 @@ class EmailService {
     } catch (error) {
       logger.error('Error al enviar email de bienvenida:', {
         error: error.message,
-        to: user.email
+        userId: user?.id
       });
       return { success: false, error: error.message };
     }
@@ -219,7 +219,7 @@ class EmailService {
 
       const mailOptions = {
         from: fromNoreply(),
-        to: user.email,
+        userId: user?.id,
         subject: `${tipoEntradaLabel} confirmada — ${event.titulo}`,
         html: `
           <!DOCTYPE html>
@@ -371,7 +371,7 @@ class EmailService {
 
       const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de confirmación enviado con QR y cartel', {
-        to: user.email,
+        userId: user?.id,
         bookingId: booking.id,
         messageId: info.messageId,
         hasCartel: !!cartelUrl,
@@ -383,7 +383,7 @@ class EmailService {
     } catch (error) {
       logger.error('Error al enviar email de confirmación:', {
         error: error.message,
-        to: user?.email,
+        userId: user?.id,
         bookingId: booking?.id
       });
       return { success: false, error: error.message };
@@ -500,7 +500,7 @@ class EmailService {
 
       const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de recordatorio enviado', {
-        to: user.email,
+        userId: user?.id,
         bookingId: booking.id,
         eventId: event.id,
         messageId: info.messageId
@@ -511,7 +511,7 @@ class EmailService {
     } catch (error) {
       logger.error('❌ Error al enviar email de recordatorio:', {
         error: error.message,
-        to: user?.email
+        userId: user?.id
       });
       return { success: false, error: error.message };
     }
@@ -626,7 +626,7 @@ class EmailService {
 
       const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de nuevo evento enviado', {
-        to: user.email,
+        userId: user?.id,
         eventId: event.id,
         messageId: info.messageId
       });
@@ -636,7 +636,7 @@ class EmailService {
     } catch (error) {
       logger.error('❌ Error al enviar email de nuevo evento:', {
         error: error.message,
-        to: user?.email
+        userId: user?.id
       });
       return { success: false, error: error.message };
     }
@@ -736,7 +736,7 @@ class EmailService {
 
       const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info('Email de agenda mensual enviado', {
-        to: user.email,
+        userId: user?.id,
         month,
         year,
         eventsCount: events.length,
@@ -748,7 +748,7 @@ class EmailService {
     } catch (error) {
       logger.error('Error al enviar email de agenda mensual:', {
         error: error.message,
-        to: user?.email
+        userId: user?.id
       });
       return { success: false, error: error.message };
     }
@@ -848,7 +848,6 @@ class EmailService {
       
       const info = await noreplyTransporter.sendMail(mailOptions);
       logger.info(' Email de password reset enviado:', {
-        to: user.email,
         userId: user.id,
         messageId: info.messageId
       });
@@ -858,7 +857,7 @@ class EmailService {
     } catch (error) {
       logger.error('Error enviando email de password reset:', {
         error: error.message,
-        to: user.email
+        userId: user?.id
       });
       return { success: false, error: error.message };
     }
@@ -924,10 +923,10 @@ class EmailService {
         `
       };
       const info = await supportTransporter.sendMail(mailOptions);
-      logger.info('Email solicitud recibida enviado', { to: solicitud.email, messageId: info.messageId });
+      logger.info('Email solicitud recibida enviado', { solicitudId: solicitud.id, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
-      logger.error('Error sendSolicitudRecibida:', { error: error.message, to: solicitud.email });
+      logger.error('Error sendSolicitudRecibida:', { error: error.message, solicitudId: solicitud?.id });
       return { success: false, error: error.message };
     }
   }
@@ -1015,7 +1014,7 @@ class EmailService {
       const loginUrl = `${process.env.FRONTEND_URL}/login`;
       const mailOptions = {
         from: fromSupport(),
-        to: user.email,
+        userId: user?.id,
         subject: '¡Solicitud aprobada! Bienvenido a La Clave 981',
         html: `
           <!DOCTYPE html>
@@ -1063,10 +1062,10 @@ class EmailService {
         `
       };
       const info = await supportTransporter.sendMail(mailOptions);
-      logger.info('Email solicitud aprobada enviado', { to: user.email, messageId: info.messageId });
+      logger.info('Email solicitud aprobada enviado', { userId: user.id, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
-      logger.error('❌ Error sendSolicitudAprobada:', { error: error.message, to: user.email });
+      logger.error('❌ Error sendSolicitudAprobada:', { error: error.message, userId: user?.id });
       return { success: false, error: error.message };
     }
   }
@@ -1123,10 +1122,10 @@ class EmailService {
         `
       };
       const info = await supportTransporter.sendMail(mailOptions);
-      logger.info('Email solicitud rechazada enviado', { to: solicitud.email, messageId: info.messageId });
+      logger.info('Email solicitud rechazada enviado', { solicitudId: solicitud.id, messageId: info.messageId });
       return { success: true, messageId: info.messageId };
     } catch (error) {
-      logger.error('Error sendSolicitudRechazada:', { error: error.message, to: solicitud.email });
+      logger.error('Error sendSolicitudRechazada:', { error: error.message, solicitudId: solicitud?.id });
       return { success: false, error: error.message };
     }
   }

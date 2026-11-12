@@ -60,16 +60,6 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-// Debug middleware
-const debugRequest = (req, res, next) => {
-  console.log('🔍 ========== DEBUG REQUEST ==========');
-  console.log('Content-Type:', req.headers['content-type']);
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
-  console.log('=====================================');
-  next();
-};
-
 // ========================================
 // AUTHENTICATION - ALL ROUTES REQUIRE ADMIN
 // ========================================
@@ -108,7 +98,6 @@ router.get('/:id', getEventDetails);
  */
 router.post(
   '/',
-  debugRequest,
   upload.single('imagen'),
   createEvent
 );
@@ -120,7 +109,6 @@ router.post(
  */
 router.put(
   '/:id',
-  debugRequest,
   upload.single('imagen'),
   updateEvent
 );
