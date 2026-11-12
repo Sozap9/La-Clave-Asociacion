@@ -1,5 +1,6 @@
 import Gallery from '../models/Gallery.js';
 import { registrarActividad, getIpFromRequest } from '../utils/activityLogger.js';
+import logger from '../config/logger.js';
 
 /**
  * ========================================
@@ -25,7 +26,7 @@ export const listFolders = async (req, res) => {
       data: folders
     });
   } catch (error) {
-    console.error('Error en listFolders:', error);
+    logger.error('Error en listFolders:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener carpetas de galería',
@@ -60,7 +61,7 @@ export const getFolderByIdOrSlug = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en getFolderByIdOrSlug:', error);
+    logger.error('Error en getFolderByIdOrSlug:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener carpeta',
@@ -109,7 +110,7 @@ export const createFolder = async (req, res) => {
       data: newFolder
     });
   } catch (error) {
-    console.error('Error en createFolder:', error);
+    logger.error('Error en createFolder:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al crear carpeta',
@@ -147,7 +148,7 @@ export const updateFolder = async (req, res) => {
       data: updatedFolder
     });
   } catch (error) {
-    console.error('Error en updateFolder:', error);
+    logger.error('Error en updateFolder:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar carpeta',
@@ -185,7 +186,7 @@ export const deleteFolder = async (req, res) => {
       message: 'Carpeta eliminada exitosamente'
     });
   } catch (error) {
-    console.error('Error en deleteFolder:', error);
+    logger.error('Error en deleteFolder:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al eliminar carpeta',
@@ -214,7 +215,7 @@ export const listFolderImages = async (req, res) => {
       data: images
     });
   } catch (error) {
-    console.error('Error en listFolderImages:', error);
+    logger.error('Error en listFolderImages:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener imágenes',
@@ -267,7 +268,7 @@ export const uploadImage = async (req, res) => {
       data: newImage
     });
   } catch (error) {
-    console.error('Error en uploadImage:', error);
+    logger.error('Error en uploadImage:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al subir imagen',
@@ -305,7 +306,7 @@ export const updateImage = async (req, res) => {
       data: updatedImage
     });
   } catch (error) {
-    console.error('Error en updateImage:', error);
+    logger.error('Error en updateImage:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar imagen',
@@ -343,7 +344,7 @@ export const deleteImage = async (req, res) => {
       message: 'Imagen eliminada exitosamente'
     });
   } catch (error) {
-    console.error('Error en deleteImage:', error);
+    logger.error('Error en deleteImage:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al eliminar imagen',
@@ -371,7 +372,7 @@ export const reorderImages = async (req, res) => {
       message: 'Imágenes reordenadas exitosamente'
     });
   } catch (error) {
-    console.error('Error en reorderImages:', error);
+    logger.error('Error en reorderImages:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al reordenar imágenes',
@@ -402,7 +403,7 @@ export const getAllImages = async (req, res) => {
       data: images
     });
   } catch (error) {
-    console.error('Error en getAllImages:', error);
+    logger.error('Error en getAllImages:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener imágenes',
@@ -428,7 +429,7 @@ export const getImageById = async (req, res) => {
       data: image
     });
   } catch (error) {
-    console.error('Error en getImageById:', error);
+    logger.error('Error en getImageById:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener imagen',
@@ -457,7 +458,7 @@ export const moveImageToFolder = async (req, res) => {
       data: updatedImage
     });
   } catch (error) {
-    console.error('Error en moveImageToFolder:', error);
+    logger.error('Error en moveImageToFolder:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al mover imagen',
@@ -477,7 +478,7 @@ export const getFeaturedImages = async (req, res) => {
       data: images
     });
   } catch (error) {
-    console.error('Error en getFeaturedImages:', error);
+    logger.error('Error en getFeaturedImages:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener imágenes destacadas',
@@ -499,7 +500,7 @@ export const getStats = async (req, res) => {
       data: stats
     });
   } catch (error) {
-    console.error('Error en getStats:', error);
+    logger.error('Error en getStats:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener estadísticas',
@@ -519,7 +520,7 @@ export const getFeaturedFolders = async (req, res) => {
       data: folders
     });
   } catch (error) {
-    console.error('Error en getFeaturedFolders:', error);
+    logger.error('Error en getFeaturedFolders:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener carpetas destacadas',
@@ -549,7 +550,7 @@ export const getAllImagesWithArtists = async (req, res) => {
       data: images
     });
   } catch (error) {
-    console.error('Error en getAllImagesWithArtists:', error);
+    logger.error('Error en getAllImagesWithArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener imágenes',
@@ -569,7 +570,7 @@ export const getImageArtists = async (req, res) => {
       data: artists
     });
   } catch (error) {
-    console.error('Error en getImageArtists:', error);
+    logger.error('Error en getImageArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener artistas de la imagen',
@@ -597,7 +598,7 @@ export const addArtistToImage = async (req, res) => {
       message: 'Artista añadido a la imagen'
     });
   } catch (error) {
-    console.error('Error en addArtistToImage:', error);
+    logger.error('Error en addArtistToImage:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al añadir artista a la imagen',
@@ -625,7 +626,7 @@ export const updateImageArtists = async (req, res) => {
       message: 'Artistas actualizados correctamente'
     });
   } catch (error) {
-    console.error('Error en updateImageArtists:', error);
+    logger.error('Error en updateImageArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar artistas',
@@ -645,7 +646,7 @@ export const removeArtistFromImage = async (req, res) => {
       message: 'Artista eliminado de la imagen'
     });
   } catch (error) {
-    console.error('Error en removeArtistFromImage:', error);
+    logger.error('Error en removeArtistFromImage:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al eliminar artista de la imagen',
@@ -665,7 +666,7 @@ export const getFolderArtists = async (req, res) => {
       data: artists
     });
   } catch (error) {
-    console.error('Error en getFolderArtists:', error);
+    logger.error('Error en getFolderArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener artistas del álbum',
@@ -693,7 +694,7 @@ export const addArtistToFolder = async (req, res) => {
       message: 'Artista añadido al álbum'
     });
   } catch (error) {
-    console.error('Error en addArtistToFolder:', error);
+    logger.error('Error en addArtistToFolder:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al añadir artista al álbum',
@@ -721,7 +722,7 @@ export const updateFolderArtists = async (req, res) => {
       message: 'Artistas actualizados correctamente'
     });
   } catch (error) {
-    console.error('Error en updateFolderArtists:', error);
+    logger.error('Error en updateFolderArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar artistas',
@@ -741,7 +742,7 @@ export const removeArtistFromFolder = async (req, res) => {
       message: 'Artista eliminado del álbum'
     });
   } catch (error) {
-    console.error('Error en removeArtistFromFolder:', error);
+    logger.error('Error en removeArtistFromFolder:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al eliminar artista del álbum',
@@ -760,7 +761,7 @@ export const getContentByArtist = async (req, res) => {
       data: content
     });
   } catch (error) {
-    console.error('Error en getContentByArtist:', error);
+    logger.error('Error en getContentByArtist:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener contenido del artista',
@@ -805,7 +806,7 @@ export const setCoverImage = async (req, res) => {
       data: updatedFolder
     });
   } catch (error) {
-    console.error('Error en setCoverImage:', error);
+    logger.error('Error en setCoverImage:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al establecer imagen de portada',
@@ -872,7 +873,7 @@ export const bulkUpdateImages = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en bulkUpdateImages:', error);
+    logger.error('Error en bulkUpdateImages:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar imágenes',
@@ -932,7 +933,7 @@ export const bulkDeleteImages = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en bulkDeleteImages:', error);
+    logger.error('Error en bulkDeleteImages:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al eliminar imágenes',

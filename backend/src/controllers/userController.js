@@ -1,5 +1,6 @@
 import { pool } from '../config/database.js';
 import bcrypt from 'bcrypt';
+import logger from '../config/logger.js';
 
 /**
  * @desc    Obtener perfil del usuario autenticado
@@ -32,7 +33,7 @@ export const getUserProfile = async (req, res) => {
       data: rows[0]
     });
   } catch (error) {
-    console.error('❌ Error al obtener perfil:', error);
+    logger.error('❌ Error al obtener perfil:', error);
     res.status(500).json({ 
       success: false,
       message: 'Error al obtener el perfil del usuario' 
@@ -59,13 +60,6 @@ export const updateUserProfile = async (req, res) => {
       dni_front_url, 
       dni_back_url 
     } = req.body;
-
-    console.log('📥 Datos recibidos para actualizar:', {
-      nombre, apellidos, email, telefono, fecha_nacimiento, dni,
-      avatar_url: avatar_url ? 'presente' : 'no',
-      dni_front_url: dni_front_url ? 'presente' : 'no',
-      dni_back_url: dni_back_url ? 'presente' : 'no'
-    });
 
     // Construir actualización dinámica
     const fieldsToUpdate = [];
@@ -135,8 +129,6 @@ export const updateUserProfile = async (req, res) => {
       });
     }
 
-    console.log('📝 Campos a actualizar:', fieldsToUpdate);
-
     fieldsToUpdate.push('updated_at = NOW()');
     values.push(userId);
 
@@ -155,7 +147,7 @@ export const updateUserProfile = async (req, res) => {
       [userId]
     );
 
-    console.log('✅ Usuario actualizado correctamente');
+    logger.info('Perfil de usuario actualizado', { userId });
 
     res.json({
       success: true,
@@ -163,7 +155,7 @@ export const updateUserProfile = async (req, res) => {
       data: updatedUser[0]
     });
   } catch (error) {
-    console.error('❌ Error al actualizar perfil:', error);
+    logger.error('❌ Error al actualizar perfil:', error);
     res.status(500).json({ 
       success: false,
       message: error.message || 'Error al actualizar el perfil' 
@@ -236,7 +228,7 @@ export const changePassword = async (req, res) => {
       message: 'Contraseña cambiada correctamente' 
     });
   } catch (error) {
-    console.error('Error al cambiar contraseña:', error);
+    logger.error('Error al cambiar contraseña:', error);
     res.status(500).json({ 
       success: false,
       message: 'Error al cambiar la contraseña' 

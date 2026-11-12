@@ -1,4 +1,5 @@
 import Venue from '../models/Venue.js';
+import logger from '../config/logger.js';
 
 /**
  * Listar venues
@@ -31,7 +32,7 @@ export const listVenues = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en listVenues:', error);
+    logger.error('Error en listVenues:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al listar venues'
@@ -66,7 +67,7 @@ export const getVenueById = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en getVenueById:', error);
+    logger.error('Error en getVenueById:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener venue'
@@ -98,7 +99,7 @@ export const createVenue = async (req, res) => {
       data: venue
     });
   } catch (error) {
-    console.error('Error en createVenue:', error);
+    logger.error('Error en createVenue:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al crear venue'
@@ -133,7 +134,7 @@ export const updateVenue = async (req, res) => {
       data: updatedVenue
     });
   } catch (error) {
-    console.error('Error en updateVenue:', error);
+    logger.error('Error en updateVenue:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar venue'
@@ -165,7 +166,7 @@ export const deleteVenue = async (req, res) => {
       message: 'Venue eliminado exitosamente'
     });
   } catch (error) {
-    console.error('Error en deleteVenue:', error);
+    logger.error('Error en deleteVenue:', error);
     
     if (error.message.includes('eventos asociados')) {
       return res.status(400).json({
@@ -205,7 +206,7 @@ export const deactivateVenue = async (req, res) => {
       message: 'Venue desactivado exitosamente'
     });
   } catch (error) {
-    console.error('Error en deactivateVenue:', error);
+    logger.error('Error en deactivateVenue:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al desactivar venue'
@@ -246,7 +247,7 @@ export const activateVenue = async (req, res) => {
       message: 'Venue reactivado exitosamente'
     });
   } catch (error) {
-    console.error('Error en activateVenue:', error);
+    logger.error('Error en activateVenue:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al reactivar venue'
@@ -267,7 +268,7 @@ export const getActiveVenues = async (req, res) => {
       data: venues
     });
   } catch (error) {
-    console.error('Error en getActiveVenues:', error);
+    logger.error('Error en getActiveVenues:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener venues activos'

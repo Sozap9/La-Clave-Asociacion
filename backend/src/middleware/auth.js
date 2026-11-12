@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import logger from '../config/logger.js';
 
 /**
  * Middleware para verificar el token JWT
@@ -19,7 +20,7 @@ export const authenticateToken = (req, res, next) => {
     // Verificar token
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
-        console.error('Error al verificar token:', err.message);
+        logger.error('Error al verificar token:', { error: err.message });
         const message = err.name === 'TokenExpiredError'
           ? 'Tu sesión ha expirado. Vuelve a iniciar sesión para continuar.'
           : 'Token inválido';
@@ -40,7 +41,7 @@ export const authenticateToken = (req, res, next) => {
       next();
     });
   } catch (error) {
-    console.error('Error en authenticateToken:', error);
+    logger.error('Error en authenticateToken:', error);
     res.status(500).json({ 
       success: false,
       message: 'Error al verificar el token' 

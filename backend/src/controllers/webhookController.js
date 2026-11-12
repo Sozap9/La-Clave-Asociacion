@@ -22,7 +22,7 @@ export const handleStripeWebhook = async (req, res) => {
     // Verificar webhook
     event = verifyWebhook(req.body, sig);
   } catch (err) {
-    console.error("Error verificando webhook:", err.message);
+    logger.error("Error verificando webhook:", { error: err.message });
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -58,12 +58,12 @@ export const handleStripeWebhook = async (req, res) => {
         break;
 
       default:
-        console.log(`Evento no manejado: ${event.type}`);
+        logger.debug(`Evento no manejado: ${event.type}`);
     }
 
     return res.status(200).json({ received: true });
   } catch (error) {
-    console.error("Error procesando webhook:", error);
+    logger.error("Error procesando webhook:", error);
     return res.status(500).json({ error: "Error procesando webhook" });
   }
 };
@@ -233,7 +233,7 @@ async function handlePaymentSucceeded(invoice) {
     const socios = await query(socioSql, [customerId]);
 
     if (socios.length === 0) {
-      console.log("Socio no encontrado para customer:", customerId);
+      logger.warn("Socio no encontrado para customer de Stripe", { customerId });
       return;
     }
 
@@ -254,11 +254,11 @@ async function handlePaymentSucceeded(invoice) {
       [socio.id, amountPaid, invoice.payment_intent, invoice.id],
     );
 
-    console.log(`✅ Pago exitoso procesado para socio ${socio.numero_socio}`);
+    logger.info(`Pago exitoso procesado para socio ${socio.numero_socio}`);
 
     // TODO: Enviar email de confirmación de pago
   } catch (error) {
-    console.error("Error en handlePaymentSucceeded:", error);
+    logger.error("Error en handlePaymentSucceeded:", error);
     throw error;
   }
 }
@@ -277,7 +277,7 @@ async function handlePaymentFailed(invoice) {
     const socios = await query(socioSql, [customerId]);
 
     if (socios.length === 0) {
-      console.log("Socio no encontrado para customer:", customerId);
+      logger.warn("Socio no encontrado para customer de Stripe", { customerId });
       return;
     }
 
@@ -302,16 +302,16 @@ async function handlePaymentFailed(invoice) {
 
     if (socioActualizado.pagos_fallidos >= 3) {
       await Socio.marcarComoMoroso(socio.id);
-      console.log(`⚠️ Socio ${socio.numero_socio} marcado como moroso`);
+      logger.warn(`Socio ${socio.numero_socio} marcado como moroso`);
       // TODO: Enviar email notificando suspensión
     } else {
-      console.log(
-        `⚠️ Pago fallido #${socioActualizado.pagos_fallidos} para socio ${socio.numero_socio}`,
+      logger.warn(
+        `Pago fallido #${socioActualizado.pagos_fallidos} para socio ${socio.numero_socio}`,
       );
       // TODO: Enviar email solicitando actualizar método de pago
     }
   } catch (error) {
-    console.error("Error en handlePaymentFailed:", error);
+    logger.error("Error en handlePaymentFailed:", error);
     throw error;
   }
 }
@@ -329,7 +329,7 @@ async function handleSubscriptionDeleted(subscription) {
     const socios = await query(socioSql, [customerId]);
 
     if (socios.length === 0) {
-      console.log("Socio no encontrado para customer:", customerId);
+      logger.warn("Socio no encontrado para customer de Stripe", { customerId });
       return;
     }
 
@@ -344,11 +344,11 @@ async function handleSubscriptionDeleted(subscription) {
       socio.user_id,
     ]);
 
-    console.log(`❌ Suscripción cancelada para socio ${socio.numero_socio}`);
+    logger.info(`Suscripción cancelada para socio ${socio.numero_socio}`);
 
     // TODO: Enviar email de confirmación de cancelación
   } catch (error) {
-    console.error("Error en handleSubscriptionDeleted:", error);
+    logger.error("Error en handleSubscriptionDeleted:", error);
     throw error;
   }
 }
@@ -367,7 +367,7 @@ async function handleSubscriptionUpdated(subscription) {
     const socios = await query(socioSql, [customerId]);
 
     if (socios.length === 0) {
-      console.log("Socio no encontrado para customer:", customerId);
+      logger.warn("Socio no encontrado para customer de Stripe", { customerId });
       return;
     }
 
@@ -379,16 +379,16 @@ async function handleSubscriptionUpdated(subscription) {
         "activo",
         socio.id,
       ]);
-      console.log(`Suscripción activa para socio ${socio.numero_socio}`);
+      logger.info(`Suscripción activa para socio ${socio.numero_socio}`);
     } else if (status === "past_due") {
       await Socio.marcarComoMoroso(socio.id);
-      console.log(`Suscripción vencida para socio ${socio.numero_socio}`);
+      logger.warn(`Suscripción vencida para socio ${socio.numero_socio}`);
     } else if (status === "canceled" || status === "unpaid") {
       await Socio.darDeBaja(socio.id, `Suscripción ${status}`);
-      console.log(`Suscripción ${status} para socio ${socio.numero_socio}`);
+      logger.info(`Suscripción ${status} para socio ${socio.numero_socio}`);
     }
   } catch (error) {
-    console.error("Error en handleSubscriptionUpdated:", error);
+    logger.error("Error en handleSubscriptionUpdated:", error);
     throw error;
   }
 }

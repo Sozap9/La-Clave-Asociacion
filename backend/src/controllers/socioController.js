@@ -10,6 +10,7 @@ import {
   getInvoices,
   createSetupIntent,
 } from "../config/payment.js";
+import logger from '../config/logger.js';
 
 /**
  * Upgrade de usuario básico a socio (DEPRECATED)
@@ -62,7 +63,7 @@ export const getMyMembership = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getMyMembership:", error);
+    logger.error("Error en getMyMembership:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener información de membresía",
@@ -113,7 +114,7 @@ export const updatePaymentMethod = async (req, res) => {
       message: "Método de pago actualizado exitosamente",
     });
   } catch (error) {
-    console.error("Error en updatePaymentMethod:", error);
+    logger.error("Error en updatePaymentMethod:", error);
     return res.status(500).json({
       success: false,
       message: "Error al actualizar método de pago",
@@ -178,7 +179,7 @@ export const cancelMembership = async (req, res) => {
       message: "Membresía cancelada exitosamente. Lamentamos verte partir",
     });
   } catch (error) {
-    console.error("Error en cancelMembership:", error);
+    logger.error("Error en cancelMembership:", error);
     return res.status(500).json({
       success: false,
       message: "Error al cancelar membresía",
@@ -228,7 +229,7 @@ export const getMyPayments = async (req, res) => {
       data: payments,
     });
   } catch (error) {
-    console.error("Error en getMyPayments:", error);
+    logger.error("Error en getMyPayments:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener historial de pagos",
@@ -274,7 +275,7 @@ export const createPaymentSetup = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en createPaymentSetup:", error);
+    logger.error("Error en createPaymentSetup:", error);
     return res.status(500).json({
       success: false,
       message: "Error al configurar método de pago",
@@ -333,7 +334,7 @@ export const getMyEvents = async (req, res) => {
       data: events,
     });
   } catch (error) {
-    console.error("Error en getMyEvents:", error);
+    logger.error("Error en getMyEvents:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener eventos",

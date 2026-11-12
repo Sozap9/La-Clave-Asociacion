@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import sharp from 'sharp';
+import logger from '../config/logger.js';
 
 // ✅ Crear directorios para galería
 const galleryDir = './uploads/gallery';
@@ -85,7 +86,7 @@ export const createThumbnail = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Error creating thumbnail:', error);
+    logger.error('Error creating thumbnail:', error);
     // Continuar sin thumbnail si falla
     next();
   }

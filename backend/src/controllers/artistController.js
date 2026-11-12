@@ -1,4 +1,5 @@
 import Artist from '../models/Artist.js';
+import logger from '../config/logger.js';
 
 /**
  * Listar artistas con filtros y búsqueda
@@ -49,7 +50,7 @@ export const listArtists = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en listArtists:', error);
+    logger.error('Error en listArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al listar artistas'
@@ -84,7 +85,7 @@ export const getArtistById = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en getArtistById:', error);
+    logger.error('Error en getArtistById:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener artista'
@@ -116,7 +117,7 @@ export const createArtist = async (req, res) => {
       data: artist
     });
   } catch (error) {
-    console.error('Error en createArtist:', error);
+    logger.error('Error en createArtist:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al crear artista'
@@ -151,7 +152,7 @@ export const updateArtist = async (req, res) => {
       data: updatedArtist
     });
   } catch (error) {
-    console.error('Error en updateArtist:', error);
+    logger.error('Error en updateArtist:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar artista'
@@ -183,7 +184,7 @@ export const deleteArtist = async (req, res) => {
       message: 'Artista eliminado exitosamente'
     });
   } catch (error) {
-    console.error('Error en deleteArtist:', error);
+    logger.error('Error en deleteArtist:', error);
     
     if (error.message.includes('eventos asociados')) {
       return res.status(400).json({
@@ -223,7 +224,7 @@ export const deactivateArtist = async (req, res) => {
       message: 'Artista desactivado exitosamente'
     });
   } catch (error) {
-    console.error('Error en deactivateArtist:', error);
+    logger.error('Error en deactivateArtist:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al desactivar artista'
@@ -278,7 +279,7 @@ export const toggleFeatured = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en toggleFeatured:', error);
+    logger.error('Error en toggleFeatured:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al actualizar estado destacado'
@@ -299,7 +300,7 @@ export const getActiveArtists = async (req, res) => {
       data: artists
     });
   } catch (error) {
-    console.error('Error en getActiveArtists:', error);
+    logger.error('Error en getActiveArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener artistas activos'
@@ -321,7 +322,7 @@ export const getFeaturedArtists = async (req, res) => {
       data: artists
     });
   } catch (error) {
-    console.error('Error en getFeaturedArtists:', error);
+    logger.error('Error en getFeaturedArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener artistas destacados'
@@ -351,7 +352,7 @@ export const searchArtists = async (req, res) => {
       data: artists
     });
   } catch (error) {
-    console.error('Error en searchArtists:', error);
+    logger.error('Error en searchArtists:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al buscar artistas'
@@ -383,7 +384,7 @@ export const getArtistEventos = async (req, res) => {
       data: eventos
     });
   } catch (error) {
-    console.error('Error en getArtistEventos:', error);
+    logger.error('Error en getArtistEventos:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al obtener eventos del artista'
@@ -424,7 +425,7 @@ export const activateArtist = async (req, res) => {
       message: 'Artista reactivado exitosamente'
     });
   } catch (error) {
-    console.error('Error en activateArtist:', error);
+    logger.error('Error en activateArtist:', error);
     return res.status(500).json({
       success: false,
       message: 'Error al reactivar artista'

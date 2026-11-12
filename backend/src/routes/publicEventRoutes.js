@@ -1,6 +1,7 @@
 import express from 'express';
 import { pool } from '../config/database.js';
 import EventTicketTier from '../models/EventTicketTier.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 
@@ -27,9 +28,6 @@ const applyActivePricing = async (events) => {
 router.get('/', async (req, res) => {
   try {
     let { status = 'upcoming', search = '', limit = '20', featured } = req.query;
-
-    console.log('📥 GET /api/events - Public route');
-    console.log('   Params:', { status, search, limit, featured });
 
     // Normalize status (accept both Spanish and English)
     const statusMap = {
@@ -78,16 +76,10 @@ router.get('/', async (req, res) => {
     // Order and limit
     query += ` ORDER BY fecha_evento DESC, hora_evento DESC LIMIT ${validLimit}`;
 
-    console.log('🔍 SQL Query:', query);
-    console.log('🔍 Params:', params);
-    console.log('🔍 Limit:', validLimit);
-
     // Execute query
     const [events] = params.length > 0
       ? await pool.execute(query, params)
       : await pool.query(query);
-
-    console.log('✅ Events found:', events.length);
 
     const eventsWithPricing = await applyActivePricing(events);
 
@@ -97,7 +89,7 @@ router.get('/', async (req, res) => {
       count: eventsWithPricing.length
     });
   } catch (error) {
-    console.error('❌ Error in GET /api/events:', error);
+    logger.error('❌ Error in GET /api/events:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching events',
@@ -113,7 +105,6 @@ router.get('/', async (req, res) => {
  */
 router.get('/featured', async (req, res) => {
   try {
-    console.log('📥 GET /api/events/featured - Public route');
 
     const query = `
       SELECT 
@@ -128,11 +119,7 @@ router.get('/featured', async (req, res) => {
       LIMIT 6
     `;
 
-    console.log('🔍 SQL Query:', query);
-
     const [events] = await pool.query(query);
-
-    console.log('✅ Featured events found:', events.length);
 
     const eventsWithPricing = await applyActivePricing(events);
 
@@ -142,7 +129,7 @@ router.get('/featured', async (req, res) => {
       count: eventsWithPricing.length
     });
   } catch (error) {
-    console.error('❌ Error in GET /api/events/featured:', error);
+    logger.error('❌ Error in GET /api/events/featured:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching featured events',
@@ -159,9 +146,6 @@ router.get('/featured', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-
-    console.log('📥 GET /api/events/:id - Public route');
-    console.log('   Event ID:', id);
 
     // Validate ID
     const eventId = parseInt(id, 10);
@@ -191,8 +175,6 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    console.log('✅ Event found:', events[0].titulo);
-
     const { precio } = await EventTicketTier.resolveActivePrice(events[0].id, events[0].precio_socio);
 
     res.json({
@@ -200,7 +182,7 @@ router.get('/:id', async (req, res) => {
       data: { ...events[0], precio_socio: precio, precio_invitado: precio }
     });
   } catch (error) {
-    console.error('❌ Error in GET /api/events/:id:', error);
+    logger.error('❌ Error in GET /api/events/:id:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching event',

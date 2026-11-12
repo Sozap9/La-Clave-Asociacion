@@ -1,3 +1,4 @@
+import logger from '../config/logger.js';
 /**
  * Jerarquía de roles en La Clave
  * basico < socio < admin
@@ -142,7 +143,7 @@ export const customAuthorize = (checkPermission) => {
 
       next();
     } catch (error) {
-      console.error('Error en customAuthorize:', error);
+      logger.error('Error en customAuthorize:', error);
       return res.status(500).json({
         success: false,
         message: 'Error verificando permisos'

@@ -57,11 +57,11 @@ export const authenticate = async (req, res, next) => {
 
     // Actualizar último acceso (opcional, en background)
     query('UPDATE users SET ultimo_acceso = NOW() WHERE id = ?', [users[0].id])
-      .catch(err => console.error('Error actualizando último acceso:', err));
+      .catch(err => logger.error('Error actualizando último acceso:', err));
 
     next();
   } catch (error) {
-    console.error('Error en authenticate middleware:', error);
+    logger.error('Error en authenticate middleware:', error);
     return res.status(500).json({
       success: false,
       message: 'Error en la autenticación'
@@ -104,12 +104,12 @@ export const optionalAuthenticate = async (req, res, next) => {
       }
     } catch (error) {
       // Token inválido, pero continuar sin usuario
-      console.log('Token inválido en optionalAuthenticate:', error.message);
+      logger.debug('Token inválido en optionalAuthenticate:', { error: error.message });
     }
 
     next();
   } catch (error) {
-    console.error('Error en optionalAuthenticate middleware:', error);
+    logger.error('Error en optionalAuthenticate middleware:', error);
     next(); // Continuar a pesar del error
   }
 };
@@ -148,7 +148,7 @@ export const requireEmailVerified = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Error en requireEmailVerified:', error);
+    logger.error('Error en requireEmailVerified:', error);
     return res.status(500).json({
       success: false,
       message: 'Error verificando el estado del email'

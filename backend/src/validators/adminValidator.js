@@ -1,4 +1,5 @@
 import { body, query, param } from "express-validator";
+import logger from '../config/logger.js';
 
 /**
  * ========================================
@@ -122,7 +123,7 @@ export const paginationValidator = [
     .custom((value) => {
       // Advertencia si pide demasiados resultados
       if (value > 50) {
-        console.warn(`⚠️  Límite alto solicitado: ${value} resultados`);
+        logger.warn(`⚠️  Límite alto solicitado: ${value} resultados`);
       }
       return true;
     }),

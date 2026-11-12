@@ -89,7 +89,7 @@ export const getGeneralStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getGeneralStats:", error);
+    logger.error("Error en getGeneralStats:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener estadísticas",
@@ -241,7 +241,7 @@ export const getDashboardStats = async (req, res) => {
       `;
       galeriaStats = await query(galeriaSql);
     } catch (err) {
-      console.log("Tablas de galería no existen, usando valores por defecto");
+      logger.debug("Tablas de galería no existen, usando valores por defecto");
     }
 
     // 6. VENUES Y ARTISTS
@@ -264,7 +264,7 @@ export const getDashboardStats = async (req, res) => {
       `;
       venuesStats = await query(venuesSql);
     } catch (err) {
-      console.log("Tabla venues no existe");
+      logger.debug("Tabla venues no existe");
     }
 
     try {
@@ -278,7 +278,7 @@ export const getDashboardStats = async (req, res) => {
       `;
       artistsStats = await query(artistsSql);
     } catch (err) {
-      console.log("Tabla artists no existe");
+      logger.debug("Tabla artists no existe");
     }
 
     // 7. ACTIVIDAD RECIENTE
@@ -374,7 +374,7 @@ export const getDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getDashboardStats:", error);
+    logger.error("Error en getDashboardStats:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener estadísticas del dashboard",
@@ -702,7 +702,7 @@ export const getAdminMenu = async (req, res) => {
 
     return res.status(200).json(menu);
   } catch (error) {
-    console.error("Error en getAdminMenu:", error);
+    logger.error("Error en getAdminMenu:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener menú del panel",
@@ -770,7 +770,7 @@ export const getUserDetails = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getUserDetails:", error);
+    logger.error("Error en getUserDetails:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener detalles del usuario",
@@ -816,7 +816,7 @@ export const listSocios = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en listSocios:", error);
+    logger.error("Error en listSocios:", error);
     return res.status(500).json({
       success: false,
       message: "Error al listar socios",
@@ -851,7 +851,7 @@ export const listUsers = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en listUsers:", error);
+    logger.error("Error en listUsers:", error);
     return res.status(500).json({
       success: false,
       message: "Error al listar usuarios",
@@ -942,7 +942,7 @@ export const createSocioManual = async (req, res) => {
       data: nuevoSocio,
     });
   } catch (error) {
-    console.error("Error en createSocioManual:", error);
+    logger.error("Error en createSocioManual:", error);
     return res.status(500).json({
       success: false,
       message: "Error al crear socio",
@@ -1030,7 +1030,7 @@ export const getSocioDetails = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getSocioDetails:", error);
+    logger.error("Error en getSocioDetails:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener detalles del socio",
@@ -1078,7 +1078,7 @@ export const updateSocio = async (req, res) => {
       data: updatedSocio,
     });
   } catch (error) {
-    console.error("Error en updateSocio:", error);
+    logger.error("Error en updateSocio:", error);
     return res.status(500).json({
       success: false,
       message: "Error al actualizar socio",
@@ -1111,10 +1111,7 @@ export const deleteSocio = async (req, res) => {
       try {
         await User.deactivate(socio.user_id);
       } catch (userError) {
-        console.warn(
-          "No se pudo desactivar user asociado, continua:",
-          userError,
-        );
+        logger.warn("No se pudo desactivar user asociado, continua:", userError);
       }
     }
 
@@ -1130,10 +1127,7 @@ export const deleteSocio = async (req, res) => {
         [id],
       );
     } catch (bookingError) {
-      console.warn(
-        "Error al cancelar reservas asociadas al socio:",
-        bookingError,
-      );
+      logger.warn("Error al cancelar reservas asociadas al socio:", bookingError);
     }
 
     return res.status(200).json({
@@ -1141,7 +1135,7 @@ export const deleteSocio = async (req, res) => {
       message: "Socio dado de baja exitosamente",
     });
   } catch (error) {
-    console.error("Error en deleteSocio:", error);
+    logger.error("Error en deleteSocio:", error);
     return res.status(500).json({
       success: false,
       message: "Error al dar de baja al socio",
@@ -1175,10 +1169,7 @@ export const deleteSocioPermanent = async (req, res) => {
     try {
       await User.delete(socio.user_id);
     } catch (deleteError) {
-      console.warn(
-        "No se pudo eliminar el usuario, se aplicará soft delete:",
-        deleteError,
-      );
+      logger.warn("No se pudo eliminar el usuario, se aplicará soft delete:", deleteError);
       await User.softDelete(socio.user_id);
     }
 
@@ -1187,7 +1178,7 @@ export const deleteSocioPermanent = async (req, res) => {
       message: "Socio eliminado permanentemente",
     });
   } catch (error) {
-    console.error("Error en deleteSocioPermanent:", error);
+    logger.error("Error en deleteSocioPermanent:", error);
     return res.status(500).json({
       success: false,
       message: "Error al eliminar el socio",
@@ -1225,7 +1216,7 @@ export const reactivateSocio = async (req, res) => {
       message: "Socio reactivado exitosamente",
     });
   } catch (error) {
-    console.error("Error en reactivateSocio:", error);
+    logger.error("Error en reactivateSocio:", error);
     return res.status(500).json({
       success: false,
       message: "Error al reactivar el socio",
@@ -1309,7 +1300,7 @@ export const listMorosos = async (req, res) => {
       data: morosos,
     });
   } catch (error) {
-    console.error("Error en listMorosos:", error);
+    logger.error("Error en listMorosos:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener socios morosos",
@@ -1359,7 +1350,7 @@ export const getEventsStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getEventsStats:", error);
+    logger.error("Error en getEventsStats:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener estadísticas de eventos",
@@ -1437,7 +1428,7 @@ export const listAllEvents = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en listAllEvents:", error);
+    logger.error("Error en listAllEvents:", error);
     return res.status(500).json({
       success: false,
       message: "Error al listar eventos",
@@ -1494,7 +1485,7 @@ export const getEventDetailsAdmin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getEventDetailsAdmin:", error);
+    logger.error("Error en getEventDetailsAdmin:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener detalles del evento",
@@ -1586,7 +1577,7 @@ export const listAllBookings = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en listAllBookings:", error);
+    logger.error("Error en listAllBookings:", error);
     return res.status(500).json({
       success: false,
       message: "Error al listar reservas",
@@ -1630,7 +1621,7 @@ export const getBookingDetails = async (req, res) => {
       data: bookings[0],
     });
   } catch (error) {
-    console.error("Error en getBookingDetails:", error);
+    logger.error("Error en getBookingDetails:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener detalles de la reserva",
@@ -1966,7 +1957,7 @@ export const cancelBookingAdmin = async (req, res) => {
       message: "Reserva cancelada exitosamente",
     });
   } catch (error) {
-    console.error("Error en cancelBookingAdmin:", error);
+    logger.error("Error en cancelBookingAdmin:", error);
     return res.status(500).json({
       success: false,
       message: "Error al cancelar reserva",
@@ -2017,7 +2008,7 @@ export const getBookingsStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getBookingsStats:", error);
+    logger.error("Error en getBookingsStats:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener estadísticas de reservas",
@@ -2061,8 +2052,8 @@ export const getEventPayments = async (req, res) => {
     const offset = (pageNum - 1) * limitNum;
     const { estado, search } = req.query;
 
-    console.log("📍 [getEventPayments] Consultando evento:", eventId);
-    console.log("   Filtros:", {
+    logger.debug("[getEventPayments] Consultando evento", {
+      eventId,
       search,
       estado,
       page: pageNum,
@@ -2083,7 +2074,6 @@ export const getEventPayments = async (req, res) => {
     }
 
     const event = eventResult[0];
-    console.log("✅ Evento encontrado:", event.titulo);
 
     // 2. Stats globales del evento (sin filtros)
     const allEntries = await query(
@@ -2174,16 +2164,8 @@ export const getEventPayments = async (req, res) => {
       ORDER BY b.created_at DESC
       LIMIT ${limitNum} OFFSET ${offset}
     `;
-
-    console.log("📍 Ejecutando query de bookings con filtros");
     const entries = await query(entriesSql, params);
-    console.log("✅ Bookings encontrados:", entries.length);
-
-    console.log(
-      "✅ [getEventPayments] Éxito - Retornando",
-      entries.length,
-      "entradas",
-    );
+    logger.debug("[getEventPayments] Entradas encontradas", { total: entries.length });
 
     return res.status(200).json({
       success: true,
@@ -2201,8 +2183,7 @@ export const getEventPayments = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ [getEventPayments] Error:", error.message);
-    console.error("Stack:", error.stack);
+    logger.error("[getEventPayments] Error:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener pagos del evento",
@@ -2276,7 +2257,7 @@ export const getMonthlyRevenue = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getMonthlyRevenue:", error);
+    logger.error("Error en getMonthlyRevenue:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener ingresos mensuales",
@@ -2305,7 +2286,7 @@ export const getPaymentsStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en getPaymentsStats:", error);
+    logger.error("Error en getPaymentsStats:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener estadísticas de pagos",
@@ -2407,7 +2388,7 @@ export const listPayments = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error en listPayments:", error);
+    logger.error("Error en listPayments:", error);
     return res.status(500).json({
       success: false,
       message: "Error al listar pagos",
@@ -2435,7 +2416,7 @@ export const getGalleryStats = async (req, res) => {
       data: stats,
     });
   } catch (error) {
-    console.error("Error en getGalleryStats:", error);
+    logger.error("Error en getGalleryStats:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener estadísticas de galería",
@@ -2475,7 +2456,7 @@ export const getRecentActivity = async (req, res) => {
       data: activity,
     });
   } catch (error) {
-    console.error("Error en getRecentActivity:", error);
+    logger.error("Error en getRecentActivity:", error);
     return res.status(500).json({
       success: false,
       message: "Error al obtener actividad reciente",
@@ -2505,7 +2486,7 @@ export const getEventsForExportSelector = async (req, res) => {
     const events = await query(sql);
     return res.status(200).json({ success: true, data: events });
   } catch (error) {
-    console.error('Error en getEventsForExportSelector:', error);
+    logger.error('Error en getEventsForExportSelector:', error);
     return res.status(500).json({ success: false, message: 'Error al obtener eventos' });
   }
 };
@@ -2563,7 +2544,7 @@ export const exportSocios = async (req, res) => {
 
     finishPdf(doc);
   } catch (error) {
-    console.error("Error al exportar socios a PDF:", error);
+    logger.error("Error al exportar socios a PDF:", error);
 
     if (res.headersSent) {
       return res.end();
@@ -2699,7 +2680,7 @@ export const exportReservas = async (req, res) => {
 
     finishPdf(doc);
   } catch (error) {
-    console.error("Error al exportar reservas a PDF:", error);
+    logger.error("Error al exportar reservas a PDF:", error);
 
     if (res.headersSent) {
       return res.end();
@@ -2801,7 +2782,7 @@ export const exportUsuarios = async (req, res) => {
 
     finishPdf(doc);
   } catch (error) {
-    console.error("Error al exportar usuarios a PDF:", error);
+    logger.error("Error al exportar usuarios a PDF:", error);
 
     if (res.headersSent) {
       return res.end();
@@ -2892,7 +2873,7 @@ export const exportEventos = async (req, res) => {
 
     finishPdf(doc);
   } catch (error) {
-    console.error("Error al exportar eventos a PDF:", error);
+    logger.error("Error al exportar eventos a PDF:", error);
 
     if (res.headersSent) {
       return res.end();
@@ -3250,7 +3231,7 @@ export const updateUserRole = async (req, res) => {
       message: `Rol actualizado a '${role}' correctamente`,
     });
   } catch (error) {
-    console.error("Error en updateUserRole:", error);
+    logger.error("Error en updateUserRole:", error);
     return res.status(500).json({
       success: false,
       message: "Error al actualizar el rol del usuario",
@@ -3482,7 +3463,7 @@ export const exportIngresosMensuales = async (req, res) => {
 
     doc.end();
   } catch (error) {
-    console.error('Error al exportar ingresos mensuales a PDF:', error);
+    logger.error('Error al exportar ingresos mensuales a PDF:', error);
     if (res.headersSent) return res.end();
     return res.status(500).json({
       success: false,
