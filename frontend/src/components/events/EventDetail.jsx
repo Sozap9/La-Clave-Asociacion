@@ -1,20 +1,42 @@
 import { X, Calendar, MapPin, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { createBooking, getMyBookings } from "../../api/eventsApi";
+import { createBooking, getMyBookings, retryBookingPayment } from "../../api/eventsApi";
 import Button from "../common/Button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const EventDetail = ({ event, isOpen, onClose }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const errorRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Token caducado: fetch no pasa por el interceptor de axios
+  function expireSession(message) {
+    sessionStorage.setItem(
+      "authMessage",
+      message || "Tu sesión ha expirado. Vuelve a iniciar sesión para continuar."
+    );
+    logout();
+    onClose();
+    navigate("/login");
+  }
+
   // Reserva que ya tenga el socio para este evento
   const [existingBooking, setExistingBooking] = useState(null);
   const [checkingBooking, setCheckingBooking] = useState(false);
+  const [bookingCheck, setBookingCheck] = useState(0);
+
+  // Al volver de Stripe con "atrás" el navegador restaura la página tal cual
+  useEffect(() => {
+    const onPageShow = (e) => {
+      if (e.persisted) setBookingCheck((n) => n + 1);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   useEffect(() => {
     if (!isOpen || !event || !isAuthenticated) {
@@ -30,6 +52,11 @@ const EventDetail = ({ event, isOpen, onClose }) => {
         const token = localStorage.getItem("token");
         const result = await getMyBookings(token);
         if (cancelled) return;
+
+        if (result.status === 401) {
+          expireSession(result.message);
+          return;
+        }
 
         if (result.success) {
           const found = (result.data || []).find(
@@ -51,7 +78,14 @@ const EventDetail = ({ event, isOpen, onClose }) => {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, event?.id, isAuthenticated]);
+  }, [isOpen, event?.id, isAuthenticated, bookingCheck]);
+
+  // En móvil el aviso puede quedar fuera de pantalla
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
 
   if (!isOpen || !event) return null;
 
@@ -92,6 +126,11 @@ const EventDetail = ({ event, isOpen, onClose }) => {
       const token = localStorage.getItem("token");
       const result = await createBooking(event.id, token);
 
+      if (result.status === 401) {
+        expireSession(result.message);
+        return;
+      }
+
       if (result.success) {
         // De pago: a Stripe. La reserva se confirma con el webhook, no al volver
         if (result.data?.checkout_url) {
@@ -107,8 +146,37 @@ const EventDetail = ({ event, isOpen, onClose }) => {
         }, 2000);
       } else {
         setError(result.message || "Error al crear la reserva");
+        // Ya hay reserva (p. ej. pago a medias): refrescar para ofrecer "Completar pago"
+        if (result.status === 409) setBookingCheck((n) => n + 1);
       }
-    } catch (err) {
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Pago pendiente: nueva sesión de Stripe para la misma reserva
+  const handleResumePayment = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const result = await retryBookingPayment(existingBooking.id, token);
+
+      if (result.status === 401) {
+        expireSession(result.message);
+        return;
+      }
+
+      if (result.success && result.data?.checkout_url) {
+        window.location.href = result.data.checkout_url;
+        return;
+      }
+
+      setError(result.message || "No se pudo abrir el pago. Intenta de nuevo.");
+    } catch {
       setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setLoading(false);
@@ -180,11 +248,6 @@ const EventDetail = ({ event, isOpen, onClose }) => {
             <div className="p-4 sm:p-8 flex flex-col gap-5 border-r border-[#262626] md:overflow-y-auto min-h-0">
 
               {/* Avisos */}
-              {error && (
-                <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 text-sm">
-                  {error}
-                </div>
-              )}
               {success && (
                 <div className="bg-green-500/20 border border-green-500 text-green-200 px-4 py-3 text-sm">
                   ¡Reserva confirmada! Redirigiendo a tus entradas...
@@ -224,29 +287,38 @@ const EventDetail = ({ event, isOpen, onClose }) => {
               )}
 
               {/* Reservar */}
-              <div className="md:mt-auto pt-2">
+              <div className="md:mt-auto pt-2 flex flex-col gap-3">
+                {error && (
+                  <div
+                    ref={errorRef}
+                    role="alert"
+                    className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 text-sm"
+                  >
+                    {error}
+                  </div>
+                )}
                 {isAuthenticated ? (
-                  existingBooking ? (
+                  existingBooking?.estado === "confirmada" ? (
                     <Button
                       variant="primary"
                       onClick={() => {
                         onClose();
-                        if (existingBooking.estado === "confirmada") {
-                          navigate(`/mis-entradas?ver=${existingBooking.id}`);
-                        } else {
-                          navigate("/mis-entradas");
-                        }
+                        navigate(`/mis-entradas?ver=${existingBooking.id}`);
                       }}
                       className="w-full flex items-center justify-center gap-2"
                     >
-                      {existingBooking.estado === "confirmada" ? (
-                        <CheckCircle size={18} />
-                      ) : (
-                        <AlertCircle size={18} />
-                      )}
-                      {existingBooking.estado === "confirmada"
-                        ? "Ya tienes reserva"
-                        : "Pago pendiente — Ver detalles"}
+                      <CheckCircle size={18} />
+                      Ya tienes reserva
+                    </Button>
+                  ) : existingBooking ? (
+                    <Button
+                      variant="primary"
+                      onClick={handleResumePayment}
+                      disabled={loading}
+                      className="w-full flex items-center justify-center gap-2"
+                    >
+                      <AlertCircle size={18} />
+                      {loading ? "Procesando..." : "Completar pago"}
                     </Button>
                   ) : (
                     <Button

@@ -55,7 +55,7 @@ export const createBooking = async (eventId, token) => {
       body: JSON.stringify({ event_id: eventId })
     });
     const data = await response.json();
-    return data;
+    return { ...data, status: response.status };
   } catch (error) {
     console.error('Error al crear reserva:', error);
     throw error;
@@ -74,7 +74,7 @@ export const getMyBookings = async (token, estado = null) => {
       }
     });
     const data = await response.json();
-    return data;
+    return { ...data, status: response.status };
   } catch (error) {
     console.error('Error al obtener mis reservas:', error);
     throw error;
@@ -111,7 +111,7 @@ export const retryBookingPayment = async (bookingId, token) => {
       }
     });
     const data = await response.json();
-    return data;
+    return { ...data, status: response.status };
   } catch (error) {
     console.error('Error al reanudar el pago:', error);
     throw error;

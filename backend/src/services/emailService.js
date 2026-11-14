@@ -173,7 +173,7 @@ class EmailService {
 
       const mailOptions = {
         from: fromNoreply(),
-        userId: user?.id,
+        to: user.email,
         subject: `${tipoEntradaLabel} confirmada — ${event.titulo}`,
         html: `
           <!DOCTYPE html>
@@ -944,7 +944,7 @@ class EmailService {
       const loginUrl = `${process.env.FRONTEND_URL}/login`;
       const mailOptions = {
         from: fromSupport(),
-        userId: user?.id,
+        to: user.email,
         subject: '¡Solicitud aprobada! Bienvenido a La Clave 981',
         html: `
           <!DOCTYPE html>
