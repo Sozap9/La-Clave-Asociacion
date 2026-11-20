@@ -1,4 +1,4 @@
-import { query } from '../config/database.js';
+import { query, transaction } from '../config/database.js';
 import logger from '../config/logger.js';
 
 /**
@@ -22,40 +22,58 @@ class EventTicketTier {
   }
 
   /**
-   * Sustituye todas las tandas del evento (al guardar el formulario)
-   * @param {Array} tandas - [{ nombre, precio, fecha_hora_inicio }]
+   * Guarda las tandas del formulario: las que traen id se actualizan y las
+   * nuevas se crean. Nunca se borra ninguna: las reservas guardan su tier_id.
+   * @param {Array} tandas - [{ id?, nombre, precio, fecha_hora_inicio, activada_manualmente }]
    */
-  static async replaceForEvent(eventId, tandas = []) {
+  static async syncForEvent(eventId, tandas = []) {
     try {
-      await query('DELETE FROM event_ticket_tiers WHERE event_id = ?', [eventId]);
-
       if (!Array.isArray(tandas) || tandas.length === 0) {
-        return [];
+        return await this.getByEvent(eventId);
       }
 
-      for (let i = 0; i < tandas.length; i++) {
-        const t = tandas[i];
-        if (!t || !t.nombre || t.precio === undefined || t.precio === null || !t.fecha_hora_inicio) {
-          continue; // las filas incompletas se ignoran
-        }
-        await query(
-          `INSERT INTO event_ticket_tiers
-            (event_id, nombre, precio, fecha_hora_inicio, orden, activada_manualmente)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            eventId,
+      await transaction(async (conn) => {
+        const [existentes] = await conn.execute(
+          'SELECT id FROM event_ticket_tiers WHERE event_id = ?',
+          [eventId],
+        );
+        const idsEvento = new Set(existentes.map((t) => t.id));
+
+        for (let i = 0; i < tandas.length; i++) {
+          const t = tandas[i];
+          if (!t || !t.nombre || t.precio === undefined || t.precio === null || !t.fecha_hora_inicio) {
+            continue; // las filas incompletas se ignoran
+          }
+          const tierId = parseInt(t.id);
+          const valores = [
             t.nombre,
             parseFloat(t.precio),
             t.fecha_hora_inicio,
             i,
             t.activada_manualmente ? 1 : 0,
-          ],
-        );
-      }
+          ];
+
+          if (tierId && idsEvento.has(tierId)) {
+            await conn.execute(
+              `UPDATE event_ticket_tiers
+               SET nombre = ?, precio = ?, fecha_hora_inicio = ?, orden = ?, activada_manualmente = ?
+               WHERE id = ? AND event_id = ?`,
+              [...valores, tierId, eventId],
+            );
+          } else {
+            await conn.execute(
+              `INSERT INTO event_ticket_tiers
+                (nombre, precio, fecha_hora_inicio, orden, activada_manualmente, event_id)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [...valores, eventId],
+            );
+          }
+        }
+      });
 
       return await this.getByEvent(eventId);
     } catch (error) {
-      logger.error('Error en EventTicketTier.replaceForEvent:', error);
+      logger.error('Error en EventTicketTier.syncForEvent:', error);
       throw error;
     }
   }

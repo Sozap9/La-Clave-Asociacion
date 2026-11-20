@@ -272,6 +272,7 @@ const AdminEventForm = () => {
       const tandasValidas = tandas
         .filter((t) => t.nombre && t.precio !== "" && t.fecha_inicio && t.hora_inicio)
         .map((t) => ({
+          id: t.id,
           nombre: t.nombre,
           precio: parseFloat(t.precio),
           fecha_hora_inicio: combinarFechaHora(t.fecha_inicio, t.hora_inicio),
@@ -529,14 +530,17 @@ const AdminEventForm = () => {
                           {isActiva ? <ZapOff size={16} /> : <Zap size={16} />}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        title="Quitar tramo"
-                        onClick={() => handleRemoveTanda(index)}
-                        className="p-2 rounded border border-[#333] text-red-400 hover:bg-red-500/10 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {/* Las tandas guardadas no se pueden quitar */}
+                      {!tanda.id && (
+                        <button
+                          type="button"
+                          title="Quitar tramo"
+                          onClick={() => handleRemoveTanda(index)}
+                          className="p-2 rounded border border-[#333] text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                     {isActiva && (
                       <p className="text-primary-400 text-xs sm:col-span-5 -mt-1">

@@ -83,10 +83,10 @@ export const createEvent = async (req, res) => {
 
     logger.info('Evento creado', { eventId: result.insertId });
 
-    // Sin tandas en el formulario, replaceForEvent no crea ninguna
+    // Sin tandas en el formulario, syncForEvent no crea ninguna
     const tandas = parseTandas(req.body.tandas);
     if (tandas.length > 0) {
-      await EventTicketTier.replaceForEvent(result.insertId, tandas);
+      await EventTicketTier.syncForEvent(result.insertId, tandas);
       logger.debug('Tandas guardadas', { total: tandas.length });
     }
 
@@ -182,11 +182,10 @@ export const updateEvent = async (req, res) => {
 
     logger.info('Evento actualizado', { eventId: id });
 
-    // Sin campo "tandas" se conservan las actuales (otros formularios no lo
-    // envían); con "[]" se borran todas.
+    // Las tandas guardadas nunca se borran; solo se actualizan o se añaden
     if (req.body.tandas !== undefined) {
       const tandas = parseTandas(req.body.tandas);
-      await EventTicketTier.replaceForEvent(id, tandas);
+      await EventTicketTier.syncForEvent(id, tandas);
       logger.debug('Tandas actualizadas', { total: tandas.length });
     }
 
