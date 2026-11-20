@@ -309,16 +309,17 @@ export const deleteEvent = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // No se borra si tiene reservas confirmadas
+    // Con cualquier reserva no se borra: la FK borraría en cascada las
+    // reservas y su rastro con los pagos. Para eso están cancelar u ocultar.
     const [bookings] = await pool.execute(
-      'SELECT COUNT(*) as count FROM bookings WHERE event_id = ? AND estado = "confirmada"', 
+      'SELECT COUNT(*) as count FROM bookings WHERE event_id = ?',
       [id]
     );
-    
+
     if (bookings[0].count > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cannot delete event with confirmed bookings' 
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede eliminar un evento con reservas. Puedes cancelarlo u ocultarlo.'
       });
     }
 
