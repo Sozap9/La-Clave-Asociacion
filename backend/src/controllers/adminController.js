@@ -1865,7 +1865,44 @@ export const cancelBookingAdmin = async (req, res) => {
       });
     }
 
-    await Booking.cancel(id, motivo || "Cancelada por administrador");
+    await transaction(async (conn) => {
+      await conn.execute(
+        `UPDATE bookings
+         SET estado = 'cancelada', fecha_cancelacion = NOW(), motivo_cancelacion = ?
+         WHERE id = ?`,
+        [motivo || "Cancelada por administrador", id],
+      );
+
+      // Igual que cancelBooking: solo las confirmadas habían descontado aforo,
+      // y las invitaciones solo cuentan en entradas_reservadas
+      if (booking.estado === "confirmada") {
+        if (booking.es_invitacion) {
+          await conn.execute(
+            `UPDATE events
+             SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
+             WHERE id = ?`,
+            [booking.numero_entradas, booking.event_id],
+          );
+        } else {
+          await conn.execute(
+            `UPDATE events
+             SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0),
+                 entradas_disponibles = entradas_disponibles + ?
+             WHERE id = ?`,
+            [booking.numero_entradas, booking.numero_entradas, booking.event_id],
+          );
+        }
+      }
+    });
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "cancelar",
+      entidadTipo: "reserva",
+      entidadId: Number(id),
+      descripcion: `Reserva #${id} cancelada por el administrador${motivo ? `: ${motivo}` : ""}`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,

@@ -251,7 +251,7 @@ class CronService {
     cron.schedule('*/15 * * * *', async () => {
       try {
         const staleBookings = await query(`
-          SELECT id, event_id, numero_entradas
+          SELECT id
           FROM bookings
           WHERE estado = 'esperando_pago'
             AND created_at < DATE_SUB(NOW(), INTERVAL 40 MINUTE)
@@ -267,12 +267,7 @@ class CronService {
              WHERE id = ?`,
             [booking.id],
           );
-          await query(
-            `UPDATE events SET entradas_disponibles = entradas_disponibles + ?,
-                                entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
-             WHERE id = ?`,
-            [booking.numero_entradas, booking.numero_entradas, booking.event_id],
-          );
+          // No hay aforo que devolver: solo se descuenta al pagar
         }
 
         logger.info(`Reservas pendientes de pago limpiadas: ${staleBookings.length}`);

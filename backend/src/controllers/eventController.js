@@ -147,11 +147,19 @@ export const updateEvent = async (req, res) => {
       ? `/uploads/events/${req.file.filename}` 
       : events[0].imagen_cartel_url;
 
-    // Las ocupadas se calculan desde entradas_disponibles: entradas_reservadas
-    // no se actualizaba y no es fiable.
-    const aforoAnterior = events[0].aforo_maximo || 0;
-    const disponiblesAnterior = events[0].entradas_disponibles ?? aforoAnterior;
-    const entradasOcupadas = Math.max(aforoAnterior - disponiblesAnterior, 0);
+    // Ocupadas desde las reservas reales, no desde los contadores guardados,
+    // para no arrastrar descuadres. Las invitaciones no ocupan aforo público
+    // pero sí cuentan en entradas_reservadas.
+    const [ocupacion] = await pool.execute(
+      `SELECT
+         COALESCE(SUM(CASE WHEN es_invitacion = 0 THEN numero_entradas END), 0) AS ocupadas,
+         COALESCE(SUM(numero_entradas), 0) AS reservadas
+       FROM bookings
+       WHERE event_id = ? AND estado IN ('confirmada', 'asistida')`,
+      [id],
+    );
+    const entradasOcupadas = parseInt(ocupacion[0].ocupadas) || 0;
+    const entradasReservadas = parseInt(ocupacion[0].reservadas) || 0;
     const nuevas_entradas_disponibles = Math.max(parseInt(aforo_maximo) - entradasOcupadas, 0);
 
     await pool.execute(
@@ -163,7 +171,7 @@ export const updateEvent = async (req, res) => {
       WHERE id = ?`,
       [
         titulo, descripcion, fecha_evento, hora_evento, hora_fin || null,
-        ubicacion, parseInt(aforo_maximo), nuevas_entradas_disponibles, entradasOcupadas,
+        ubicacion, parseInt(aforo_maximo), nuevas_entradas_disponibles, entradasReservadas,
         precio_socio ? parseFloat(precio_socio) : 0,
         precio_invitado ? parseFloat(precio_invitado) : 0,
         imagen_cartel_url,
