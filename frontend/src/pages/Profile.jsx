@@ -8,6 +8,7 @@ import EditProfileModal from '../components/common/EditProfileModal';
 import ChangePasswordModal from '../components/common/ChangePasswordModal';
 import { ArrowRight } from 'lucide-react';
 import { FEATURES } from '../utils/constants';
+import { mediaUrl } from '../utils/mediaUrl';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -127,7 +128,7 @@ const Profile = () => {
                 <div className="w-20 h-20 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-2xl sm:text-4xl font-bold shadow-2xl">
                   {userData.avatar_url ? (
                     <img 
-                      src={userData.avatar_url} 
+                      src={mediaUrl(userData.avatar_url)} 
                       alt={userData.nombre}
                       className="w-full h-full rounded-full object-cover"
                     />

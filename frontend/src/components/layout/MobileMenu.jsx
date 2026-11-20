@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { NAV_ROUTES, FEATURES } from '../../utils/constants';
 import Button from '../common/Button';
 import { useLanguage } from '../../context/LanguageContext';
+import { mediaUrl } from '../../utils/mediaUrl';
 
 const MobileMenu = ({ isOpen, onClose }) => {
   const { user, isAuthenticated, isAdmin, isSocio, logout } = useAuth();
@@ -142,7 +143,7 @@ const MobileMenu = ({ isOpen, onClose }) => {
                 >
                   {user?.avatar_url ? (
                     <img
-                      src={user.avatar_url}
+                      src={mediaUrl(user.avatar_url)}
                       alt={`${user.nombre} ${user.apellidos}`}
                       className="w-12 h-12 rounded-full object-cover shadow-glow"
                     />

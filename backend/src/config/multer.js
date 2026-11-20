@@ -42,6 +42,20 @@ const dniStorage = multer.diskStorage({
   },
 });
 
+// Imágenes del perfil (avatar y DNI) en una sola petición: cada campo a su carpeta
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = file.fieldname === "avatar" ? "avatars" : "dni";
+    cb(null, path.join(uploadsDir, dir));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    const prefix = file.fieldname === "avatar" ? "avatar" : "dni";
+    cb(null, `${prefix}-${req.user.id}-${uniqueSuffix}${ext}`);
+  },
+});
+
 // DNI de solicitudes: aún no hay usuario, el nombre usa fecha y aleatorio
 const solicitudDniStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -124,6 +138,16 @@ export const uploadDNI = multer({
   fileFilter: imageFilter,
 });
 
+// Perfil: campos avatar y dni_front, ambos opcionales
+export const uploadProfileImages = multer({
+  storage: profileStorage,
+  limits,
+  fileFilter: imageFilter,
+}).fields([
+  { name: "avatar", maxCount: 1 },
+  { name: "dni_front", maxCount: 1 },
+]);
+
 // Solicitud de socio (pública): campos dni_front y dni_back
 export const uploadSolicitudDNI = multer({
   storage: solicitudDniStorage,
@@ -170,6 +194,7 @@ export const getFileUrl = (filePath) => {
 export default {
   uploadAvatar,
   uploadDNI,
+  uploadProfileImages,
   uploadSolicitudDNI,
   uploadEventImage,
   uploadGalleryImage,

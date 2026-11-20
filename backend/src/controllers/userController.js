@@ -1,6 +1,12 @@
 import { pool } from '../config/database.js';
 import bcrypt from 'bcrypt';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import logger from '../config/logger.js';
+import { deleteFile } from '../config/multer.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const backendRoot = path.join(__dirname, '../..');
 
 /**
  * @desc    Mi perfil
@@ -47,6 +53,17 @@ export const getUserProfile = async (req, res) => {
  * @access  Private
  */
 export const updateUserProfile = async (req, res) => {
+  // Las imágenes solo llegan como archivo (multer); en la base va la ruta
+  const avatarFile = req.files?.avatar?.[0];
+  const dniFrontFile = req.files?.dni_front?.[0];
+
+  // Si la petición no llega a guardarse, los archivos recién subidos sobran
+  const descartarSubidas = () => {
+    [avatarFile, dniFrontFile]
+      .filter(Boolean)
+      .forEach((file) => deleteFile(file.path));
+  };
+
   try {
     const userId = req.user.id;
     const { 
@@ -55,11 +72,16 @@ export const updateUserProfile = async (req, res) => {
       email, 
       telefono, 
       fecha_nacimiento, 
-      dni, 
-      avatar_url, 
-      dni_front_url, 
-      dni_back_url 
+      dni
     } = req.body;
+
+    const avatar_url = avatarFile ? `uploads/avatars/${avatarFile.filename}` : undefined;
+    const dni_front_url = dniFrontFile ? `uploads/dni/${dniFrontFile.filename}` : undefined;
+
+    const [current] = await pool.execute(
+      'SELECT avatar_url, dni_front_url FROM users WHERE id = ?',
+      [userId]
+    );
 
     // Solo se actualizan los campos que llegan
     const fieldsToUpdate = [];
@@ -76,6 +98,7 @@ export const updateUserProfile = async (req, res) => {
     if (email !== undefined && email !== '') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
+        descartarSubidas();
         return res.status(400).json({ 
           success: false,
           message: 'Email inválido' 
@@ -88,6 +111,7 @@ export const updateUserProfile = async (req, res) => {
       );
 
       if (existingEmail.length > 0) {
+        descartarSubidas();
         return res.status(400).json({ 
           success: false,
           message: 'El email ya está en uso' 
@@ -109,20 +133,17 @@ export const updateUserProfile = async (req, res) => {
       fieldsToUpdate.push('dni = ?');
       values.push(dni || null);
     }
-    if (avatar_url !== undefined) {
+    if (avatar_url) {
       fieldsToUpdate.push('avatar_url = ?');
-      values.push(avatar_url || null);
+      values.push(avatar_url);
     }
-    if (dni_front_url !== undefined) {
+    if (dni_front_url) {
       fieldsToUpdate.push('dni_front_url = ?');
-      values.push(dni_front_url || null);
-    }
-    if (dni_back_url !== undefined) {
-      fieldsToUpdate.push('dni_back_url = ?');
-      values.push(dni_back_url || null);
+      values.push(dni_front_url);
     }
 
     if (fieldsToUpdate.length === 0) {
+      descartarSubidas();
       return res.status(400).json({ 
         success: false,
         message: 'No hay campos para actualizar' 
@@ -147,6 +168,15 @@ export const updateUserProfile = async (req, res) => {
       [userId]
     );
 
+    // Fuera los archivos sustituidos (solo rutas de uploads/, no base64 antiguo)
+    const anteriores = [
+      avatar_url && current[0]?.avatar_url,
+      dni_front_url && current[0]?.dni_front_url,
+    ];
+    anteriores
+      .filter((ruta) => ruta && ruta.startsWith('uploads/'))
+      .forEach((ruta) => deleteFile(path.join(backendRoot, ruta)));
+
     logger.info('Perfil de usuario actualizado', { userId });
 
     res.json({
@@ -155,6 +185,7 @@ export const updateUserProfile = async (req, res) => {
       data: updatedUser[0]
     });
   } catch (error) {
+    descartarSubidas();
     logger.error('Error al actualizar perfil:', error);
     res.status(500).json({ 
       success: false,

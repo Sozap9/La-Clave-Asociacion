@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { X, Camera, Check, Upload } from "lucide-react";
 import api from "../../api/axios";
 import DatePickerInput from "./DatePickerInput";
+import { mediaUrl } from "../../utils/mediaUrl";
 
 // DNI (12345678A)
 const isValidDNI = (dni) => {
@@ -46,9 +47,11 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
     telefono: "",
     fecha_nacimiento: "",
     dni: "",
-    avatar_url: "",
-    dni_front_url: "",
   });
+
+  // Archivos elegidos, se envían al guardar
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [dniFrenteFile, setDniFrenteFile] = useState(null);
 
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [dniFrentePreview, setDniFrentePreview] = useState(null);
@@ -70,11 +73,11 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
           ? userData.fecha_nacimiento.split("T")[0]
           : "",
         dni: userData.dni || "",
-        avatar_url: userData.avatar_url || "",
-        dni_front_url: userData.dni_front_url || "",
       });
-      setAvatarPreview(userData.avatar_url || null);
-      setDniFrentePreview(userData.dni_front_url || null);
+      setAvatarFile(null);
+      setDniFrenteFile(null);
+      setAvatarPreview(mediaUrl(userData.avatar_url));
+      setDniFrentePreview(mediaUrl(userData.dni_front_url));
       setError("");
       setSuccess("");
     }
@@ -90,8 +93,8 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
   const handleImageChange = (e, type) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError("La imagen debe ser menor a 10MB");
+      if (file.size > 5 * 1024 * 1024) {
+        setError("La imagen debe ser menor a 5MB");
         setTimeout(() => setError(""), 3000);
         return;
       }
@@ -102,22 +105,18 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result;
+      const preview = URL.createObjectURL(file);
 
-        switch (type) {
-          case "avatar":
-            setAvatarPreview(base64);
-            setFormData({ ...formData, avatar_url: base64 });
-            break;
-          case "dni_frente":
-            setDniFrentePreview(base64);
-            setFormData({ ...formData, dni_front_url: base64 });
-            break;
-        }
-      };
-      reader.readAsDataURL(file);
+      switch (type) {
+        case "avatar":
+          setAvatarFile(file);
+          setAvatarPreview(preview);
+          break;
+        case "dni_frente":
+          setDniFrenteFile(file);
+          setDniFrentePreview(preview);
+          break;
+      }
     }
   };
 
@@ -137,7 +136,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
         }
       });
 
-      if (Object.keys(updateData).length === 0) {
+      if (Object.keys(updateData).length === 0 && !avatarFile && !dniFrenteFile) {
         setError("No hay cambios para guardar");
         setLoading(false);
         return;
@@ -160,7 +159,15 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
         }
       }
 
-      const response = await api.put("/users/profile", updateData);
+      // Texto e imágenes en un FormData; las imágenes van como archivo
+      const body = new FormData();
+      Object.entries(updateData).forEach(([key, value]) => body.append(key, value));
+      if (avatarFile) body.append("avatar", avatarFile);
+      if (dniFrenteFile) body.append("dni_front", dniFrenteFile);
+
+      const response = await api.put("/users/profile", body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       if (response.data.success) {
         setSuccess("✓ Perfil actualizado correctamente");
@@ -237,7 +244,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
               <input
                 ref={avatarInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => handleImageChange(e, "avatar")}
                 className="hidden"
               />
@@ -246,7 +253,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                 Haz clic en la imagen para cambiar tu avatar
                 <br />
                 <span className="text-xs text-gray-500">
-                  Máximo 10MB - JPG, PNG, GIF
+                  Máximo 5MB - JPG, PNG, WEBP
                 </span>
               </p>
             </div>
@@ -400,11 +407,11 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                   <input
                     ref={dniFrenteInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={(e) => handleImageChange(e, "dni_frente")}
                     className="hidden"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Máximo 10MB</p>
+                  <p className="text-xs text-gray-500 mt-1">Máximo 5MB</p>
                 </div>
               </div>
             </div>
