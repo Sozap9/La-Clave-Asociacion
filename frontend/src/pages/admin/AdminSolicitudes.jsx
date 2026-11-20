@@ -23,9 +23,9 @@ import FilterBar from "../../components/UI/FilterBar";
 import SearchInput from "../../components/UI/SearchInput";
 import Pagination from "../../components/UI/Pagination";
 import AdminCard from "../../components/admin/AdminCard";
+import PrivateImage from "../../components/common/PrivateImage";
 import { respuestasRegistro } from "../../utils/registroRespuestas";
 
-const BACKEND_URL = import.meta.env.VITE_API_URL?.replace("/api", "") || "";
 
 const solicitudFilters = [
   { value: "pendiente", label: "Pendientes" },
@@ -91,7 +91,6 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
     }
   };
 
-  const imgUrl = (path) => (path ? `${BACKEND_URL}/${path}` : null);
   const cfg = ESTADO_CONFIG[solicitud.estado] || ESTADO_CONFIG.pendiente;
 
   return (
@@ -192,26 +191,20 @@ const SolicitudModal = ({ solicitud, onClose, onAprobar, onRechazar }) => {
               Documento de identidad
             </h3>
             <div className="grid grid-cols-1 max-w-[220px] gap-4">
-              {[
-                ["Cara delantera", solicitud.dni_front_url],
-              ].map(([label, path]) => (
-                <div key={label}>
-                  <p className="text-gray-500 text-xs mb-2">{label}</p>
-                  {imgUrl(path) ? (
-                    <a href={imgUrl(path)} target="_blank" rel="noreferrer">
-                      <img
-                        src={imgUrl(path)}
-                        alt={label}
-                        className="w-full h-36 object-cover rounded-xl border border-[#262626] hover:border-primary-500/50 transition-colors"
-                      />
-                    </a>
-                  ) : (
+              <div>
+                <p className="text-gray-500 text-xs mb-2">Cara delantera</p>
+                <PrivateImage
+                  endpoint={solicitud.dni_front_url ? `/admin/solicitudes/${solicitud.id}/dni` : null}
+                  alt="Cara delantera"
+                  link
+                  className="w-full h-36 object-cover rounded-xl border border-[#262626] hover:border-primary-500/50 transition-colors"
+                  fallback={
                     <div className="w-full h-36 bg-[#111] rounded-xl border border-[#262626] flex items-center justify-center text-gray-600 text-sm">
                       Sin imagen
                     </div>
-                  )}
-                </div>
-              ))}
+                  }
+                />
+              </div>
             </div>
           </section>
 

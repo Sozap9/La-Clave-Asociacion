@@ -1,6 +1,7 @@
 import express from 'express';
 import { 
   getUserProfile, 
+  getMyDni,
   updateUserProfile, 
   changePassword 
 } from '../controllers/userController.js';
@@ -12,6 +13,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.get('/profile', getUserProfile);
+
+router.get('/profile/dni', getMyDni);
 
 // Los errores de multer (tamaño, formato) se devuelven como 400 con su mensaje
 const profileUpload = (req, res, next) => {

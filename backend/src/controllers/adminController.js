@@ -13,6 +13,7 @@ import EmailService from "../services/emailService.js";
 import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
 import logger from "../config/logger.js"; 
 import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
+import { enviarDocumento } from "../utils/documentos.js";
 
 // Estadísticas y dashboard
 
@@ -2848,6 +2849,35 @@ export const getSolicitudDetails = async (req, res) => {
 };
 
 /**
+ * Imagen del DNI de una solicitud
+ * GET /api/admin/solicitudes/:id/dni
+ */
+export const getSolicitudDni = async (req, res) => {
+  try {
+    const solicitud = await SolicitudSocio.findById(parseInt(req.params.id));
+    return enviarDocumento(res, solicitud?.dni_front_url);
+  } catch (error) {
+    logger.error("Error en getSolicitudDni:", error);
+    return res.status(500).json({ success: false, message: "Error al obtener el documento" });
+  }
+};
+
+/**
+ * Imagen del DNI de un socio (id de socio)
+ * GET /api/admin/socios/:id/dni
+ */
+export const getSocioDni = async (req, res) => {
+  try {
+    const socio = await Socio.findById(req.params.id);
+    const user = socio ? await User.findById(socio.user_id) : null;
+    return enviarDocumento(res, user?.dni_front_url);
+  } catch (error) {
+    logger.error("Error en getSocioDni:", error);
+    return res.status(500).json({ success: false, message: "Error al obtener el documento" });
+  }
+};
+
+/**
  * Aprobar solicitud: crea el usuario y su fila en socios
  * PUT /api/admin/solicitudes/:id/aprobar
  */
@@ -3391,6 +3421,8 @@ export default {
   exportIngresosMensuales,
   listSolicitudes,
   getSolicitudDetails,
+  getSolicitudDni,
+  getSocioDni,
   aprobarSolicitud,
   rechazarSolicitud,
   deleteSolicitud,

@@ -3,6 +3,7 @@ import { X, Camera, Check, Upload } from "lucide-react";
 import api from "../../api/axios";
 import DatePickerInput from "./DatePickerInput";
 import { mediaUrl } from "../../utils/mediaUrl";
+import PrivateImage from "./PrivateImage";
 
 // DNI (12345678A)
 const isValidDNI = (dni) => {
@@ -77,7 +78,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
       setAvatarFile(null);
       setDniFrenteFile(null);
       setAvatarPreview(mediaUrl(userData.avatar_url));
-      setDniFrentePreview(mediaUrl(userData.dni_front_url));
+      setDniFrentePreview(null);
       setError("");
       setSuccess("");
     }
@@ -395,10 +396,18 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                         className="w-full h-32 object-contain rounded"
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                        <Upload className="w-8 h-8 mb-2" />
-                        <p className="text-sm">Click para subir DNI frente</p>
-                      </div>
+                      // El DNI guardado no es público: se pide con la sesión
+                      <PrivateImage
+                        endpoint={userData?.dni_front_url ? "/users/profile/dni" : null}
+                        alt="DNI Frente"
+                        className="w-full h-32 object-contain rounded"
+                        fallback={
+                          <div className="flex flex-col items-center justify-center h-32 text-gray-400">
+                            <Upload className="w-8 h-8 mb-2" />
+                            <p className="text-sm">Click para subir DNI frente</p>
+                          </div>
+                        }
+                      />
                     )}
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
                       <Upload className="w-8 h-8 text-white" />

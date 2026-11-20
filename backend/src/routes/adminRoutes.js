@@ -56,6 +56,8 @@ import {
   // Solicitudes
   listSolicitudes,
   getSolicitudDetails,
+  getSolicitudDni,
+  getSocioDni,
   aprobarSolicitud,
   rechazarSolicitud,
   deleteSolicitud,
@@ -134,6 +136,13 @@ router.get(
   idParamValidator,
   handleValidationErrors,
   getSocioDetails,
+);
+
+router.get(
+  "/socios/:id/dni",
+  idParamValidator,
+  handleValidationErrors,
+  getSocioDni,
 );
 
 router.put(
@@ -336,6 +345,7 @@ router.get(
 );
 
 router.get("/solicitudes/:id", getSolicitudDetails);
+router.get("/solicitudes/:id/dni", getSolicitudDni);
 
 router.put("/solicitudes/:id/aprobar", aprobarSolicitud);
 

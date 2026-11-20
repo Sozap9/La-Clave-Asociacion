@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import logger from "./config/logger.js";
 import httpLogger from "./middleware/httpLogger.js";
+import { CARPETAS_PRIVADAS } from "./utils/documentos.js";
 
 // __dirname en módulos ES
 const __filename = fileURLToPath(import.meta.url);
@@ -73,7 +74,11 @@ app.use(compression({
   threshold: 1024
 }));
 
-// Archivos subidos
+// Archivos subidos. Los DNI no son públicos: se piden por la API con sesión
+app.use(
+  CARPETAS_PRIVADAS.map((carpeta) => `/uploads/${carpeta}`),
+  (req, res) => res.status(404).end(),
+);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 

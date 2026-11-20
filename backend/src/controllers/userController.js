@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import logger from '../config/logger.js';
 import { deleteFile } from '../config/multer.js';
+import { enviarDocumento } from '../utils/documentos.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.join(__dirname, '../..');
@@ -44,6 +45,24 @@ export const getUserProfile = async (req, res) => {
       success: false,
       message: 'Error al obtener el perfil del usuario' 
     });
+  }
+};
+
+/**
+ * @desc    Imagen de mi DNI
+ * @route   GET /api/users/profile/dni
+ * @access  Private
+ */
+export const getMyDni = async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT dni_front_url FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    return enviarDocumento(res, rows[0]?.dni_front_url);
+  } catch (error) {
+    logger.error('Error al obtener el DNI del perfil:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener el documento' });
   }
 };
 
