@@ -10,7 +10,8 @@ import { query } from '../config/database.js';
 
 /**
  * Tareas programadas (hora de Madrid): recordatorios del día (9:00), agenda
- * mensual (día 1, 8:00), morosidad (0:00), tokens caducados (3:00),
+ * mensual (día 1, 8:00), morosidad (0:00, solo con CUOTAS_ACTIVAS=true),
+ * tokens caducados (3:00),
  * reservas sin pagar y aviso a la lista de espera (cada 15 min).
  */
 class CronService {
@@ -21,7 +22,10 @@ class CronService {
     
     this.scheduleEventReminders();
     this.scheduleMonthlyAgenda();
-    this.scheduleMorosityCheck();
+    // La asociación no cobra cuotas: la morosidad solo corre si se activan
+    if (process.env.CUOTAS_ACTIVAS === 'true') {
+      this.scheduleMorosityCheck();
+    }
     this.scheduleTokenCleanup();
     this.scheduleExpiredBookingsCleanup();
     
@@ -179,10 +183,9 @@ class CronService {
             dias_morosidad = DATEDIFF(CURDATE(), proximo_pago),
             estado = CASE
               WHEN DATEDIFF(CURDATE(), proximo_pago) > 30 THEN 'moroso'
-              WHEN DATEDIFF(CURDATE(), proximo_pago) > 0 THEN 'activo_pendiente'
               ELSE 'activo'
             END
-          WHERE estado IN ('activo', 'activo_pendiente', 'moroso')
+          WHERE estado IN ('activo', 'moroso')
             AND proximo_pago IS NOT NULL
         `;
         
@@ -231,8 +234,15 @@ class CronService {
         `;
         
         const result = await query(sql);
+
+        // Cambios de email que nadie confirmó a tiempo
+        const emails = await query(`
+          UPDATE users
+          SET email_pendiente = NULL, email_cambio_token = NULL, email_cambio_expira = NULL
+          WHERE email_cambio_expira < NOW()
+        `);
         
-        logger.info(`Limpieza completada: ${result.affectedRows} tokens eliminados`);
+        logger.info(`Limpieza completada: ${result.affectedRows} tokens de contraseña y ${emails.affectedRows} cambios de email caducados`);
         
       } catch (error) {
         logger.error('Error en tarea de limpieza de tokens:', error);
