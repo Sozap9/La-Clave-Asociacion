@@ -5,12 +5,13 @@ import Event from '../models/Event.js';
 import Socio from '../models/Socio.js';
 import User from '../models/User.js';
 import EmailService from './emailService.js';
+import { avisarListaEspera } from './listaEsperaService.js';
 import { query } from '../config/database.js';
 
 /**
  * Tareas programadas (hora de Madrid): recordatorios del día (9:00), agenda
- * mensual (día 1, 8:00), morosidad (0:00), tokens caducados (3:00) y
- * reservas sin pagar (cada 15 min).
+ * mensual (día 1, 8:00), morosidad (0:00), tokens caducados (3:00),
+ * reservas sin pagar y aviso a la lista de espera (cada 15 min).
  */
 class CronService {
   
@@ -244,43 +245,46 @@ class CronService {
   }
   
   /**
-   * Cada 15 min cancela las reservas esperando_pago de más de 40 min, por si
-   * no llega el webhook checkout.session.expired (Stripe las caduca a los 30)
+   * Cada 15 min cancela las reservas esperando_pago cuyo enlace de pago caducó
+   * hace más de 10 min, por si no llega el webhook checkout.session.expired.
+   * Las reservas sin pago_expira_en (anteriores a ese campo) usan 40 min desde
+   * que se crearon.
    */
   static scheduleExpiredBookingsCleanup() {
     cron.schedule('*/15 * * * *', async () => {
       try {
-        const staleBookings = await query(`
-          SELECT id
-          FROM bookings
+        const result = await query(`
+          UPDATE bookings
+          SET estado = 'cancelada', fecha_cancelacion = NOW(),
+              motivo_cancelacion = 'Pago no completado a tiempo (limpieza automática)'
           WHERE estado = 'esperando_pago'
-            AND created_at < DATE_SUB(NOW(), INTERVAL 40 MINUTE)
+            AND (
+              (pago_expira_en IS NOT NULL AND pago_expira_en < DATE_SUB(NOW(), INTERVAL 10 MINUTE))
+              OR (pago_expira_en IS NULL AND created_at < DATE_SUB(NOW(), INTERVAL 40 MINUTE))
+            )
         `);
+        // No hay aforo que devolver: solo se descuenta al pagar
 
-        if (staleBookings.length === 0) return;
-
-        for (const booking of staleBookings) {
-          await query(
-            `UPDATE bookings 
-             SET estado = 'cancelada', fecha_cancelacion = NOW(), 
-                 motivo_cancelacion = 'Pago no completado a tiempo (limpieza automática)'
-             WHERE id = ?`,
-            [booking.id],
-          );
-          // No hay aforo que devolver: solo se descuenta al pagar
+        if (result.affectedRows > 0) {
+          logger.info(`Reservas pendientes de pago limpiadas: ${result.affectedRows}`);
         }
-
-        logger.info(`Reservas pendientes de pago limpiadas: ${staleBookings.length}`);
       } catch (error) {
         logger.error('Error en limpieza de reservas pendientes de pago:', error);
+      }
+
+      // Después de la limpieza, que puede haber liberado plazas
+      try {
+        await avisarListaEspera();
+      } catch (error) {
+        logger.error('Error en aviso a la lista de espera:', error);
       }
     }, {
       timezone: "Europe/Madrid"
     });
 
-    logger.info('Tarea programada: Limpieza de reservas pendientes de pago (cada 15 min)');
+    logger.info('Tarea programada: Limpieza de reservas pendientes de pago y aviso a la lista de espera (cada 15 min)');
   }
-
+  
   // Pausa entre envíos
   static delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));

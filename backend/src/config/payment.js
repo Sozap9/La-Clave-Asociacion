@@ -56,7 +56,7 @@ export const createCheckoutSession = async ({ booking, event, user, numeroEntrad
             currency: 'eur',
             product_data: {
               name: event.titulo,
-              description: `Entrada para el evento del ${event.fecha_evento}`,
+              description: `Entrada para el evento del ${new Date(event.fecha_evento).toLocaleDateString('es-ES')}`,
             },
             unit_amount: Math.round(unitPrice * 100),
           },
@@ -78,6 +78,16 @@ export const createCheckoutSession = async ({ booking, event, user, numeroEntrad
     logger.error('Error creando Checkout Session:', error);
     throw error;
   }
+};
+
+// Consultar una sesión de Checkout (status: open, complete o expired)
+export const getCheckoutSession = async (sessionId) => {
+  return await getStripe().checkout.sessions.retrieve(sessionId);
+};
+
+// Anular una sesión abierta para que ya no se pueda pagar
+export const expireCheckoutSession = async (sessionId) => {
+  return await getStripe().checkout.sessions.expire(sessionId);
 };
 
 // Cliente de Stripe
@@ -211,10 +221,13 @@ export const verifyWebhook = (payload, signature) => {
   }
 };
 
-// Reembolso
-export const refundPayment = async (paymentIntentId) => {
+// Reembolso. Con idempotencyKey, repetir la llamada no reembolsa dos veces.
+export const refundPayment = async (paymentIntentId, idempotencyKey) => {
   try {
-    return await getStripe().refunds.create({ payment_intent: paymentIntentId });
+    return await getStripe().refunds.create(
+      { payment_intent: paymentIntentId },
+      idempotencyKey ? { idempotencyKey } : undefined,
+    );
   } catch (error) {
     logger.error('Error creando reembolso:', error);
     throw error;
@@ -231,6 +244,8 @@ export default {
   stripe,
   createStripeCustomer,
   createCheckoutSession,
+  getCheckoutSession,
+  expireCheckoutSession,
   attachPaymentMethod,
   createSubscription,
   cancelSubscription,

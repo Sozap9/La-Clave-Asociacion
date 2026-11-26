@@ -1,5 +1,5 @@
-import { verifyWebhook } from "../config/payment.js";
-import { query } from "../config/database.js";
+import { verifyWebhook, refundPayment } from "../config/payment.js";
+import { query, transaction } from "../config/database.js";
 import Socio from "../models/Socio.js";
 import Booking from "../models/Booking.js";
 import Event from "../models/Event.js";
@@ -68,11 +68,12 @@ export const handleStripeWebhook = async (req, res) => {
 
 /**
  * Checkout pagado: confirma la reserva (hasta aquí sigue esperando_pago).
- * Idempotente, porque Stripe reintenta los webhooks.
+ * Idempotente, porque Stripe reintenta los webhooks. Si la reserva ya estaba
+ * cancelada o pagada con otro enlace, no se da otra entrada: se devuelve el dinero.
  */
 async function handleCheckoutSessionCompleted(session) {
   try {
-    const bookingId = session.metadata?.booking_id;
+    const bookingId = Number(session.metadata?.booking_id);
     if (!bookingId) {
       logger.warn(
         "checkout.session.completed sin booking_id en metadata — se ignora (probablemente de otro flujo de Stripe)",
@@ -81,57 +82,153 @@ async function handleCheckoutSessionCompleted(session) {
       return;
     }
 
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      logger.error("checkout.session.completed: booking no encontrada", {
+    if (session.payment_status !== "paid") {
+      logger.warn("checkout.session.completed sin pago completado, se ignora", {
         bookingId,
+        sessionId: session.id,
+        paymentStatus: session.payment_status,
       });
       return;
     }
 
-    if (booking.estado === "confirmada") {
-      logger.info("Booking ya estaba confirmada, se ignora reintento de webhook", {
+    const importe = (session.amount_total || 0) / 100;
+    const paymentIntent = session.payment_intent;
+
+    // Con la reserva bloqueada: si Stripe entrega el mismo aviso dos veces a
+    // la vez, el segundo espera y encuentra el pago ya guardado
+    const resultado = await transaction(async (conn) => {
+      const [reservas] = await conn.execute(
+        `SELECT * FROM bookings WHERE id = ? FOR UPDATE`,
+        [bookingId],
+      );
+      const booking = reservas[0];
+      if (!booking) return { accion: "no_existe" };
+
+      const [pagos] = await conn.execute(
+        `SELECT id FROM payments WHERE stripe_payment_intent_id = ? LIMIT 1`,
+        [paymentIntent],
+      );
+      if (pagos.length > 0) return { accion: "repetido", booking };
+
+      if (booking.estado === "esperando_pago") {
+        await conn.execute(
+          `UPDATE bookings SET estado = 'confirmada', precio_pagado = ?, stripe_session_id = ? WHERE id = ?`,
+          [importe, session.id, bookingId],
+        );
+
+        // Aquí se descuenta el aforo público (no al reservar)
+        await conn.execute(
+          `UPDATE events SET entradas_disponibles = entradas_disponibles - ?,
+                              entradas_reservadas = entradas_reservadas + ?
+           WHERE id = ?`,
+          [booking.numero_entradas, booking.numero_entradas, booking.event_id],
+        );
+
+        await conn.execute(
+          `INSERT INTO payments (
+            socio_id, booking_id, event_id, stripe_payment_intent_id, amount, currency,
+            tipo_pago, descripcion, estado, fecha_pago, metadata, created_at
+          ) VALUES (?, ?, ?, ?, ?, 'EUR', 'entrada_evento', ?, 'exitoso', NOW(), ?, NOW())`,
+          [
+            booking.socio_id,
+            bookingId,
+            booking.event_id,
+            paymentIntent,
+            importe,
+            `Entrada a evento (booking ${bookingId})`,
+            JSON.stringify({
+              event_id: String(booking.event_id),
+              booking_id: String(bookingId),
+              checkout_session_id: session.id,
+            }),
+          ],
+        );
+
+        return { accion: "confirmada", booking };
+      }
+
+      // Se guarda ya como reembolsado: así el aviso charge.refunded no cancela
+      // la reserva buena (la que se pagó con el otro enlace)
+      const motivo =
+        booking.estado === "cancelada"
+          ? "la reserva ya estaba cancelada"
+          : "la reserva ya estaba pagada";
+
+      await conn.execute(
+        `INSERT INTO payments (
+          socio_id, booking_id, event_id, stripe_payment_intent_id, amount, currency,
+          tipo_pago, descripcion, estado, fecha_pago, fecha_reembolso, metadata, created_at
+        ) VALUES (?, ?, ?, ?, ?, 'EUR', 'entrada_evento', ?, 'reembolsado', NOW(), NOW(), ?, NOW())`,
+        [
+          booking.socio_id,
+          bookingId,
+          booking.event_id,
+          paymentIntent,
+          importe,
+          `Pago devuelto automáticamente: ${motivo} (booking ${bookingId})`,
+          JSON.stringify({
+            event_id: String(booking.event_id),
+            booking_id: String(bookingId),
+            checkout_session_id: session.id,
+            reembolso_automatico: true,
+          }),
+        ],
+      );
+
+      // Si el reembolso falla, se deshace todo y Stripe reintentará el aviso
+      await refundPayment(paymentIntent, `reembolso-${paymentIntent}`);
+
+      return { accion: "reembolsada", booking, motivo };
+    });
+
+    if (resultado.accion === "no_existe") {
+      logger.error("checkout.session.completed: booking no encontrada", { bookingId });
+      return;
+    }
+
+    if (resultado.accion === "repetido") {
+      logger.info("Pago ya procesado, se ignora reintento de webhook", {
         bookingId,
+        paymentIntent,
       });
       return;
     }
 
-    // Se guarda el importe pagado: el email de confirmación lo muestra
-    await query(
-      `UPDATE bookings SET estado = 'confirmada', precio_pagado = ? WHERE id = ?`,
-      [(session.amount_total || 0) / 100, bookingId],
-    );
+    const { booking } = resultado;
+    const event = await Event.findById(booking.event_id);
 
-    // Aquí se descuenta el aforo público (no al reservar)
-    await query(
-      `UPDATE events SET entradas_disponibles = entradas_disponibles - ?,
-                          entradas_reservadas = entradas_reservadas + ?
-       WHERE id = ?`,
-      [booking.numero_entradas, booking.numero_entradas, booking.event_id],
-    );
+    let purchaserUser = null;
+    try {
+      const socio = await Socio.findById(booking.socio_id);
+      purchaserUser = socio ? await User.findById(socio.user_id) : null;
+    } catch (lookupError) {
+      logger.warn("No se pudo resolver el usuario del pago", { bookingId });
+    }
+    const nombreSocio = purchaserUser
+      ? `${purchaserUser.nombre} ${purchaserUser.apellidos}`
+      : "Un socio";
 
-    await query(
-      `INSERT INTO payments (
-        socio_id, stripe_payment_intent_id, amount, currency, tipo_pago,
-        descripcion, estado, fecha_pago, metadata, created_at
-      ) VALUES (?, ?, ?, 'EUR', 'entrada_evento', ?, 'exitoso', NOW(), ?, NOW())`,
-      [
-        booking.socio_id,
-        session.payment_intent,
-        (session.amount_total || 0) / 100,
-        `Entrada a evento (booking ${bookingId})`,
-        JSON.stringify({
-          event_id: session.metadata?.event_id,
-          booking_id: bookingId,
-          checkout_session_id: session.id,
-        }),
-      ],
-    );
+    if (resultado.accion === "reembolsada") {
+      registrarActividad({
+        userId: purchaserUser?.id || null,
+        accion: "cancelar",
+        entidadTipo: "pago",
+        entidadId: bookingId,
+        descripcion: `Pago de ${importe.toFixed(2)} € de ${nombreSocio} para "${event?.titulo || "un evento"}" devuelto automáticamente: ${resultado.motivo}`,
+        ipAddress: null,
+      });
 
-    const event = await Event.findById(session.metadata?.event_id);
-    const bookingWithQR = await Booking.findById(bookingId);
+      logger.warn("Pago devuelto automáticamente:", {
+        bookingId,
+        sessionId: session.id,
+        paymentIntent,
+        motivo: resultado.motivo,
+      });
+      return;
+    }
 
     try {
+      const bookingWithQR = await Booking.findById(bookingId);
       const qrData = `LACLAVE-${bookingId}-${bookingWithQR.codigo_acceso}`;
       // En base64: Railway borra los archivos del disco al reiniciar
       const qrCode = await generateQRCodeBase64(qrData, bookingId);
@@ -140,10 +237,7 @@ async function handleCheckoutSessionCompleted(session) {
       logger.error("Error generando QR tras pago confirmado:", qrError);
     }
 
-    let purchaserUser = null;
     try {
-      const socio = await Socio.findById(booking.socio_id);
-      purchaserUser = socio ? await User.findById(socio.user_id) : null;
       const finalBooking = await Booking.findById(bookingId);
       if (purchaserUser && event) {
         await EmailService.sendBookingConfirmation(finalBooking, event, purchaserUser);
@@ -157,14 +251,14 @@ async function handleCheckoutSessionCompleted(session) {
       accion: "crear",
       entidadTipo: "pago",
       entidadId: bookingId,
-      descripcion: `${purchaserUser ? `${purchaserUser.nombre} ${purchaserUser.apellidos}` : "Un socio"} compró ${booking.numero_entradas} entrada${booking.numero_entradas !== 1 ? "s" : ""} para "${event?.titulo || "un evento"}" (${((session.amount_total || 0) / 100).toFixed(2)} €)`,
+      descripcion: `${nombreSocio} compró ${booking.numero_entradas} entrada${booking.numero_entradas !== 1 ? "s" : ""} para "${event?.titulo || "un evento"}" (${importe.toFixed(2)} €)`,
       ipAddress: null, // llamada de Stripe, sin IP de usuario
     });
 
     logger.info("Pago de entrada confirmado vía Stripe Checkout:", {
       bookingId,
       sessionId: session.id,
-      paymentIntent: session.payment_intent,
+      paymentIntent,
     });
   } catch (error) {
     logger.error("Error en handleCheckoutSessionCompleted:", error);
@@ -173,7 +267,8 @@ async function handleCheckoutSessionCompleted(session) {
 }
 
 /**
- * Checkout caducado sin pagar: se cancela la reserva
+ * Checkout caducado sin pagar: se cancela la reserva, salvo que tenga ya
+ * otro enlace de pago más reciente (reintento desde Mis entradas)
  */
 async function handleCheckoutSessionExpired(session) {
   try {
@@ -186,7 +281,16 @@ async function handleCheckoutSessionExpired(session) {
       return;
     }
 
-    await Booking.cancel(bookingId, "Pago no completado a tiempo");
+    if (booking.stripe_session_id && booking.stripe_session_id !== session.id) {
+      return;
+    }
+
+    await query(
+      `UPDATE bookings
+       SET estado = 'cancelada', fecha_cancelacion = NOW(), motivo_cancelacion = ?
+       WHERE id = ? AND estado = 'esperando_pago'`,
+      ["Pago no completado a tiempo", bookingId],
+    );
 
     // No hay aforo que devolver: solo se descuenta al pagar
 

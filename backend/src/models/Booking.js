@@ -327,11 +327,15 @@ class Booking {
       const positionResult = await query(positionSql, [eventId]);
       const position = positionResult[0].next_position;
 
+      // Si ya estuvo en la lista (avisado, expirado...) vuelve al final
       const sql = `
         INSERT INTO waiting_list (socio_id, event_id, posicion, estado)
         VALUES (?, ?, ?, 'esperando')
+        ON DUPLICATE KEY UPDATE
+          posicion = ?, estado = 'esperando',
+          notificado = 0, fecha_notificacion = NULL, fecha_registro = NOW()
       `;
-      const result = await query(sql, [socioId, eventId, position]);
+      const result = await query(sql, [socioId, eventId, position, position]);
 
       return {
         id: result.insertId,

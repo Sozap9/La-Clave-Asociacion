@@ -5,10 +5,28 @@ import Socio from "../models/Socio.js";
 import User from "../models/User.js";
 import EmailService from "../services/emailService.js";
 import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
-import { createCheckoutSession } from "../config/payment.js";
+import {
+  createCheckoutSession,
+  getCheckoutSession,
+  expireCheckoutSession,
+} from "../config/payment.js";
 import { query, transaction, pool } from "../config/database.js";
 import logger from "../config/logger.js";
 import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
+import {
+  ahoraEnMadrid,
+  inicioEvento,
+  finEvento,
+  horaDelDiaEvento,
+} from "../utils/horaMadrid.js";
+
+// Enlace de pago vigente de la reserva: el reintento lo reutiliza y la
+// limpieza automática espera a que caduque
+const guardarSesionPago = (bookingId, session) =>
+  query(
+    `UPDATE bookings SET stripe_session_id = ?, pago_expira_en = FROM_UNIXTIME(?) WHERE id = ?`,
+    [session.id, session.expires_at, bookingId],
+  );
 
 /**
  * Crear reserva
@@ -26,7 +44,9 @@ export const createBooking = async (req, res) => {
     }
 
     const userId = req.user.id;
-    const { event_id, numero_entradas = 1 } = req.body;
+    const { event_id } = req.body;
+    // Una entrada por socio
+    const numero_entradas = 1;
 
     if (!event_id) {
       return res.status(400).json({
@@ -89,49 +109,92 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // La venta cierra en hora_fin, no al empezar. Si hora_fin < hora_evento,
-    // el evento acaba al día siguiente (p. ej. 23:30 a 06:00).
-    const fechaEvento = new Date(event.fecha_evento);
-    const [horaInicioH, horaInicioM] = (event.hora_evento || "00:00:00")
-      .split(":")
-      .map(Number);
-    const [horaFinH, horaFinM] = (event.hora_fin || "23:59:59")
-      .split(":")
-      .map(Number);
-    const cruzaMedianoche =
-      horaFinH * 60 + horaFinM < horaInicioH * 60 + horaInicioM;
-
-    const finEvento = new Date(
-      fechaEvento.getFullYear(),
-      fechaEvento.getMonth(),
-      fechaEvento.getDate() + (cruzaMedianoche ? 1 : 0),
-      horaFinH || 0,
-      horaFinM || 0,
-      0,
-    );
-
-    if (finEvento <= new Date()) {
+    // La venta cierra en hora_fin (hora de Madrid), no al empezar
+    if (finEvento(event) <= ahoraEnMadrid()) {
       return res.status(400).json({
         success: false,
         message: "Las entradas para este evento ya no están disponibles: el evento ha finalizado.",
       });
     }
 
-    const existingBooking = await Booking.findBySocioAndEvent(
-      socio.id,
-      event_id,
-    );
-    if (existingBooking) {
+    // El precio vigente se fija en la reserva (precio_unitario, tier_id) para
+    // que no cambie si entra otra tanda antes de pagar
+    const { precio: precioUnitario, tier_id: tierId } =
+      await EventTicketTier.resolveActivePrice(event_id, event.precio_socio);
+
+    // Gratis: se confirma sin pasar por Stripe
+    const esGratuito = !precioUnitario || precioUnitario <= 0;
+
+    // Con el evento bloqueado, dos peticiones a la vez (doble clic, dos
+    // pestañas, dos socios por la última plaza) no pueden pasar las dos
+    const resultado = await transaction(async (conn) => {
+      await conn.execute(`SELECT id FROM events WHERE id = ? FOR UPDATE`, [event_id]);
+
+      const [existentes] = await conn.execute(
+        `SELECT id FROM bookings
+         WHERE socio_id = ? AND event_id = ? AND estado IN ('confirmada', 'asistida', 'esperando_pago')
+         LIMIT 1`,
+        [socio.id, event_id],
+      );
+      if (existentes.length > 0) return { tipo: "existe" };
+
+      // Cuenta también las esperando_pago, para no vender de más
+      const libres = await Event.plazasLibres(conn, event_id);
+      if (libres < numero_entradas) return { tipo: "lleno" };
+
+      const codigo_acceso = `ACC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const codigo_reserva = `LCV-${year}${month}-${randomPart}`;
+
+      const estadoInicial = esGratuito ? "confirmada" : "esperando_pago";
+
+      const [result] = await conn.execute(
+        `INSERT INTO bookings (
+          socio_id, event_id, tier_id, numero_entradas, estado,
+          codigo_reserva, codigo_acceso, precio_pagado, precio_unitario, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0.00, ?, NOW())`,
+        [socio.id, event_id, tierId, numero_entradas, estadoInicial, codigo_reserva, codigo_acceso, precioUnitario],
+      );
+
+      const bookingId = result.insertId;
+
+      // Si venía de la lista de espera, sale de ella
+      await conn.execute(
+        `UPDATE waiting_list SET estado = 'convertido'
+         WHERE socio_id = ? AND event_id = ? AND estado IN ('esperando', 'notificado')`,
+        [socio.id, event_id],
+      );
+
+      // El aforo público solo baja aquí si la reserva se confirma ya (gratis).
+      // Las de pago lo descuentan en el webhook al pagarse.
+      if (estadoInicial === "confirmada") {
+        await conn.execute(
+          `UPDATE events
+           SET entradas_disponibles = entradas_disponibles - ?,
+               entradas_reservadas = entradas_reservadas + ?
+           WHERE id = ?`,
+          [numero_entradas, numero_entradas, event_id],
+        );
+      }
+
+      const [rows] = await conn.execute(`SELECT * FROM bookings WHERE id = ?`, [
+        bookingId,
+      ]);
+      return { tipo: "creada", booking: rows[0] };
+    });
+
+    if (resultado.tipo === "existe") {
       return res.status(409).json({
         success: false,
         message: "Ya tienes una reserva para este evento",
       });
     }
 
-    // Cuenta también las reservas esperando_pago, para no vender de más
-    const available = await Event.checkAvailability(event_id, numero_entradas);
-
-    if (!available) {
+    if (resultado.tipo === "lleno") {
       // Sin plazas: lista de espera
       const inWaitingList = await Booking.checkWaitingList(socio.id, event_id);
 
@@ -153,7 +216,7 @@ export const createBooking = async (req, res) => {
       return res.status(200).json({
         success: true,
         message:
-          "El aforo está completo. Has sido añadido a la lista de espera",
+          "El aforo está completo. Te hemos apuntado a la lista de espera y te avisaremos por correo si se libera una plaza.",
         data: {
           waiting_list: true,
           position: waitingListEntry.position,
@@ -161,61 +224,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // El precio vigente se fija en la reserva (precio_unitario, tier_id) para
-    // que no cambie si entra otra tanda antes de pagar
-    const { precio: precioUnitario, tier_id: tierId } =
-      await EventTicketTier.resolveActivePrice(event_id, event.precio_socio);
-
-    // Gratis: se confirma sin pasar por Stripe
-    const esGratuito = !precioUnitario || precioUnitario <= 0;
-
-    const booking = await transaction(async (conn) => {
-      const codigo_acceso = `ACC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const codigo_reserva = `LCV-${year}${month}-${randomPart}`;
-
-      const estadoInicial = esGratuito ? "confirmada" : "esperando_pago";
-
-      const [result] = await conn.execute(
-        `INSERT INTO bookings (
-          socio_id, event_id, tier_id, numero_entradas, estado,
-          codigo_reserva, codigo_acceso, precio_pagado, precio_unitario, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0.00, ?, NOW())`,
-        [socio.id, event_id, tierId, numero_entradas, estadoInicial, codigo_reserva, codigo_acceso, precioUnitario],
-      );
-
-      const bookingId = result.insertId;
-
-      // El aforo público solo baja aquí si la reserva se confirma ya (gratis).
-      // Las de pago lo descuentan en el webhook al pagarse. La sobreventa la
-      // evita Event.checkAvailability, que sí cuenta las esperando_pago.
-      if (estadoInicial === "confirmada") {
-        try {
-          await conn.execute(
-            `UPDATE events
-             SET entradas_disponibles = entradas_disponibles - ?,
-                 entradas_reservadas = entradas_reservadas + ?
-             WHERE id = ?`,
-            [numero_entradas, numero_entradas, event_id],
-          );
-        } catch (updateError) {
-          logger.warn(
-            "No se pudo actualizar entradas disponibles:",
-            updateError.message,
-          );
-          // Bases de datos antiguas sin la columna
-        }
-      }
-
-      const [rows] = await conn.execute(`SELECT * FROM bookings WHERE id = ?`, [
-        bookingId,
-      ]);
-      return rows[0];
-    });
+    const booking = resultado.booking;
 
     // Gratis: confirmar ya
     if (esGratuito) {
@@ -278,6 +287,8 @@ export const createBooking = async (req, res) => {
         numeroEntradas: numero_entradas,
         precioUnitario,
       });
+
+      await guardarSesionPago(booking.id, session);
 
       logger.info("Checkout Session creada:", {
         bookingId: booking.id,
@@ -359,6 +370,40 @@ export const retryBookingPayment = async (req, res) => {
       });
     }
 
+    if (finEvento(event) <= ahoraEnMadrid()) {
+      return res.status(400).json({
+        success: false,
+        message: "Este evento ya ha finalizado",
+      });
+    }
+
+    // Si el enlace anterior sigue abierto se reutiliza: así nunca hay dos
+    // enlaces pagables para la misma reserva
+    if (booking.stripe_session_id) {
+      try {
+        const anterior = await getCheckoutSession(booking.stripe_session_id);
+        if (anterior.status === "open" && anterior.url) {
+          return res.status(200).json({
+            success: true,
+            message: "Sesión de pago en curso",
+            data: { checkout_url: anterior.url },
+          });
+        }
+        if (anterior.status === "complete") {
+          return res.status(409).json({
+            success: false,
+            message:
+              "Este pago ya se ha completado. La entrada aparecerá confirmada en unos segundos.",
+          });
+        }
+      } catch (stripeError) {
+        logger.warn("No se pudo consultar la sesión de pago anterior:", {
+          bookingId: booking.id,
+          error: stripeError.message,
+        });
+      }
+    }
+
     const user = await User.findById(userId);
 
     // Se cobra el precio fijado al reservar, aunque haya cambiado la tanda
@@ -376,6 +421,8 @@ export const retryBookingPayment = async (req, res) => {
         cancelPath: '/mis-entradas',
         precioUnitario,
       });
+
+      await guardarSesionPago(booking.id, session);
 
       logger.info("Checkout Session de reintento creada:", {
         bookingId: booking.id,
@@ -563,20 +610,12 @@ export const cancelBooking = async (req, res) => {
     // las esperando_pago se pueden cancelar siempre
     if (booking.estado === "confirmada") {
       const event = await Event.findById(booking.event_id);
-      const fechaEvento = new Date(event.fecha_evento);
       const horaLimiteCancelacion = parseInt(
         process.env.HORA_LIMITE_COMPRA_MISMO_DIA || "23",
         10,
       );
-      const limiteCancelacion = new Date(
-        fechaEvento.getFullYear(),
-        fechaEvento.getMonth(),
-        fechaEvento.getDate(),
-        horaLimiteCancelacion,
-        0,
-        0,
-      );
-      if (limiteCancelacion < new Date()) {
+      const limiteCancelacion = horaDelDiaEvento(event.fecha_evento, horaLimiteCancelacion);
+      if (limiteCancelacion < ahoraEnMadrid()) {
         return res.status(400).json({
           success: false,
           message: "No puedes cancelar una reserva de un evento que ya pasó",
@@ -584,13 +623,16 @@ export const cancelBooking = async (req, res) => {
       }
     }
 
-    await transaction(async (conn) => {
-      await conn.execute(
-        `UPDATE bookings 
+    // Solo cancela si la reserva sigue como se leyó: si el pago se completa
+    // justo a la vez, el webhook la habrá confirmado y no se toca
+    const cancelada = await transaction(async (conn) => {
+      const [result] = await conn.execute(
+        `UPDATE bookings
          SET estado = 'cancelada', fecha_cancelacion = NOW(), motivo_cancelacion = ?
-         WHERE id = ?`,
-        [motivo || "Cancelación voluntaria", id],
+         WHERE id = ? AND estado = ?`,
+        [motivo || "Cancelación voluntaria", id, booking.estado],
       );
+      if (result.affectedRows === 0) return false;
 
       // Solo se devuelven plazas si estaba confirmada. Las invitaciones no
       // ocupaban plaza: solo se corrige entradas_reservadas.
@@ -612,7 +654,27 @@ export const cancelBooking = async (req, res) => {
           );
         }
       }
+      return true;
     });
+
+    if (!cancelada) {
+      return res.status(409).json({
+        success: false,
+        message: "El estado de la reserva acaba de cambiar. Recarga la página.",
+      });
+    }
+
+    // El enlace de pago pendiente se anula para que no se pueda pagar después
+    if (booking.estado === "esperando_pago" && booking.stripe_session_id) {
+      try {
+        await expireCheckoutSession(booking.stripe_session_id);
+      } catch (stripeError) {
+        logger.warn("No se pudo anular la sesión de pago:", {
+          bookingId: booking.id,
+          error: stripeError.message,
+        });
+      }
+    }
 
     logger.info("Reserva cancelada:", { bookingId: id });
 
@@ -625,7 +687,7 @@ export const cancelBooking = async (req, res) => {
       ipAddress: getIpFromRequest(req),
     });
 
-    // Pendiente: avisar a la lista de espera
+    // La lista de espera la avisa la tarea programada (listaEsperaService)
 
     return res.status(200).json({
       success: true,
@@ -636,7 +698,6 @@ export const cancelBooking = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al cancelar reserva",
-      error: error.message,
     });
   }
 };
@@ -693,35 +754,14 @@ export const getEventBookings = async (req, res) => {
   }
 };
 
-// Las horas de los eventos son de Madrid y el servidor puede estar en UTC:
-// se compara todo como hora de reloj de Madrid (ms desde 1970 sin zona)
-const ahoraEnMadrid = () => {
-  const partes = Object.fromEntries(
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Madrid",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    })
-      .formatToParts(new Date())
-      .map((p) => [p.type, p.value]),
-  );
-  return Date.UTC(partes.year, partes.month - 1, partes.day, partes.hour, partes.minute, partes.second);
-};
-
 // Escaneo permitido desde 3 h antes del inicio hasta hora_fin (con cruce de medianoche)
 const ventanaCheckIn = (booking) => {
-  const [y, m, d] = booking.fecha_evento_dia.split("-").map(Number);
-  const [hi, mi] = (booking.hora_evento || "00:00:00").split(":").map(Number);
-  const [hf, mf] = (booking.hora_fin || "23:59:59").split(":").map(Number);
-  const cruzaMedianoche = hf * 60 + mf < hi * 60 + mi;
-  const inicio = Date.UTC(y, m - 1, d, hi, mi);
-  const fin = Date.UTC(y, m - 1, d + (cruzaMedianoche ? 1 : 0), hf, mf);
-  return { desde: inicio - 3 * 60 * 60 * 1000, hasta: fin };
+  const datos = {
+    fecha_evento: booking.fecha_evento_dia,
+    hora_evento: booking.hora_evento,
+    hora_fin: booking.hora_fin,
+  };
+  return { desde: inicioEvento(datos) - 3 * 60 * 60 * 1000, hasta: finEvento(datos) };
 };
 
 const mensajeEstadoNoValido = (booking) => {

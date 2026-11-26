@@ -12,6 +12,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [avisoListaEspera, setAvisoListaEspera] = useState("");
 
   // Token caducado: fetch no pasa por el interceptor de axios
   function expireSession(message) {
@@ -111,7 +112,8 @@ const EventDetail = ({ event, isOpen, onClose }) => {
   };
 
   const isFull = entradas_disponibles <= 0;
-  const canBook = !isFull && isAuthenticated && !existingBooking;
+  // Con el aforo completo el botón apunta a la lista de espera
+  const canBook = isAuthenticated && !existingBooking;
 
   const handleBooking = async () => {
     if (!isAuthenticated) {
@@ -138,12 +140,21 @@ const EventDetail = ({ event, isOpen, onClose }) => {
           return;
         }
 
-        // Gratis o lista de espera: ya viene resuelto
+        // Aforo completo: queda en la lista de espera, sin entrada
+        if (result.data?.waiting_list) {
+          setAvisoListaEspera(result.message);
+          return;
+        }
+
+        // Gratis: ya viene confirmada
         setSuccess(true);
         setTimeout(() => {
           onClose();
           navigate("/mis-entradas");
         }, 2000);
+      } else if (result.status === 409 && result.data?.position) {
+        // Ya estaba en la lista de espera
+        setAvisoListaEspera(result.message);
       } else {
         setError(result.message || "Error al crear la reserva");
         // Ya hay reserva (p. ej. pago a medias): refrescar para ofrecer "Completar pago"
@@ -254,6 +265,12 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                 </div>
               )}
 
+              {avisoListaEspera && (
+                <div className="bg-amber-500/20 border border-amber-500 text-amber-200 px-4 py-3 text-sm">
+                  {avisoListaEspera}
+                </div>
+              )}
+
               {/* Descripción */}
               {descripcion && (
                 <p className="text-gray-300 leading-relaxed font-light text-sm whitespace-pre-line">
@@ -332,7 +349,7 @@ const EventDetail = ({ event, isOpen, onClose }) => {
                         : checkingBooking
                           ? "Comprobando..."
                           : isFull
-                            ? "Aforo Completo"
+                            ? "Aforo completo: apuntarme a la lista de espera"
                             : precio_socio > 0
                               ? "Reservar y Donar"
                               : "Reservar Plaza"}

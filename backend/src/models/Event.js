@@ -277,6 +277,28 @@ class Event {
     }
   }
 
+  // Plazas libres leídas con la conexión de una transacción (mismo cálculo que findById)
+  static async plazasLibres(conn, eventId) {
+    const [rows] = await conn.execute(
+      `SELECT
+         e.aforo_maximo,
+         COALESCE(SUM(CASE
+           WHEN b.estado IN ('confirmada', 'asistida', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
+           THEN b.numero_entradas
+           ELSE 0
+         END), 0) AS reservadas
+       FROM events e
+       LEFT JOIN bookings b ON e.id = b.event_id
+       LEFT JOIN socios s ON b.socio_id = s.id
+       LEFT JOIN users ub ON s.user_id = ub.id
+       WHERE e.id = ?
+       GROUP BY e.id`,
+      [eventId],
+    );
+    if (rows.length === 0) return 0;
+    return rows[0].aforo_maximo - (parseInt(rows[0].reservadas) || 0);
+  }
+
   // Eventos destacados
   static async getFeatured(limit = 6) {
     try {
