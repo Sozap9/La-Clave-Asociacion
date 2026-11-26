@@ -340,7 +340,7 @@ class EmailService {
     }
   }
 
-  // Recordatorio de evento
+  // Recordatorio de evento: se envía el mismo día a las 9:00 (cronService)
   static async sendEventReminder(booking, event, user) {
     try {
       const fechaEvento = new Date(event.fecha_evento).toLocaleDateString('es-ES', {
@@ -353,7 +353,7 @@ class EmailService {
       const mailOptions = {
         from: fromNoreply(),
         to: user.email,
-        subject: `Recordatorio: ${event.titulo} - Mañana`,
+        subject: `Recordatorio: ${event.titulo} - Hoy`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -370,7 +370,7 @@ class EmailService {
                     <tr>
                       <td style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); padding: 40px 30px; text-align: center;">
                         <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">
-                          ¡El evento es mañana!
+                          ¡El evento es hoy!
                         </h1>
                       </td>
                     </tr>
@@ -378,7 +378,7 @@ class EmailService {
                     <tr>
                       <td style="padding: 40px 30px; color: #e5e5e5;">
                         <p style="line-height: 1.6; margin: 0 0 30px 0; font-size: 16px;">
-                          Hola <strong>${user.nombre}</strong>, te recordamos que mañana tienes el evento:
+                          Hola <strong>${user.nombre}</strong>, te recordamos que hoy tienes el evento:
                         </p>
                         
                         <div style="background-color: #2a2a2a; padding: 25px; border-radius: 8px; margin: 30px 0;">
