@@ -5,12 +5,17 @@ import {
   updateUserProfile, 
   changePassword 
 } from '../controllers/userController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { solicitarCambioEmail } from '../controllers/emailCambioController.js';
+// Comprueba en la base que la cuenta sigue activa (no solo el token)
+import { authenticate } from '../middleware/authMiddleware.js';
 import { uploadProfileImages } from '../config/multer.js';
+import { authLimiter } from '../middleware/rateLimiter.js';
+import { changePasswordValidator } from '../validators/authValidator.js';
+import { handleValidationErrors } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-router.use(authenticateToken);
+router.use(authenticate);
 
 router.get('/profile', getUserProfile);
 
@@ -22,13 +27,24 @@ const profileUpload = (req, res, next) => {
     if (!err) return next();
     const message = err.code === 'LIMIT_FILE_SIZE'
       ? 'La imagen no puede superar los 5 MB'
-      : err.message;
+      : err.code === 'LIMIT_UNEXPECTED_FILE'
+        ? 'Solo se puede cambiar la foto de perfil'
+        : err.message;
     return res.status(400).json({ success: false, message });
   });
 };
 
 router.put('/profile', profileUpload, updateUserProfile);
 
-router.put('/change-password', changePassword);
+// Con contraseña y límite de intentos, como el login
+router.put('/profile/email', authLimiter, solicitarCambioEmail);
+
+router.put(
+  '/change-password',
+  authLimiter,
+  changePasswordValidator,
+  handleValidationErrors,
+  changePassword
+);
 
 export default router;

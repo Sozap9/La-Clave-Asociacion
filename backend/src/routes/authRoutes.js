@@ -11,6 +11,7 @@ import {
   forgotPassword,
   resetPassword
 } from '../controllers/authController.js';
+import { confirmarCambioEmail } from '../controllers/emailCambioController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { validateAdminSecret } from '../middleware/adminSecretMiddleware.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
@@ -105,6 +106,9 @@ router.post(
   handleValidationErrors,
   resetPassword
 );
+
+// Enlace del correo para confirmar un cambio de email (sin sesión)
+router.post('/confirmar-email', authLimiter, confirmarCambioEmail);
 
 // Con sesión
 

@@ -62,6 +62,7 @@ import {
   rechazarSolicitud,
   deleteSolicitud,
   getPendientesCount,
+  actualizarDatosSocio,
 } from "../controllers/adminController.js";
 
 import {
@@ -80,6 +81,7 @@ import {
 import { authenticate } from "../middleware/authMiddleware.js";
 import { isAdmin } from "../middleware/roleMiddleware.js";
 import { adminStrictLimiter } from "../middleware/rateLimiter.js";
+import { uploadDNI } from "../config/multer.js";
 import { handleValidationErrors } from "../middleware/validationMiddleware.js";
 
 import { verifyQRValidator } from "../validators/bookingValidator.js";
@@ -150,6 +152,26 @@ router.put(
   updateSocioValidator,
   handleValidationErrors,
   updateSocio,
+);
+
+// Datos personales verificados (nombre, DNI...): solo los cambia un admin.
+// Los errores de multer (tamaño, formato) se devuelven como 400
+const dniUpload = (req, res, next) => {
+  uploadDNI.single("dni_front")(req, res, (err) => {
+    if (!err) return next();
+    const message = err.code === "LIMIT_FILE_SIZE"
+      ? "La imagen no puede superar los 5 MB"
+      : err.message;
+    return res.status(400).json({ success: false, message });
+  });
+};
+
+router.put(
+  "/socios/:id/datos",
+  idParamValidator,
+  handleValidationErrors,
+  dniUpload,
+  actualizarDatosSocio,
 );
 
 router.patch(

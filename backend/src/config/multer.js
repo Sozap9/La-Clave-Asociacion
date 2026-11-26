@@ -138,15 +138,12 @@ export const uploadDNI = multer({
   fileFilter: imageFilter,
 });
 
-// Perfil: campos avatar y dni_front, ambos opcionales
+// Perfil: solo la foto (el DNI lo cambia un admin)
 export const uploadProfileImages = multer({
   storage: profileStorage,
   limits,
   fileFilter: imageFilter,
-}).fields([
-  { name: "avatar", maxCount: 1 },
-  { name: "dni_front", maxCount: 1 },
-]);
+}).fields([{ name: "avatar", maxCount: 1 }]);
 
 // Solicitud de socio (pública): campos dni_front y dni_back
 export const uploadSolicitudDNI = multer({

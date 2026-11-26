@@ -13,7 +13,75 @@ import EmailService from "../services/emailService.js";
 import { generateQRCodeBase64 } from "../utils/qrCodeGenerator.js";
 import logger from "../config/logger.js"; 
 import { registrarActividad, getIpFromRequest } from "../utils/activityLogger.js";
-import { enviarDocumento } from "../utils/documentos.js";
+import { enviarDocumento, borrarDocumento } from "../utils/documentos.js";
+import crypto from "crypto";
+import { isValidSpanishDocument } from "../utils/validators.js";
+
+// Socios cuyos datos se eliminaron: su email pasa a ser eliminado-{id}@laclave.invalid
+const DOMINIO_ELIMINADO = "@laclave.invalid";
+const esUsuarioEliminado = (email = "") => email.endsWith(DOMINIO_ELIMINADO);
+
+// Ni la propia cuenta ni la de otro admin se dan de baja o se eliminan
+const motivoNoGestionable = (socio, req) => {
+  if (socio.user_id === req.user?.id) {
+    return "No puedes hacer esto con tu propia cuenta";
+  }
+  if (socio.role === "admin") {
+    return "Es administrador: quítale antes el rol de admin";
+  }
+  return null;
+};
+
+// Cancela las reservas confirmadas y pendientes de pago del socio en eventos
+// de hoy en adelante y devuelve sus plazas. Las asistidas y las de eventos
+// pasados se quedan como están. También lo saca de las listas de espera.
+const cancelarReservasActivas = async (conn, socioId, motivo) => {
+  const [reservas] = await conn.execute(
+    `SELECT b.id, b.event_id, b.estado, b.numero_entradas, b.es_invitacion
+     FROM bookings b
+     INNER JOIN events e ON e.id = b.event_id
+     WHERE b.socio_id = ? AND b.estado IN ('confirmada', 'esperando_pago')
+       AND e.fecha_evento >= CURDATE()
+     FOR UPDATE`,
+    [socioId],
+  );
+
+  for (const reserva of reservas) {
+    await conn.execute(
+      `UPDATE bookings
+       SET estado = 'cancelada', fecha_cancelacion = NOW(), motivo_cancelacion = ?
+       WHERE id = ?`,
+      [motivo, reserva.id],
+    );
+
+    // Igual que cancelBookingAdmin: solo las confirmadas habían descontado aforo
+    if (reserva.estado === "confirmada") {
+      if (reserva.es_invitacion) {
+        await conn.execute(
+          `UPDATE events SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0)
+           WHERE id = ?`,
+          [reserva.numero_entradas, reserva.event_id],
+        );
+      } else {
+        await conn.execute(
+          `UPDATE events
+           SET entradas_reservadas = GREATEST(entradas_reservadas - ?, 0),
+               entradas_disponibles = entradas_disponibles + ?
+           WHERE id = ?`,
+          [reserva.numero_entradas, reserva.numero_entradas, reserva.event_id],
+        );
+      }
+    }
+  }
+
+  await conn.execute(
+    `UPDATE waiting_list SET estado = 'expirado'
+     WHERE socio_id = ? AND estado IN ('esperando', 'notificado')`,
+    [socioId],
+  );
+
+  return reservas.length;
+};
 
 // Estadísticas y dashboard
 
@@ -984,7 +1052,8 @@ export const getSocioDetails = async (req, res) => {
       success: true,
       data: {
         socio,
-        user,
+        // Sin contraseña ni tokens
+        user: User.sanitizeUser(user),
         payments,
         bookings,
         solicitud,
@@ -1048,6 +1117,162 @@ export const updateSocio = async (req, res) => {
 };
 
 /**
+ * Corregir los datos personales verificados de un socio (solo admin):
+ * nombre, apellidos, teléfono, fecha de nacimiento, DNI, email y foto del DNI
+ * PUT /api/admin/socios/:id/datos
+ */
+export const actualizarDatosSocio = async (req, res) => {
+  const dniFile = req.file;
+  const descartarSubida = () => {
+    if (dniFile) borrarDocumento(`uploads/dni/${dniFile.filename}`);
+  };
+  const error400 = (message) => {
+    descartarSubida();
+    return res.status(400).json({ success: false, message });
+  };
+
+  try {
+    const { id } = req.params;
+
+    const socio = await Socio.findById(id);
+    if (!socio) {
+      descartarSubida();
+      return res.status(404).json({ success: false, message: "Socio no encontrado" });
+    }
+
+    if (esUsuarioEliminado(socio.email)) {
+      return error400("Los datos de este socio se eliminaron y no se pueden editar");
+    }
+
+    const [actual] = await query(
+      `SELECT id, nombre, apellidos, telefono, fecha_nacimiento, dni, email, dni_front_url
+       FROM users WHERE id = ?`,
+      [socio.user_id],
+    );
+
+    const LETRAS = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
+    const cambios = {};
+    const etiquetas = [];
+
+    const { nombre, apellidos, telefono, fecha_nacimiento, dni, email } = req.body;
+
+    if (nombre !== undefined) {
+      const valor = String(nombre).trim();
+      if (valor.length < 2 || valor.length > 50 || !LETRAS.test(valor)) {
+        return error400("El nombre debe tener entre 2 y 50 letras");
+      }
+      if (valor !== actual.nombre) { cambios.nombre = valor; etiquetas.push("nombre"); }
+    }
+
+    if (apellidos !== undefined) {
+      const valor = String(apellidos).trim();
+      if (valor.length < 2 || valor.length > 100 || !LETRAS.test(valor)) {
+        return error400("Los apellidos deben tener entre 2 y 100 letras");
+      }
+      if (valor !== actual.apellidos) { cambios.apellidos = valor; etiquetas.push("apellidos"); }
+    }
+
+    if (telefono !== undefined) {
+      const valor = String(telefono).trim();
+      if (valor && !/^[0-9+\s()-]{6,20}$/.test(valor)) {
+        return error400("El teléfono no es válido");
+      }
+      if ((valor || null) !== actual.telefono) { cambios.telefono = valor || null; etiquetas.push("teléfono"); }
+    }
+
+    if (fecha_nacimiento !== undefined && fecha_nacimiento !== "") {
+      const valor = String(fecha_nacimiento).slice(0, 10);
+      const fecha = new Date(`${valor}T00:00:00`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(valor) || Number.isNaN(fecha.getTime())) {
+        return error400("La fecha de nacimiento no es válida");
+      }
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - fecha.getFullYear();
+      if (hoy < new Date(hoy.getFullYear(), fecha.getMonth(), fecha.getDate())) edad -= 1;
+      const edadMinima = parseInt(process.env.EDAD_MINIMA || "18", 10);
+      if (edad < edadMinima || edad > 120) {
+        return error400(`La fecha de nacimiento no es válida (edad mínima ${edadMinima} años)`);
+      }
+      const anterior = actual.fecha_nacimiento
+        ? `${actual.fecha_nacimiento.getFullYear()}-${String(actual.fecha_nacimiento.getMonth() + 1).padStart(2, "0")}-${String(actual.fecha_nacimiento.getDate()).padStart(2, "0")}`
+        : null;
+      if (valor !== anterior) { cambios.fecha_nacimiento = valor; etiquetas.push("fecha de nacimiento"); }
+    }
+
+    if (dni !== undefined && dni !== "") {
+      const valor = String(dni).trim().toUpperCase();
+      if (!isValidSpanishDocument(valor)) {
+        return error400("El documento debe ser un DNI o NIE válido");
+      }
+      if (valor !== actual.dni) {
+        const [repetido] = await query(`SELECT id FROM users WHERE dni = ? AND id != ?`, [valor, actual.id]);
+        if (repetido) return error400("Ese DNI ya lo tiene otra cuenta");
+        cambios.dni = valor;
+        etiquetas.push("DNI");
+      }
+    }
+
+    if (email !== undefined && email !== "") {
+      const valor = String(email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor) || valor.length > 100) {
+        return error400("El email no es válido");
+      }
+      if (valor !== actual.email.toLowerCase()) {
+        const [repetido] = await query(`SELECT id FROM users WHERE LOWER(email) = ? AND id != ?`, [valor, actual.id]);
+        if (repetido) return error400("Ese email ya lo tiene otra cuenta");
+        cambios.email = valor;
+        etiquetas.push("email");
+      }
+    }
+
+    if (dniFile) {
+      cambios.dni_front_url = `uploads/dni/${dniFile.filename}`;
+      etiquetas.push("foto del DNI");
+    }
+
+    if (etiquetas.length === 0) {
+      return res.status(200).json({ success: true, message: "No había cambios que guardar" });
+    }
+
+    const campos = Object.keys(cambios);
+    // Un cambio de email hecho por el admin anula cualquier cambio pendiente del socio
+    const extra = cambios.email
+      ? ", email_pendiente = NULL, email_cambio_token = NULL, email_cambio_expira = NULL"
+      : "";
+    await query(
+      `UPDATE users SET ${campos.map((c) => `${c} = ?`).join(", ")}${extra}, updated_at = NOW() WHERE id = ?`,
+      [...campos.map((c) => cambios[c]), actual.id],
+    );
+
+    if (dniFile && actual.dni_front_url) {
+      borrarDocumento(actual.dni_front_url);
+    }
+
+    // Solo qué campos, no sus valores: el registro no guarda datos personales
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "actualizar",
+      entidadTipo: "socio",
+      entidadId: Number(id),
+      descripcion: `Datos del socio ${socio.numero_socio} corregidos: ${etiquetas.join(", ")}`,
+      ipAddress: getIpFromRequest(req),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Datos actualizados: ${etiquetas.join(", ")}`,
+    });
+  } catch (error) {
+    descartarSubida();
+    logger.error("Error en actualizarDatosSocio:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error al actualizar los datos del socio",
+    });
+  }
+};
+
+/**
  * Dar de baja a un socio
  * DELETE /api/admin/socios/:id
  */
@@ -1064,50 +1289,62 @@ export const deleteSocio = async (req, res) => {
       });
     }
 
-    await Socio.darDeBaja(id, motivo || "Baja administrativa");
-
-    // Redundante con Socio.darDeBaja(), por si esa lógica cambia
-    if (socio.user_id) {
-      try {
-        await User.deactivate(socio.user_id);
-      } catch (userError) {
-        logger.warn("No se pudo desactivar user asociado, continua:", userError);
-      }
+    if (socio.estado === "inactivo") {
+      return res.status(400).json({
+        success: false,
+        message: "Este socio ya está dado de baja",
+      });
     }
 
-    // Un fallo aquí no detiene la baja
-    try {
-      await query(
-        `
-        UPDATE bookings 
-        SET estado = 'cancelada', motivo_cancelacion = 'Membresía cancelada por administrador'
-        WHERE socio_id = ? AND estado = 'confirmada'
-          AND event_id IN (SELECT id FROM events WHERE fecha_evento > CURDATE())
-      `,
-        [id],
+    const bloqueo = motivoNoGestionable(socio, req);
+    if (bloqueo) {
+      return res.status(400).json({ success: false, message: bloqueo });
+    }
+
+    const motivoBaja = motivo || "Baja administrativa";
+
+    // Todo junto: si algo falla, el socio no queda a medias
+    const canceladas = await transaction(async (conn) => {
+      await conn.execute(
+        `UPDATE socios
+         SET estado = 'inactivo', fecha_baja = CURDATE(), motivo_baja = ?,
+             notas_admin = CONCAT(IFNULL(notas_admin, ''), '\n', ?)
+         WHERE id = ?`,
+        [motivoBaja, motivoBaja, id],
       );
-    } catch (bookingError) {
-      logger.warn("Error al cancelar reservas asociadas al socio:", bookingError);
-    }
+      // Sin usuario activo no puede iniciar sesión (lo comprueba authMiddleware)
+      await conn.execute(`UPDATE users SET activo = 0 WHERE id = ?`, [socio.user_id]);
+      return cancelarReservasActivas(conn, id, "Membresía cancelada por administrador");
+    });
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "baja",
+      entidadTipo: "socio",
+      entidadId: Number(id),
+      descripcion: `${socio.nombre} ${socio.apellidos} (${socio.numero_socio}) dado de baja: ${motivoBaja}${canceladas ? `. ${canceladas} reserva${canceladas !== 1 ? "s" : ""} cancelada${canceladas !== 1 ? "s" : ""}` : ""}`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Socio dado de baja exitosamente",
+      message: canceladas
+        ? `Socio dado de baja. Se han cancelado ${canceladas} reserva${canceladas !== 1 ? "s" : ""} de eventos próximos.`
+        : "Socio dado de baja exitosamente",
     });
   } catch (error) {
     logger.error("Error en deleteSocio:", error);
     return res.status(500).json({
       success: false,
       message: "Error al dar de baja al socio",
-      ...(process.env.NODE_ENV === "development"
-        ? { error: error.message }
-        : {}),
     });
   }
 };
 
 /**
- * Eliminar permanentemente un socio y su usuario (soft delete si no es posible)
+ * Eliminar los datos personales de un socio (derecho de supresión).
+ * Se conservan sus pagos y reservas de forma anónima para que las cuentas y
+ * el historial de eventos sigan cuadrando.
  * DELETE /api/admin/socios/:id/permanent
  */
 export const deleteSocioPermanent = async (req, res) => {
@@ -1122,26 +1359,120 @@ export const deleteSocioPermanent = async (req, res) => {
       });
     }
 
-    // Borra el socio (cascade en pagos y reservas)
-    await query("DELETE FROM socios WHERE id = ?", [id]);
-
-    // Puede fallar por FK; entonces se hace soft delete
-    try {
-      await User.delete(socio.user_id);
-    } catch (deleteError) {
-      logger.warn("No se pudo eliminar el usuario, se aplicará soft delete:", deleteError);
-      await User.softDelete(socio.user_id);
+    const bloqueo = motivoNoGestionable(socio, req);
+    if (bloqueo) {
+      return res.status(400).json({ success: false, message: bloqueo });
     }
+
+    const [usuario] = await query(
+      `SELECT id, email, dni, nombre, apellidos, dni_front_url, dni_back_url
+       FROM users WHERE id = ?`,
+      [socio.user_id],
+    );
+
+    if (esUsuarioEliminado(usuario.email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Los datos de este socio ya se eliminaron",
+      });
+    }
+
+    const solicitudes = await query(
+      `SELECT id, dni_front_url, dni_back_url FROM solicitudes_socios
+       WHERE email = ? OR (? IS NOT NULL AND dni = ?)`,
+      [usuario.email, usuario.dni, usuario.dni],
+    );
+
+    const marca = `eliminado-${usuario.id}`;
+    const emailAnonimo = `${marca}${DOMINIO_ELIMINADO}`;
+    const nombreCompleto = `${usuario.nombre} ${usuario.apellidos}`.trim();
+
+    const canceladas = await transaction(async (conn) => {
+      const n = await cancelarReservasActivas(conn, id, "Datos del socio eliminados");
+
+      await conn.execute(
+        `UPDATE socios
+         SET estado = 'inactivo', fecha_baja = COALESCE(fecha_baja, CURDATE()),
+             motivo_baja = 'Datos personales eliminados', notas_admin = NULL
+         WHERE id = ?`,
+        [id],
+      );
+
+      // La contraseña pasa a ser un valor aleatorio que no es un hash válido
+      await conn.execute(
+        `UPDATE users
+         SET username = ?, email = ?, password_hash = ?,
+             nombre = 'Socio', apellidos = 'eliminado', telefono = NULL,
+             fecha_nacimiento = NULL, dni = NULL, dni_front_url = NULL,
+             dni_back_url = NULL, dni_frente_url = NULL, dni_dorso_url = NULL,
+             firma_url = NULL, avatar_url = NULL, reset_password_token = NULL,
+             reset_password_expires = NULL, email_verification_token = NULL,
+             password_reset_token = NULL, password_reset_expires = NULL,
+             ip_registro = NULL, activo = 0, email_pendiente = NULL,
+             email_cambio_token = NULL, email_cambio_expira = NULL
+         WHERE id = ?`,
+        [marca, emailAnonimo, crypto.randomBytes(32).toString("hex"), usuario.id],
+      );
+
+      await conn.execute(`DELETE FROM sessions WHERE user_id = ?`, [usuario.id]);
+      await conn.execute(`DELETE FROM push_subscriptions WHERE user_id = ?`, [usuario.id]);
+      await conn.execute(`DELETE FROM notifications WHERE user_id = ?`, [usuario.id]);
+
+      if (solicitudes.length > 0) {
+        await conn.execute(
+          `UPDATE solicitudes_socios
+           SET email = ?, password_hash = '', nombre = 'Socio', apellidos = 'eliminado',
+               telefono = NULL, fecha_nacimiento = NULL, dni = 'ELIMINADO',
+               dni_front_url = NULL, dni_back_url = NULL, motivacion = NULL,
+               invitado_por = NULL, evento_interes = NULL, ip_solicitud = NULL
+           WHERE id IN (${solicitudes.map(() => "?").join(",")})`,
+          [emailAnonimo, ...solicitudes.map((s) => s.id)],
+        );
+      }
+
+      // Mensajes de contacto: se conserva el texto, no quién lo envió
+      await conn.execute(
+        `UPDATE contact_messages
+         SET nombre = 'Socio eliminado', email = ?, telefono = NULL, ip_address = NULL
+         WHERE email = ?`,
+        [emailAnonimo, usuario.email],
+      );
+
+      // El registro de actividad guarda nombres en el texto
+      if (nombreCompleto.length >= 5) {
+        await conn.execute(
+          `UPDATE activity_log SET descripcion = REPLACE(descripcion, ?, 'Socio eliminado')
+           WHERE descripcion LIKE CONCAT('%', ?, '%')`,
+          [nombreCompleto, nombreCompleto],
+        );
+      }
+
+      return n;
+    });
+
+    // Fotos del DNI: después de confirmar los cambios en la base
+    [usuario.dni_front_url, usuario.dni_back_url]
+      .concat(solicitudes.flatMap((s) => [s.dni_front_url, s.dni_back_url]))
+      .forEach(borrarDocumento);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "eliminar",
+      entidadTipo: "socio",
+      entidadId: Number(id),
+      descripcion: `Datos personales del socio ${socio.numero_socio} eliminados. Sus pagos y reservas se conservan de forma anónima${canceladas ? `; ${canceladas} reserva${canceladas !== 1 ? "s" : ""} próxima${canceladas !== 1 ? "s" : ""} cancelada${canceladas !== 1 ? "s" : ""}` : ""}`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Socio eliminado permanentemente",
+      message: "Datos del socio eliminados. Sus pagos y reservas se conservan de forma anónima.",
     });
   } catch (error) {
     logger.error("Error en deleteSocioPermanent:", error);
     return res.status(500).json({
       success: false,
-      message: "Error al eliminar el socio",
+      message: "Error al eliminar los datos del socio",
     });
   }
 };
@@ -1162,6 +1493,13 @@ export const reactivateSocio = async (req, res) => {
       });
     }
 
+    if (esUsuarioEliminado(socio.email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Los datos de este socio se eliminaron: no se puede reactivar. Tendría que volver a solicitar el alta.",
+      });
+    }
+
     if (socio.estado !== "inactivo") {
       return res.status(400).json({
         success: false,
@@ -1170,6 +1508,15 @@ export const reactivateSocio = async (req, res) => {
     }
 
     await Socio.reactivar(id);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "reactivar",
+      entidadTipo: "socio",
+      entidadId: Number(id),
+      descripcion: `${socio.nombre} ${socio.apellidos} (${socio.numero_socio}) reactivado`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
@@ -3117,6 +3464,23 @@ export const updateUserRole = async (req, res) => {
       });
     }
 
+    // Solo la cuenta de administrador principal (ADMIN_PRINCIPAL_EMAIL) cambia
+    // roles; otros admins no. Sin la variable, no lo puede hacer nadie.
+    const emailPrincipal = (process.env.ADMIN_PRINCIPAL_EMAIL || "").trim().toLowerCase();
+    if (!emailPrincipal || (req.user.email || "").toLowerCase() !== emailPrincipal) {
+      return res.status(403).json({
+        success: false,
+        message: "Solo la cuenta de administrador principal puede cambiar roles",
+      });
+    }
+
+    if (Number(id) === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: "No puedes cambiar el rol de la cuenta principal",
+      });
+    }
+
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({
@@ -3125,25 +3489,57 @@ export const updateUserRole = async (req, res) => {
       });
     }
 
-    // Un admin también es socio: al promocionarlo se le crea la fila en
-    // socios si no la tiene; si ya existe, no se toca
-    if (role === "admin") {
-      const socioExistente = await Socio.findByUserId(id);
-      if (!socioExistente) {
-        const numeroSocioAdmin = await Socio.generarNumeroSocio();
-        await query(
-          `INSERT INTO socios (user_id, numero_socio, cuota_mensual, estado, fecha_alta)
-           VALUES (?, ?, 0.00, 'activo', CURDATE())`,
-          [id, numeroSocioAdmin],
-        );
-        logger.info(
-          "Fila de socio creada automáticamente al promocionar a admin",
-          { userId: id },
-        );
+    if (!user.activo) {
+      return res.status(400).json({
+        success: false,
+        message: "Este usuario está dado de baja. Reactívalo antes de cambiar su rol.",
+      });
+    }
+
+    if (user.role === role) {
+      return res.status(200).json({
+        success: true,
+        message: `El usuario ya tiene el rol '${role}'`,
+      });
+    }
+
+    // Nunca se queda la web sin administradores activos
+    if (user.role === "admin") {
+      const [{ otros }] = await query(
+        `SELECT COUNT(*) AS otros FROM users WHERE role = 'admin' AND activo = 1 AND id != ?`,
+        [id],
+      );
+      if (Number(otros) === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Tiene que quedar al menos un administrador",
+        });
       }
     }
 
+    // Admins y socios necesitan su fila en socios para reservar; si no la
+    // tiene se crea, y si ya existe no se toca
+    const socioExistente = await Socio.findByUserId(id);
+    if (!socioExistente) {
+      const numeroSocio = await Socio.generarNumeroSocio();
+      await query(
+        `INSERT INTO socios (user_id, numero_socio, cuota_mensual, estado, fecha_alta)
+         VALUES (?, ?, 0.00, 'activo', CURDATE())`,
+        [id, numeroSocio],
+      );
+      logger.info("Fila de socio creada al cambiar el rol", { userId: id });
+    }
+
     await query(`UPDATE users SET role = ? WHERE id = ?`, [role, id]);
+
+    registrarActividad({
+      userId: req.user?.id || null,
+      accion: "cambiar_rol",
+      entidadTipo: "usuario",
+      entidadId: Number(id),
+      descripcion: `Rol de ${user.nombre} ${user.apellidos} cambiado de '${user.role}' a '${role}'`,
+      ipAddress: getIpFromRequest(req),
+    });
 
     return res.status(200).json({
       success: true,
@@ -3154,7 +3550,6 @@ export const updateUserRole = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error al actualizar el rol del usuario",
-      ...(process.env.NODE_ENV === "development" ? { error: error.message } : {}),
     });
   }
 };

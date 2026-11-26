@@ -33,8 +33,18 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
         return;
       }
 
-      if (formData.newPassword.length < 6) {
-        setError('La nueva contraseña debe tener al menos 6 caracteres');
+      // Mismas reglas que el registro
+      if (
+        formData.newPassword.length < 8 ||
+        !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.newPassword)
+      ) {
+        setError('La nueva contraseña debe tener al menos 8 caracteres, con mayúscula, minúscula y número');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.newPassword === formData.currentPassword) {
+        setError('La nueva contraseña debe ser diferente a la actual');
         setLoading(false);
         return;
       }
@@ -65,7 +75,8 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
         }, 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al cambiar contraseña');
+      const data = err.response?.data;
+      setError(data?.errors?.[0]?.message || data?.message || 'Error al cambiar contraseña');
       setLoading(false);
     }
   };
@@ -143,7 +154,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
                 value={formData.newPassword}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
                 required
               />
             </div>
@@ -165,7 +176,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
           </div>
 
           <p className="text-xs text-gray-500 text-center">
-            La contraseña debe tener al menos 6 caracteres
+            La contraseña debe tener al menos 8 caracteres, con una mayúscula, una minúscula y un número
           </p>
 
           <div className="flex gap-3 pt-4">

@@ -22,6 +22,7 @@ import SearchInput from "../../components/UI/SearchInput";
 import Pagination from "../../components/UI/Pagination";
 import AdminCard from "../../components/admin/AdminCard";
 import PrivateImage from "../../components/common/PrivateImage";
+import EditarDatosSocio from "../../components/admin/EditarDatosSocio";
 import { respuestasRegistro } from "../../utils/registroRespuestas";
 
 
@@ -59,6 +60,9 @@ const AdminSocios = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedSocio, setSelectedSocio] = useState(null);
+  // Edición de datos verificados dentro del detalle
+  const [editandoDatos, setEditandoDatos] = useState(false);
+  const [avisoDatos, setAvisoDatos] = useState("");
   const [roleSelections, setRoleSelections] = useState({});
 
   // Que una respuesta lenta no pise a una más nueva
@@ -142,6 +146,8 @@ const AdminSocios = () => {
     try {
       const result = await getSocioDetails(socioId);
       if (result.success) {
+        setEditandoDatos(false);
+        setAvisoDatos("");
         setSelectedSocio(result.data);
       } else {
         setError(result.message || "Error al obtener detalles del socio");
@@ -156,7 +162,7 @@ const AdminSocios = () => {
 
   const handleDeactivateSocio = async (socioId) => {
     const confirm = window.confirm(
-      "¿Estás seguro de que quieres dar de baja a este socio? Esto lo dejará inactivo.",
+      "¿Dar de baja a este socio? No podrá iniciar sesión y se cancelarán sus reservas de eventos próximos. Se puede reactivar más adelante.",
     );
     if (!confirm) return;
 
@@ -180,7 +186,7 @@ const AdminSocios = () => {
 
   const handleDeleteSocio = async (socioId) => {
     const confirm = window.confirm(
-      "¿Eliminar este usuario? Esta acción es irreversible y eliminará todos sus datos.",
+      "¿Eliminar los datos personales de este socio?\n\nSe borran su nombre, email, teléfono y DNI, y se cancelan sus reservas de eventos próximos. Sus pagos y reservas pasadas se conservan de forma anónima para las cuentas.\n\nNo se puede deshacer.",
     );
     if (!confirm) return;
 
@@ -189,7 +195,7 @@ const AdminSocios = () => {
     try {
       const result = await deleteSocioPermanent(socioId);
       if (!result.success) {
-        setError(result.message || "Error al eliminar al socio");
+        setError(result.message || "Error al eliminar los datos del socio");
       } else {
         await fetchSocios();
         setSelectedSocio(null);
@@ -210,11 +216,14 @@ const AdminSocios = () => {
     try {
       const result = await updateUserRole(userId, newRole);
       if (!result.success) {
+        // Si no se guarda, el selector vuelve al rol que tenía
+        setRoleSelections((prev) => ({ ...prev, [userId]: currentRole }));
         setError(result.message || "Error al cambiar el rol");
       } else {
         await fetchSocios();
       }
     } catch (err) {
+      setRoleSelections((prev) => ({ ...prev, [userId]: currentRole }));
       console.error("Error al cambiar el rol:", err);
       setError("Error de conexión");
     } finally {
@@ -363,7 +372,7 @@ const AdminSocios = () => {
                         icon: <Trash2 size={20} />,
                         onClick: () => handleDeleteSocio(socio.id),
                         color: "primary",
-                        title: "Eliminar usuario",
+                        title: "Eliminar datos del socio",
                       },
                     ]
                   : []),
@@ -430,6 +439,17 @@ const AdminSocios = () => {
               <h2 className="text-2xl font-bold text-white">
                 Detalles del Socio
               </h2>
+              {!editandoDatos && !selectedSocio.user?.email?.endsWith("@laclave.invalid") && (
+                <button
+                  onClick={() => {
+                    setAvisoDatos("");
+                    setEditandoDatos(true);
+                  }}
+                  className="px-3 py-1.5 text-sm border border-primary-500/40 text-white rounded-lg hover:bg-[#262626] transition-colors sm:ml-auto"
+                >
+                  Editar datos
+                </button>
+              )}
               <button
                 onClick={() => setSelectedSocio(null)}
                 className="text-gray-400 hover:text-white transition-colors"
@@ -438,6 +458,24 @@ const AdminSocios = () => {
               </button>
             </div>
 
+            {avisoDatos && (
+              <div className="bg-green-500/20 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg text-sm mb-4">
+                {avisoDatos}
+              </div>
+            )}
+
+            {editandoDatos ? (
+              <EditarDatosSocio
+                socioId={selectedSocio.socio.id}
+                user={selectedSocio.user}
+                onCancelar={() => setEditandoDatos(false)}
+                onGuardado={async (mensaje) => {
+                  await handleOpenDetails(selectedSocio.socio.id);
+                  await fetchSocios();
+                  setAvisoDatos(mensaje);
+                }}
+              />
+            ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -598,6 +636,7 @@ const AdminSocios = () => {
               </div>
 
             </div>
+            )}
           </div>
         </div>
       )}

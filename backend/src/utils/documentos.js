@@ -33,3 +33,20 @@ export const enviarDocumento = (res, ruta) => {
 
   return res.sendFile(absoluta);
 };
+// Borra del disco la imagen de un DNI (solo dentro de las carpetas privadas).
+// Las guardadas en base64 desaparecen al vaciar su columna.
+export const borrarDocumento = (ruta) => {
+  if (!ruta || ruta.startsWith('data:')) return;
+
+  const absoluta = path.resolve(backendRoot, ruta);
+  const permitida = CARPETAS_PRIVADAS.some((carpeta) =>
+    absoluta.startsWith(path.join(uploadsDir, carpeta) + path.sep),
+  );
+  if (!permitida) return;
+
+  try {
+    if (fs.existsSync(absoluta)) fs.unlinkSync(absoluta);
+  } catch {
+    // Si no se puede borrar, la ruta ya no queda guardada en la base
+  }
+};

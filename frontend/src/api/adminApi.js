@@ -330,6 +330,23 @@ export const updateSocio = async (id, data) => {
   }
 };
 
+// Corregir datos verificados (nombre, DNI, foto del DNI...). Va como FormData:
+// sin Content-Type, el navegador pone el de multipart
+export const actualizarDatosSocio = async (id, formData) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_URL}/admin/socios/${id}/datos`, {
+      method: "PUT",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating socio data:", error);
+    throw error;
+  }
+};
+
 export const deactivateSocio = async (id, motivo = "Baja administrativa") => {
   try {
     const response = await fetch(`${API_URL}/admin/socios/${id}/deactivate`, {

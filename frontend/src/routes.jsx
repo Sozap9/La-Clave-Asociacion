@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RecuperarPassword from "./pages/RecuperarPassword";
+import ConfirmarEmail from "./pages/ConfirmarEmail";
 import Events from "./pages/Events";
 import Profile from "./pages/Profile";
 import Gallery from "./pages/Gallery";
@@ -117,6 +118,14 @@ export const router = createBrowserRouter([
     element: (
       <Layout>
         <RecuperarPassword />
+      </Layout>
+    ),
+  },
+  {
+    path: "/confirmar-email",
+    element: (
+      <Layout>
+        <ConfirmarEmail />
       </Layout>
     ),
   },

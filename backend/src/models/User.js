@@ -373,6 +373,10 @@ class User {
       email_verification_token,
       reset_password_token,
       reset_password_expires,
+      password_reset_token,
+      password_reset_expires,
+      email_cambio_token,
+      email_cambio_expira,
       ...sanitizedUser
     } = user;
 

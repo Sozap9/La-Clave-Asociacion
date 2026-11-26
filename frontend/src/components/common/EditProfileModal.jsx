@@ -1,194 +1,143 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Camera, Check, Upload } from "lucide-react";
+import { X, Camera, Check, Lock, Mail } from "lucide-react";
 import api from "../../api/axios";
-import DatePickerInput from "./DatePickerInput";
 import { mediaUrl } from "../../utils/mediaUrl";
 import PrivateImage from "./PrivateImage";
 
-// DNI (12345678A)
-const isValidDNI = (dni) => {
-  if (typeof dni !== "string") return false;
-  const value = dni.trim().toUpperCase();
-  const dniRegex = /^[0-9]{8}[A-Z]$/;
-  if (!dniRegex.test(value)) return false;
-
-  const letters = "TRWAGMYFPDXBNJZSQVHLCKE";
-  const number = parseInt(value.substr(0, 8), 10);
-  const letter = value.substr(8, 1);
-
-  return letters.charAt(number % 23) === letter;
-};
-
-// NIE (X1234567A)
-const isValidNIE = (nie) => {
-  if (typeof nie !== "string") return false;
-  const value = nie.trim().toUpperCase();
-  const nieRegex = /^[XYZ][0-9]{7}[A-Z]$/;
-  if (!nieRegex.test(value)) return false;
-
-  const niePrefix = { X: "0", Y: "1", Z: "2" };
-  const letters = "TRWAGMYFPDXBNJZSQVHLCKE";
-
-  const nieNumber = niePrefix[value.charAt(0)] + value.substr(1, 7);
-  const letter = value.substr(8, 1);
-
-  return letters.charAt(parseInt(nieNumber, 10) % 23) === letter;
-};
-
-// DNI o NIE
-const isValidSpanishDocument = (document) => {
-  return isValidDNI(document) || isValidNIE(document);
-};
-
+// Nombre, apellidos, fecha de nacimiento y DNI los verificó la asociación:
+// aquí solo se ven. El socio cambia su foto y su teléfono, y el email con
+// confirmación desde el nuevo correo.
 const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
-  const [formData, setFormData] = useState({
-    nombre: "",
-    apellidos: "",
-    email: "",
-    telefono: "",
-    fecha_nacimiento: "",
-    dni: "",
-  });
-
-  // Archivos elegidos, se envían al guardar
+  const [telefono, setTelefono] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
-  const [dniFrenteFile, setDniFrenteFile] = useState(null);
-
   const [avatarPreview, setAvatarPreview] = useState(null);
-  const [dniFrentePreview, setDniFrentePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Cambio de email
+  const [nuevoEmail, setNuevoEmail] = useState("");
+  const [passwordEmail, setPasswordEmail] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [emailSuccess, setEmailSuccess] = useState("");
+
   const avatarInputRef = useRef(null);
-  const dniFrenteInputRef = useRef(null);
 
   useEffect(() => {
     if (userData && isOpen) {
-      setFormData({
-        nombre: userData.nombre || "",
-        apellidos: userData.apellidos || "",
-        email: userData.email || "",
-        telefono: userData.telefono || "",
-        fecha_nacimiento: userData.fecha_nacimiento
-          ? userData.fecha_nacimiento.split("T")[0]
-          : "",
-        dni: userData.dni || "",
-      });
+      setTelefono(userData.telefono || "");
       setAvatarFile(null);
-      setDniFrenteFile(null);
       setAvatarPreview(mediaUrl(userData.avatar_url));
-      setDniFrentePreview(null);
       setError("");
       setSuccess("");
+      setNuevoEmail("");
+      setPasswordEmail("");
+      setEmailError("");
+      setEmailSuccess("");
     }
   }, [userData, isOpen]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleImageChange = (e, type) => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError("La imagen debe ser menor a 5MB");
-        setTimeout(() => setError(""), 3000);
-        return;
-      }
+    if (!file) return;
 
-      if (!file.type.startsWith("image/")) {
-        setError("El archivo debe ser una imagen");
-        setTimeout(() => setError(""), 3000);
-        return;
-      }
-
-      const preview = URL.createObjectURL(file);
-
-      switch (type) {
-        case "avatar":
-          setAvatarFile(file);
-          setAvatarPreview(preview);
-          break;
-        case "dni_frente":
-          setDniFrenteFile(file);
-          setDniFrentePreview(preview);
-          break;
-      }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("La imagen debe ser menor a 5MB");
+      return;
     }
+    if (!file.type.startsWith("image/")) {
+      setError("El archivo debe ser una imagen");
+      return;
+    }
+
+    setError("");
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    const telefonoLimpio = telefono.trim();
+    const telefonoCambiado = telefonoLimpio !== (userData?.telefono || "");
+
+    if (!telefonoCambiado && !avatarFile) {
+      setError("No hay cambios para guardar");
+      return;
+    }
+
+    if (telefonoLimpio && !/^[0-9+\s()-]{6,20}$/.test(telefonoLimpio)) {
+      setError("El teléfono no es válido");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const updateData = {};
-
-      Object.keys(formData).forEach((key) => {
-        const value = formData[key];
-        if (value !== null && value !== undefined && value !== "") {
-          updateData[key] = value;
-        }
-      });
-
-      if (Object.keys(updateData).length === 0 && !avatarFile && !dniFrenteFile) {
-        setError("No hay cambios para guardar");
-        setLoading(false);
-        return;
-      }
-
-      if (updateData.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(updateData.email)) {
-          setError("Email inválido");
-          setLoading(false);
-          return;
-        }
-      }
-
-      if (updateData.dni) {
-        if (!isValidSpanishDocument(updateData.dni)) {
-          setError("Documento inválido. Formato DNI: 12345678A · Formato NIE: X1234567A");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Texto e imágenes en un FormData; las imágenes van como archivo
       const body = new FormData();
-      Object.entries(updateData).forEach(([key, value]) => body.append(key, value));
+      if (telefonoCambiado) body.append("telefono", telefonoLimpio);
       if (avatarFile) body.append("avatar", avatarFile);
-      if (dniFrenteFile) body.append("dni_front", dniFrenteFile);
 
       const response = await api.put("/users/profile", body, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (response.data.success) {
-        setSuccess("✓ Perfil actualizado correctamente");
-
+        setSuccess("Perfil actualizado correctamente");
         setTimeout(() => {
           setSuccess("");
           if (onUpdate) onUpdate();
           onClose();
-        }, 2000);
+        }, 1500);
       } else {
         setError(response.data.message || "Error al actualizar");
-        setLoading(false);
       }
     } catch (err) {
-      console.error("Error:", err);
-      console.error("Error response:", err.response);
       setError(err.response?.data?.message || "Error al actualizar perfil");
+    } finally {
       setLoading(false);
     }
   };
+
+  const handleCambiarEmail = async () => {
+    setEmailError("");
+    setEmailSuccess("");
+
+    const email = nuevoEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Escribe un email válido");
+      return;
+    }
+    if (!passwordEmail) {
+      setEmailError("Escribe tu contraseña para confirmar que eres tú");
+      return;
+    }
+
+    setEmailLoading(true);
+    try {
+      const response = await api.put("/users/profile/email", {
+        nuevoEmail: email,
+        password: passwordEmail,
+      });
+      setEmailSuccess(response.data.message);
+      setNuevoEmail("");
+      setPasswordEmail("");
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      setEmailError(err.response?.data?.message || "No se pudo solicitar el cambio");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const fechaNacimiento = userData?.fecha_nacimiento
+    ? new Date(userData.fecha_nacimiento).toLocaleDateString("es-ES")
+    : "—";
+
+  const inputClass =
+    "w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors";
 
   if (!isOpen) return null;
 
@@ -231,8 +180,8 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                     />
                   ) : (
                     <span>
-                      {formData.nombre?.charAt(0)}
-                      {formData.apellidos?.charAt(0)}
+                      {userData?.nombre?.charAt(0)}
+                      {userData?.apellidos?.charAt(0)}
                     </span>
                   )}
                 </div>
@@ -246,7 +195,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                 ref={avatarInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => handleImageChange(e, "avatar")}
+                onChange={handleImageChange}
                 className="hidden"
               />
 
@@ -273,161 +222,129 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
               </div>
             )}
 
-            {/* Datos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  name="nombre"
-                  value={formData.nombre}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-                  placeholder="Tu nombre"
-                />
-              </div>
+            {/* Teléfono */}
+            <div className="max-w-sm">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Teléfono
+              </label>
+              <input
+                type="tel"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                className={inputClass}
+                placeholder="612345678"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Apellidos
-                </label>
-                <input
-                  type="text"
-                  name="apellidos"
-                  value={formData.apellidos}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-                  placeholder="Tus apellidos"
-                />
+            {/* Datos verificados: solo lectura */}
+            <div className="border-t border-gray-800 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-gray-400" />
+                Datos verificados
+              </h3>
+              <p className="text-xs text-gray-500 mb-4">
+                La asociación comprobó estos datos al aprobar tu alta. Si hay
+                algún error, contacta con la asociación para corregirlo.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  ["Nombre", userData?.nombre],
+                  ["Apellidos", userData?.apellidos],
+                  ["Fecha de nacimiento", fechaNacimiento],
+                  ["DNI / NIE", userData?.dni],
+                ].map(([etiqueta, valor]) => (
+                  <div key={etiqueta}>
+                    <p className="text-xs text-gray-500 mb-1">{etiqueta}</p>
+                    <p className="text-white bg-[#111] border border-[#262626] rounded-lg px-4 py-3">
+                      {valor || "—"}
+                    </p>
+                  </div>
+                ))}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-                  placeholder="tu@email.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  name="telefono"
-                  value={formData.telefono}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-                  placeholder="612345678"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Fecha de Nacimiento
-                </label>
-                <DatePickerInput
-                  selected={
-                    formData.fecha_nacimiento
-                      ? new Date(formData.fecha_nacimiento)
-                      : null
+              <div className="mt-4 max-w-xs">
+                <p className="text-xs text-gray-500 mb-1">DNI (cara delantera)</p>
+                {/* El DNI guardado no es público: se pide con la sesión */}
+                <PrivateImage
+                  endpoint={userData?.dni_front_url ? "/users/profile/dni" : null}
+                  alt="DNI Frente"
+                  className="w-full h-32 object-contain rounded border border-[#262626]"
+                  fallback={
+                    <div className="flex items-center justify-center h-32 text-gray-500 text-sm border border-[#262626] rounded">
+                      Sin imagen
+                    </div>
                   }
-                  onChange={(date) => {
-                    if (date) {
-                      const year = date.getFullYear();
-                      const month = String(date.getMonth() + 1).padStart(
-                        2,
-                        "0",
-                      );
-                      const day = String(date.getDate()).padStart(2, "0");
-                      setFormData({
-                        ...formData,
-                        fecha_nacimiento: `${year}-${month}-${day}`,
-                      });
-                    }
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  DNI / NIE
-                </label>
-                <input
-                  type="text"
-                  name="dni"
-                  value={formData.dni}
-                  onChange={handleChange}
-                  maxLength={9}
-                  className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#262626] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
-                  placeholder="12345678A / X1234567A"
                 />
               </div>
             </div>
 
-            {/* Fotos del DNI */}
+            {/* Email: se cambia con confirmación desde el nuevo correo */}
             <div className="border-t border-gray-800 pt-6">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Documentación DNI
+              <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-400" />
+                Email
               </h3>
-              <div className="grid grid-cols-1 max-w-xs gap-6">
-                {/* Cara delantera */}
+              <p className="text-sm text-gray-300 mb-1">
+                Actual: <span className="text-white">{userData?.email}</span>
+              </p>
+              {userData?.email_pendiente && !emailSuccess && (
+                <p className="text-xs text-amber-300 mb-3">
+                  Pendiente de confirmar: {userData.email_pendiente}. Revisa ese
+                  correo y pulsa el enlace.
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mb-4">
+                Te enviaremos un enlace al nuevo correo. Hasta que lo confirmes,
+                seguirás entrando con el actual.
+              </p>
+
+              {emailError && (
+                <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm mb-4">
+                  {emailError}
+                </div>
+              )}
+              {emailSuccess && (
+                <div className="bg-green-500/20 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg text-sm mb-4">
+                  {emailSuccess}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    DNI Frente
+                    Nuevo email
                   </label>
-                  <div
-                    onClick={() => dniFrenteInputRef.current?.click()}
-                    className="relative cursor-pointer group border-2 border-dashed border-gray-700 rounded-lg p-4 hover:border-primary-500 transition-colors"
-                  >
-                    {dniFrentePreview ? (
-                      <img
-                        src={dniFrentePreview}
-                        alt="DNI Frente"
-                        className="w-full h-32 object-contain rounded"
-                      />
-                    ) : (
-                      // El DNI guardado no es público: se pide con la sesión
-                      <PrivateImage
-                        endpoint={userData?.dni_front_url ? "/users/profile/dni" : null}
-                        alt="DNI Frente"
-                        className="w-full h-32 object-contain rounded"
-                        fallback={
-                          <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-                            <Upload className="w-8 h-8 mb-2" />
-                            <p className="text-sm">Click para subir DNI frente</p>
-                          </div>
-                        }
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                      <Upload className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
                   <input
-                    ref={dniFrenteInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => handleImageChange(e, "dni_frente")}
-                    className="hidden"
+                    type="email"
+                    value={nuevoEmail}
+                    onChange={(e) => setNuevoEmail(e.target.value)}
+                    className={inputClass}
+                    placeholder="nuevo@email.com"
+                    autoComplete="email"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Máximo 5MB</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Tu contraseña
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordEmail}
+                    onChange={(e) => setPasswordEmail(e.target.value)}
+                    className={inputClass}
+                    placeholder="Para confirmar que eres tú"
+                    autoComplete="current-password"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCambiarEmail}
+                  disabled={emailLoading}
+                  className="px-6 py-3 bg-[#1a1a1a] hover:bg-[#262626] border border-primary-500/40 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {emailLoading ? "Enviando..." : "Cambiar email"}
+                </button>
               </div>
             </div>
-
-            <p className="text-xs text-gray-500 text-center">
-              Modifica solo los campos que desees actualizar
-            </p>
 
             {/* Botones */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
@@ -443,7 +360,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onUpdate }) => {
                 disabled={loading}
                 className="w-full sm:flex-1 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/20"
               >
-                {loading ? "Guardando..." : "Guardar Cambios"}
+                {loading ? "Guardando..." : "Guardar foto y teléfono"}
               </button>
             </div>
           </form>
