@@ -100,11 +100,11 @@ class Booking {
   // Reserva activa de un socio para un evento
   static async findBySocioAndEvent(socioId, eventId) {
     try {
-      // Cuenta también esperando_pago: no se abre otra mientras la primera
-      // está pendiente (hasta 30 min)
+      // Cuenta también esperando_pago (no se abre otra mientras la primera está
+      // pendiente) y asistida (quien ya entró no puede comprar otra)
       const sql = `
         SELECT * FROM bookings 
-        WHERE socio_id = ? AND event_id = ? AND estado IN ('confirmada', 'esperando_pago')
+        WHERE socio_id = ? AND event_id = ? AND estado IN ('confirmada', 'asistida', 'esperando_pago')
         LIMIT 1
       `;
       const results = await query(sql, [socioId, eventId]);

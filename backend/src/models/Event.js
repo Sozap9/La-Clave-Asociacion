@@ -11,7 +11,7 @@ class Event {
           e.*,
           u.nombre as creado_por_nombre,
           SUM(CASE 
-            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
+            WHEN b.estado IN ('confirmada', 'asistida', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real
@@ -28,7 +28,8 @@ class Event {
       
       if (results.length > 0) {
         const event = results[0];
-        // Disponibles reales a partir de las reservas
+        // Disponibles reales a partir de las reservas. Las asistidas siguen
+        // ocupando plaza: escanear una entrada no libera aforo.
         const reservadas = parseInt(event.entradas_reservadas_real) || 0;
         event.entradas_disponibles_real = event.aforo_maximo - reservadas;
         return event;
@@ -106,7 +107,7 @@ class Event {
         SELECT 
           e.*,
           SUM(CASE 
-            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
+            WHEN b.estado IN ('confirmada', 'asistida', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real
@@ -309,7 +310,7 @@ class Event {
         SELECT 
           e.*,
           SUM(CASE 
-            WHEN b.estado IN ('confirmada', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
+            WHEN b.estado IN ('confirmada', 'asistida', 'esperando_pago') AND ub.role != 'admin' AND b.es_invitacion = 0
             THEN b.numero_entradas 
             ELSE 0 
           END) as entradas_reservadas_real
