@@ -167,9 +167,10 @@ class EmailService {
         }
       }
 
-      // QR servido como PNG por getBookingQRImage. El parámetro que cambia en
-      // cada envío evita que Brevo reutilice una copia rota en caché.
-      const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}?v=${Date.now()}`;
+      // QR servido como PNG por getBookingQRImage (la ruta exige el .png). El
+      // parámetro que cambia en cada envío evita que Brevo reutilice una copia
+      // rota en caché.
+      const qrUrl = `${backendUrl}/api/bookings/qr/${booking.id}/${booking.codigo_acceso}.png?v=${Date.now()}`;
 
       const mailOptions = {
         from: fromNoreply(),

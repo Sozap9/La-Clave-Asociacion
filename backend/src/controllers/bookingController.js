@@ -408,7 +408,7 @@ export const retryBookingPayment = async (req, res) => {
 
 /**
  * QR de una reserva como imagen PNG (no data URI)
- * GET /api/bookings/qr/:id/:codigo
+ * GET /api/bookings/qr/:id/:codigo.png
  */
 export const getBookingQRImage = async (req, res) => {
   try {
