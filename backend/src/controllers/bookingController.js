@@ -693,6 +693,57 @@ export const getEventBookings = async (req, res) => {
   }
 };
 
+// Las horas de los eventos son de Madrid y el servidor puede estar en UTC:
+// se compara todo como hora de reloj de Madrid (ms desde 1970 sin zona)
+const ahoraEnMadrid = () => {
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Madrid",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date())
+      .map((p) => [p.type, p.value]),
+  );
+  return Date.UTC(partes.year, partes.month - 1, partes.day, partes.hour, partes.minute, partes.second);
+};
+
+// Escaneo permitido desde 3 h antes del inicio hasta hora_fin (con cruce de medianoche)
+const ventanaCheckIn = (booking) => {
+  const [y, m, d] = booking.fecha_evento_dia.split("-").map(Number);
+  const [hi, mi] = (booking.hora_evento || "00:00:00").split(":").map(Number);
+  const [hf, mf] = (booking.hora_fin || "23:59:59").split(":").map(Number);
+  const cruzaMedianoche = hf * 60 + mf < hi * 60 + mi;
+  const inicio = Date.UTC(y, m - 1, d, hi, mi);
+  const fin = Date.UTC(y, m - 1, d + (cruzaMedianoche ? 1 : 0), hf, mf);
+  return { desde: inicio - 3 * 60 * 60 * 1000, hasta: fin };
+};
+
+const mensajeEstadoNoValido = (booking) => {
+  switch (booking.estado) {
+    case "asistida": {
+      if (!booking.fecha_asistencia) return "Esta entrada ya se ha usado";
+      const hora = new Date(booking.fecha_asistencia).toLocaleTimeString("es-ES", {
+        timeZone: "Europe/Madrid",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return `Esta entrada ya se ha usado (a las ${hora})`;
+    }
+    case "cancelada":
+      return "Esta entrada está cancelada";
+    case "esperando_pago":
+      return "Pago pendiente: esta entrada no es válida";
+    default:
+      return "Esta entrada no es válida";
+  }
+};
+
 /**
  * Validar un QR y marcar asistencia (admin)
  * POST /api/bookings/verify-qr
@@ -728,11 +779,30 @@ export const verifyQRAndCheckIn = async (req, res) => {
     if (booking.estado !== "confirmada") {
       return res.status(400).json({
         success: false,
-        message: `Esta reserva está ${booking.estado}`,
+        message: mensajeEstadoNoValido(booking),
       });
     }
 
-    await Booking.markAsAttended(booking.id);
+    const ventana = ventanaCheckIn(booking);
+    const ahora = ahoraEnMadrid();
+    if (ahora < ventana.desde || ahora > ventana.hasta) {
+      const fecha = booking.fecha_evento_dia.split("-").reverse().join("/");
+      return res.status(400).json({
+        success: false,
+        message:
+          ahora < ventana.desde
+            ? `Esta entrada es de otro evento: "${booking.evento_titulo}" (${fecha}). Se puede escanear desde 3 horas antes de que empiece.`
+            : `Esta entrada es de otro evento: "${booking.evento_titulo}" (${fecha}), que ya ha terminado.`,
+      });
+    }
+
+    const marcada = await Booking.markAsAttended(booking.id);
+    if (!marcada) {
+      return res.status(400).json({
+        success: false,
+        message: "Esta entrada se acaba de escanear en otro dispositivo",
+      });
+    }
 
     registrarActividad({
       userId: req.user?.id || null,

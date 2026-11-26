@@ -44,7 +44,9 @@ class Booking {
           b.*,
           e.titulo as evento_titulo,
           e.fecha_evento,
+          DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fecha_evento_dia,
           e.hora_evento,
+          e.hora_fin,
           e.ubicacion,
           s.numero_socio,
           u.nombre as socio_nombre,
@@ -73,7 +75,9 @@ class Booking {
           b.*,
           e.titulo as evento_titulo,
           e.fecha_evento,
+          DATE_FORMAT(e.fecha_evento, '%Y-%m-%d') as fecha_evento_dia,
           e.hora_evento,
+          e.hora_fin,
           e.ubicacion,
           s.numero_socio,
           u.nombre as socio_nombre,
@@ -172,15 +176,17 @@ class Booking {
   }
 
   // Marcar reserva como asistida
+  // Solo pasa de confirmada a asistida: si dos lectores escanean a la vez,
+  // el segundo no cambia nada y devuelve false
   static async markAsAttended(id) {
   try {
     const sql = `
       UPDATE bookings 
       SET fecha_asistencia = NOW(), asistencia = 1, estado = 'asistida'
-      WHERE id = ?
+      WHERE id = ? AND estado = 'confirmada'
     `;
-    await query(sql, [id]);
-    return true;
+    const result = await query(sql, [id]);
+    return result.affectedRows > 0;
   } catch (error) {
     logger.error('Error en markAsAttended:', error);
     throw error;
